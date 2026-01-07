@@ -20,9 +20,9 @@ This API provides the backend services for managing expense groups, tracking exp
 uv sync
 ```
 
-1. Run the development server:
+2. Run the development server:
 ```bash
-uv run fastapi dev main.py --reload
+docker compose up --build
 ```
 
 The API will be available at `http://127.0.0.1:8000`
@@ -32,6 +32,22 @@ The API will be available at `http://127.0.0.1:8000`
 Once the server is running, you can access:
 - Interactive API docs: `http://127.0.0.1:8000/docs`
 - Alternative docs: `http://127.0.0.1:8000/redoc`
+
+## Project Structure
+
+This project follows the [FastAPI Bigger Applications](https://fastapi.tiangolo.com/tutorial/bigger-applications/) pattern for organizing code into multiple files:
+
+```
+api/
+├── routers/             # API route handlers
+├── models/              # Database models
+├── schemas/             # Pydantic request/response schemas
+├── core/                # Shared functionality
+|   └── dependencies.py  # Shared dependencies (auth, validation, etc.)
+├── main.py              # FastAPI application entry point
+├── README.md            # This file
+└── pyproject.toml       # Project dependencies and configuration
+```
 
 ## Development Roadmap
 
@@ -107,27 +123,10 @@ Once the server is running, you can access:
 - **Validation**: Pydantic
 - **Code Quality**: Ruff
 
-## Project Structure
-
-```
-api/
-├── main.py           # FastAPI application entry point
-├── pyproject.toml    # Project dependencies and configuration
-├── README.md         # This file
-└── (future structure)
-    ├── models/       # Database models
-    ├── schemas/      # Pydantic schemas
-    ├── routers/      # API route handlers
-    ├── services/     # Business logic
-    ├── auth/         # Authentication utilities
-    └── db/           # Database configuration
-```
-
 ## Contributing
 
 When adding new features:
 1. Follow the roadmap phases
-2. Write tests for new endpoints
+2. Write tests for new endpoints in `routers/tests/`
 3. Update API documentation
 4. Ensure code passes linting with `ruff check`
-

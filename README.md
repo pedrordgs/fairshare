@@ -19,9 +19,11 @@ FairShare helps groups of friends, roommates, or colleagues manage shared expens
 
 ```
 fairshare/
-├── api/          # FastAPI backend application
-├── web/          # React frontend application
-└── README.md     # This file
+├── api/                    # FastAPI backend application
+├── web/                    # React frontend application (coming soon)
+├── AGENTS.md               # AI agent instructions
+├── LICENSE
+└── README.md               # This file
 ```
 
 ## Getting Started
@@ -34,7 +36,12 @@ fairshare/
 
 ### API Setup
 
-See the [API README](api/README.md) for detailed setup instructions.
+```bash
+cd api
+docker compose up --build
+```
+
+The API will be available at `http://127.0.0.1:8000`. See the [API README](api/README.md) for detailed setup instructions.
 
 ### Web App Setup
 
@@ -44,6 +51,13 @@ See the web app README (coming soon) for setup instructions.
 
 This project is currently in active development. See the [API README](api/README.md) for the development roadmap.
 
+### Running Tests
+
+```bash
+cd api
+uv run pytest
+```
+
 ## License
 
 See [LICENSE](LICENSE) file for details.
@@ -52,3 +66,8 @@ See [LICENSE](LICENSE) file for details.
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+When contributing:
+1. Follow the existing code patterns
+2. Write tests for new functionality
+3. Update documentation as needed
+4. Ensure code passes linting

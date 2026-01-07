@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    container_name: fairshare-api
+    tty: true
+    stdin_open: true
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/.venv
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', '-k', 'https://127.0.0.1:8000/health/alive/']
+      interval: 10s
+      timeout: 5s
+      retries: 5

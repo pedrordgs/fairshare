@@ -1,17 +1,58 @@
 services:
   api:
-    build: .
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile
     container_name: fairshare-api
+    restart: unless-stopped
     tty: true
     stdin_open: true
+    env_file: docker/config.env
     ports:
       - "8000:8000"
     volumes:
       - .:/app
       - /app/.venv
-    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ['CMD', 'curl', '-f', '-k', 'https://127.0.0.1:8000/health/alive/']
+      test: ['CMD', 'curl', '-f', '-k', 'https://127.0.0.1:8000/-/alive/']
       interval: 10s
       timeout: 5s
       retries: 5
+
+  db:
+    image: postgres:17-alpine
+    container_name: fairshare-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=dbpass
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dbuser -d db']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: fairshare-pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@example.com
+      - PGADMIN_DEFAULT_PASSWORD=password
+    volumes:
+      - ./data/pgadmin:/root/.pgadmin
+      - ./docker/servers.json:/pgadmin4/servers.json
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true

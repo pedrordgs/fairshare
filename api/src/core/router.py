@@ -1,7 +1,7 @@
 from typing import Literal
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/health")
+router = APIRouter(prefix="/-")
 
 
 @router.get("/alive/")

@@ -35,19 +35,36 @@ Once the server is running, you can access:
 
 ## Project Structure
 
-This project follows the [FastAPI Bigger Applications](https://fastapi.tiangolo.com/tutorial/bigger-applications/) pattern for organizing code into multiple files:
+This project follows a modular structure within the `src/` directory, inspired by the [FastAPI Bigger Applications](https://fastapi.tiangolo.com/tutorial/bigger-applications/) pattern:
 
 ```
 api/
-├── routers/             # API route handlers
-├── models/              # Database models
-├── schemas/             # Pydantic request/response schemas
-├── core/                # Shared functionality
-|   └── dependencies.py  # Shared dependencies (auth, validation, etc.)
-├── main.py              # FastAPI application entry point
-├── README.md            # This file
-└── pyproject.toml       # Project dependencies and configuration
+├── src/                 # Source code organized in modules
+│   ├── auth/            # Authentication module
+│   │   ├── router.py    # API routes for auth
+│   │   ├── models.py    # Data models
+│   │   ├── service.py   # Business logic
+│   │   └── ...          # Other files as needed
+│   ├── core/            # Core functionality
+│   └── main.py          # App entry point
+├── docker/              # Docker configuration
+├── pyproject.toml       # Project dependencies and configuration
+├── docker-compose.yml   # Docker setup
+└── README.md            # This file
 ```
+
+### API Structure
+
+The backend code is organized in modules under `src/`:
+
+- `auth/`: Handles authentication, user management, and security
+- `core/`: Provides core functionality like configuration and health checks
+
+Each module is self-contained with its own router, models, services, and tests.
+
+To set up a new module (e.g., for "expenses"), create `src/expenses/` with files like `router.py`, `models.py`, `service.py`, etc., following the pattern of existing modules.
+
+For detailed instructions, see [AGENTS.md](../AGENTS.md).
 
 ## Development Roadmap
 
@@ -127,6 +144,6 @@ api/
 
 When adding new features:
 1. Follow the roadmap phases
-2. Write tests for new endpoints in `routers/tests/`
+2. Write tests for new endpoints in the module's `tests/` directory
 3. Update API documentation
 4. Ensure code passes linting with `ruff check`

@@ -1,10 +1,10 @@
 {
   "python.languageServer": "None",
-  "python.autoComplete.extraPaths": ["./api"],
+  "python.autoComplete.extraPaths": ["./api/src"],
   "python.testing.promptToConfigure": false,
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": false,
-  "cursorpyright.analysis.extraPaths": ["./api"],
+  "cursorpyright.analysis.extraPaths": ["./api/src"],
   "cursorpyright.analysis.typeCheckingMode": "off",
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",

@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 from auth.service import get_user_by_id
 from core.conf import settings
-from core.dependencies import DbSession
+from db.dependencies import DbSession
 
 from .models import User
 

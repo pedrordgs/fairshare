@@ -92,6 +92,54 @@ cd api
 docker-compose up --build
 ```
 
+## Database Migrations
+
+This project uses Alembic for database schema migrations. Migrations run automatically when the container starts.
+
+### Running Migrations
+
+All migration commands should be run from the `api/` directory and inside `api` container:
+
+```bash
+cd api
+
+# Generate a new migration from model changes
+uv run alembic revision --autogenerate -m "Description"
+
+# Apply migrations to database
+uv run alembic upgrade head
+
+# Rollback one migration
+uv run alembic downgrade -1
+
+# View migration history
+uv run alembic history
+
+# View current revision
+uv run alembic current
+
+# In Docker (migrations auto-run on startup):
+# Migrations run automatically via entrypoint.sh
+# To manually run: docker compose exec api uv run alembic upgrade head
+```
+
+### Adding New Models
+
+When creating new database models:
+
+1. Define the model in the appropriate module's `models.py` file
+2. Import the model in `src/db/models/__init__.py` to ensure Alembic detects it
+3. Generate a migration: `uv run alembic revision --autogenerate -m "Add <model_name> table"`
+4. Review the generated migration file in `src/alembic/versions/`
+5. Apply the migration: `uv run alembic upgrade head`
+
+### Important Notes
+
+- Always review auto-generated migrations before applying them
+- Never manually modify the database schema; use migrations instead
+- Migrations are run automatically on container startup via the entrypoint script
+- Test migrations in development before applying to production
+
 ## Code Style Guidelines
 
 - **Python**: Follow PEP 8, enforced by Ruff

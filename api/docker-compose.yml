@@ -11,13 +11,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
-      - /app/.venv
+      - .:/home/fairshare
+      - /home/fairshare/.venv
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'curl', '-f', '-k', 'https://127.0.0.1:8000/-/alive/']
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8000/-/alive/']
       interval: 10s
       timeout: 5s
       retries: 5

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends, status, HTTPException
 
 from auth.dependencies import AuthenticatedUser
-from core.dependencies import DbSession
+from db.dependencies import DbSession
 from .security import create_access_token, verify_password
 from .models import Token, User, UserCreate, UserPublic, UserUpdate
 from .service import create_user, get_user_by_email, update_user

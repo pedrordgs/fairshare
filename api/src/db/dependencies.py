@@ -6,7 +6,7 @@ from sqlmodel import Session, create_engine
 
 from core.conf import settings
 
-engine = create_engine(str(settings.database_dsn), echo=True)
+engine = create_engine(str(settings.database_dsn), echo=settings.debug)
 
 
 def get_database_session() -> Generator[Session, None, None]:

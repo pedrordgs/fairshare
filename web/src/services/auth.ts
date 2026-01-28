@@ -1,5 +1,5 @@
 import api from './api';
-import { UserCreate, User, Token, UserUpdate } from '../schema';
+import { UserCreate, User, Token, UserUpdate } from '@schema';
 
 export const authApi = {
   login: async (email: string, password: string): Promise<Token> => {

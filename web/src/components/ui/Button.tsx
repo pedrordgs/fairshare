@@ -15,17 +15,17 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const baseClasses = 'font-medium rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 relative overflow-hidden group';
   
-  const sizeClasses = size === 'lg' 
-    ? 'py-4 px-8 text-lg'
-    : size === 'sm'
-    ? 'py-2 px-4 text-sm'
-    : 'py-3 px-6';
+  const sizeClasses = {
+    sm: 'py-2 px-4 text-sm',
+    md: 'py-3 px-6',
+    lg: 'py-4 px-8 text-lg'
+  }[size];
     
-  const variantClasses = variant === 'primary' 
-    ? 'bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white focus:ring-accent-500 shadow-lg hover:shadow-xl transform hover:-translate-y-px'
-    : variant === 'ghost'
-    ? 'bg-transparent hover:bg-primary-50 text-primary-700 focus:ring-primary-500 border border-transparent hover:border-primary-200'
-    : 'bg-primary-100 hover:bg-primary-200 text-primary-800 focus:ring-primary-500 border border-primary-200 hover:border-primary-300';
+  const variantClasses = {
+    primary: 'bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white focus:ring-accent-500 shadow-lg hover:shadow-xl transform hover:-translate-y-px',
+    secondary: 'bg-primary-100 hover:bg-primary-200 text-primary-800 focus:ring-primary-500 border border-primary-200 hover:border-primary-300',
+    ghost: 'bg-transparent hover:bg-primary-50 text-primary-700 focus:ring-primary-500 border border-transparent hover:border-primary-200'
+  }[variant];
 
   return (
     <button

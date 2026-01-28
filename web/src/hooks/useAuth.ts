@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { authApi } from '@services';
-import { User } from '@schema';
+import { useQuery } from "@tanstack/react-query";
+import { authApi } from "@services/auth";
+import { type User } from "@schema/auth";
 
 export const useAuth = () => {
   const {
@@ -8,10 +8,10 @@ export const useAuth = () => {
     isLoading,
     error,
   } = useQuery<User, Error>({
-    queryKey: ['auth', 'me'],
+    queryKey: ["auth", "me"],
     queryFn: authApi.getMe,
     retry: false,
-    enabled: !!localStorage.getItem('access_token'),
+    enabled: !!localStorage.getItem("access_token"),
   });
 
   const isAuthenticated = !!user && !error;

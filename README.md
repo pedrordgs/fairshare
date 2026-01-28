@@ -15,49 +15,6 @@ FairShare helps groups of friends, roommates, or colleagues manage shared expens
 - **User Management**: Invite friends to groups and manage your profile
 - **Authentication**: Secure login via Google OAuth or email/password
 
-## Project Structure
-
-```
-fairshare/
-├── api/                    # FastAPI backend application
-├── web/                    # React frontend application (coming soon)
-├── AGENTS.md               # AI agent instructions
-├── LICENSE
-└── README.md               # This file
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.12+ (for API)
-- Node.js and npm/yarn (for web app)
-- PostgreSQL (or your preferred database)
-
-### API Setup
-
-```bash
-cd api
-docker compose up --build
-```
-
-The API will be available at `http://127.0.0.1:8000`. See the [API README](api/README.md) for detailed setup instructions.
-
-### Web App Setup
-
-See the web app README (coming soon) for setup instructions.
-
-## Development
-
-This project is currently in active development. See the [API README](api/README.md) for the development roadmap.
-
-### Running Tests
-
-```bash
-cd api
-uv run pytest
-```
-
 ## License
 
 See [LICENSE](LICENSE) file for details.

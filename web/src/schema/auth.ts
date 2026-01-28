@@ -1,25 +1,25 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const UserSchema = z.object({
   id: z.number(),
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
 });
 
 export const UserCreateSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(6),
 });
 
 export const UserUpdateSchema = z.object({
   name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
+  email: z.email().optional(),
 });
 
 export const TokenSchema = z.object({
   access_token: z.string(),
-  token_type: z.literal('bearer'),
+  token_type: z.literal("bearer"),
 });
 
 export type User = z.infer<typeof UserSchema>;

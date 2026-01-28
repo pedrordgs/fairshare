@@ -6,6 +6,8 @@
   "python.testing.unittestEnabled": false,
   "cursorpyright.analysis.extraPaths": ["./api/src"],
   "cursorpyright.analysis.typeCheckingMode": "off",
+  "eslint.enable": true,
+  "eslint.workingDirectories": ["./web"],
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
@@ -18,6 +20,17 @@
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.fixAll": "explicit"
+    }
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascript][typescript]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
     }
   }
 }

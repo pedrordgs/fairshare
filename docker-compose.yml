@@ -1,17 +1,33 @@
 services:
+  web:
+    build:
+      context: ./web
+      dockerfile: ./docker/Dockerfile
+    env_file: ./web/docker/config.env
+    container_name: fairshare-web
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    ports:
+      - "5173:5173"
+    environment:
+      - PATH=$PATH:/bin/:/app/node_modules/.bin/
+    volumes:
+      - ./web:/app
+
   api:
     build:
-      context: ./
+      context: ./api
       dockerfile: ./docker/Dockerfile
+    env_file: ./api/docker/config.env
     container_name: fairshare-api
     restart: unless-stopped
     tty: true
     stdin_open: true
-    env_file: docker/config.env
     ports:
       - "8000:8000"
     volumes:
-      - .:/home/fairshare
+      - ./api:/home/fairshare
       - /home/fairshare/.venv
     depends_on:
       db:
@@ -31,7 +47,7 @@ services:
       - POSTGRES_USER=dbuser
       - POSTGRES_PASSWORD=dbpass
     volumes:
-      - ./data/db:/var/lib/postgresql/data
+      - ./api/data/db:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -48,8 +64,8 @@ services:
       - PGADMIN_DEFAULT_EMAIL=admin@example.com
       - PGADMIN_DEFAULT_PASSWORD=password
     volumes:
-      - ./data/pgadmin:/root/.pgadmin
-      - ./docker/servers.json:/pgadmin4/servers.json
+      - ./api/data/pgadmin:/root/.pgadmin
+      - ./api/docker/servers.json:/pgadmin4/servers.json
     ports:
       - "8080:80"
     depends_on:

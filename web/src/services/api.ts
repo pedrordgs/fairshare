@@ -2,7 +2,7 @@ import axios, { type AxiosResponse } from "axios";
 import { toast } from "sonner";
 import { getAuthToken, removeAuthToken } from "./auth";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -38,6 +38,10 @@ api.interceptors.response.use(
       if (status === 400) {
         toast.error("Please check your information and try again.");
       } else if (status === 401) {
+        // Skip 401 handling for login endpoint - let LoginForm handle wrong credentials
+        if (error.config?.url === "/auth/token") {
+          return Promise.reject(error);
+        }
         toast.error("Your session has expired. Please sign in again.");
         removeAuthToken();
         window.location.href = "/";

@@ -87,13 +87,16 @@ export const authApi = {
 
   /**
    * Registers a new user account.
+   * After successful registration, automatically logs in the user to get an access token.
    *
    * @param userData - User registration data including email, name, and password
    * @returns Promise resolving to the token response for the newly created user
    */
   register: async (userData: UserCreate): Promise<Token> => {
-    const response = await api.post("/auth/register", userData);
-    return response.data;
+    // First, register the user
+    await api.post("/auth/register", userData);
+    // Then, login to get the access token
+    return authApi.login(userData.email, userData.password);
   },
 
   /**

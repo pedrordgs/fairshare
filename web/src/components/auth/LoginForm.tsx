@@ -22,6 +22,7 @@ export interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { login } = useAuth();
+  const [apiError, setApiError] = React.useState<string | null>(null);
 
   const {
     register,
@@ -35,23 +36,36 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     mutationFn: (data: LoginFormData) =>
       authApi.login(data.email, data.password),
     onSuccess: (data) => {
+      // Clear any previous errors
+      setApiError(null);
       // Store token and update auth state
       login(data.access_token);
-
       // Let parent handle navigation via onSuccess callback
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: (error: { response?: { status?: number } }) => {
       console.error("Login failed:", error);
+      // Handle 401 specifically for wrong credentials
+      if (error.response?.status === 401) {
+        setApiError("Invalid email or password. Please try again.");
+      } else {
+        setApiError("An error occurred. Please try again later.");
+      }
     },
   });
 
   const onSubmit = (data: LoginFormData) => {
+    setApiError(null);
     loginMutation.mutate(data);
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {apiError && (
+        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+          {apiError}
+        </div>
+      )}
       <Input
         {...register("email")}
         id="email"

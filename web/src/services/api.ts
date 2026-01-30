@@ -1,4 +1,5 @@
 import axios, { type AxiosResponse } from "axios";
+import { toast } from "sonner";
 import { getAuthToken, removeAuthToken } from "./auth";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -30,12 +31,36 @@ api.interceptors.response.use(
         data: error.response.data,
         timestamp: new Date().toISOString(),
       });
+
+      const status = error.response.status;
+
+      // Show toast notifications for specific HTTP errors
+      if (status === 400) {
+        toast.error("Please check your information and try again.");
+      } else if (status === 401) {
+        toast.error("Your session has expired. Please sign in again.");
+        removeAuthToken();
+        window.location.href = "/";
+      } else if (status === 403) {
+        toast.error(
+          "You don't have permission to do that. Check with the group owner if you need access.",
+        );
+      } else if (status === 404) {
+        toast.error(
+          "We couldn't find what you're looking for. It may have been deleted.",
+        );
+      } else if (status >= 500) {
+        toast.error("Oops! Something went wrong on our end. Please try again.");
+      }
     } else if (error.request) {
       console.error("API Network Error:", {
         message: error.message,
         url: error.config?.url,
         timestamp: new Date().toISOString(),
       });
+      toast.error(
+        "Connection issue - please check your internet and try again.",
+      );
     } else {
       console.error("API Request Error:", {
         message: error.message,
@@ -43,10 +68,6 @@ api.interceptors.response.use(
       });
     }
 
-    if (error.response?.status === 401) {
-      removeAuthToken();
-      window.location.href = "/";
-    }
     return Promise.reject(error);
   },
 );

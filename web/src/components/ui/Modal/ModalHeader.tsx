@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "@components/ui/Button";
+import { CloseIcon } from "@assets/icons/navigation-icons";
 
 export interface ModalHeaderProps {
   title: string;
@@ -58,17 +59,7 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({
                    transition-all duration-300 hover:bg-slate-100/50 group"
         aria-label="Close modal"
       >
-        <svg
-          className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="1.5"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <CloseIcon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
       </Button>
     </div>
   );

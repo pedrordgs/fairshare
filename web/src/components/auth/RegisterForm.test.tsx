@@ -261,16 +261,44 @@ describe("RegisterForm", () => {
         expect(mockLogin).toHaveBeenCalledWith("test-token-123");
       });
     });
+
+    it("calls onSuccess callback after successful registration", async () => {
+      const user = userEvent.setup();
+      const onSuccessMock = vi.fn();
+      const mockToken = { access_token: "test-token-123" };
+
+      vi.mocked(AuthService.authApi.register).mockResolvedValue(mockToken);
+
+      renderWithProviders(<RegisterForm onSuccess={onSuccessMock} />);
+
+      await user.type(screen.getByLabelText(/full name/i), "John Doe");
+      await user.type(screen.getByLabelText(/email/i), "john@example.com");
+      await user.type(screen.getByLabelText(/^password$/i), "password123");
+      await user.type(
+        screen.getByLabelText(/confirm password/i),
+        "password123",
+      );
+      await user.click(screen.getByRole("button", { name: /create account/i }));
+
+      await waitFor(() => {
+        expect(onSuccessMock).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   describe("Error Handling", () => {
     it("displays user-friendly error message on registration failure", async () => {
       const user = userEvent.setup();
-      const errorMessage = "Email already exists";
 
-      vi.mocked(AuthService.authApi.register).mockRejectedValue(
-        new Error(errorMessage),
-      );
+      // Mock 409 conflict error with email already exists message
+      vi.mocked(AuthService.authApi.register).mockRejectedValue({
+        response: {
+          status: 409,
+          data: {
+            detail: "A user with this email already exists",
+          },
+        },
+      });
 
       renderWithProviders(<RegisterForm />);
 
@@ -294,9 +322,15 @@ describe("RegisterForm", () => {
     it("displays generic error message for unknown errors", async () => {
       const user = userEvent.setup();
 
-      vi.mocked(AuthService.authApi.register).mockRejectedValue(
-        "Unknown error",
-      );
+      // Mock general server error with detail message
+      vi.mocked(AuthService.authApi.register).mockRejectedValue({
+        response: {
+          status: 500,
+          data: {
+            detail: "Internal server error",
+          },
+        },
+      });
 
       renderWithProviders(<RegisterForm />);
 
@@ -310,8 +344,80 @@ describe("RegisterForm", () => {
       await user.click(screen.getByRole("button", { name: /create account/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/registration failed/i)).toBeInTheDocument();
+        // Should show the API error detail message
+        expect(screen.getByText(/internal server error/i)).toBeInTheDocument();
       });
+    });
+
+    it("displays field-level validation errors from API", async () => {
+      const user = userEvent.setup();
+
+      const validationError = {
+        response: {
+          data: {
+            detail: [
+              {
+                type: "string_too_short",
+                loc: ["body", "name"],
+                msg: "Name must be at least 5 characters",
+                input: "Jo",
+              },
+            ],
+          },
+        },
+      };
+
+      vi.mocked(AuthService.authApi.register).mockRejectedValue(
+        validationError,
+      );
+
+      renderWithProviders(<RegisterForm />);
+
+      await user.type(screen.getByLabelText(/full name/i), "Jo");
+      await user.type(screen.getByLabelText(/email/i), "john@example.com");
+      await user.type(screen.getByLabelText(/^password$/i), "password123");
+      await user.type(
+        screen.getByLabelText(/confirm password/i),
+        "password123",
+      );
+      await user.click(screen.getByRole("button", { name: /create account/i }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/name must be at least 5 characters/i),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("handles network errors gracefully", async () => {
+      const user = userEvent.setup();
+
+      const networkError = new Error("Network Error");
+
+      vi.mocked(AuthService.authApi.register).mockRejectedValue(networkError);
+
+      renderWithProviders(<RegisterForm />);
+
+      await user.type(screen.getByLabelText(/full name/i), "John Doe");
+      await user.type(screen.getByLabelText(/email/i), "john@example.com");
+      await user.type(screen.getByLabelText(/^password$/i), "password123");
+      await user.type(
+        screen.getByLabelText(/confirm password/i),
+        "password123",
+      );
+      const submitButton = screen.getByRole("button", {
+        name: /create account/i,
+      });
+      await user.click(submitButton);
+
+      // Form should not crash and button should be re-enabled after error
+      await waitFor(() => {
+        expect(submitButton).not.toBeDisabled();
+      });
+
+      // Form fields should still be present
+      expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     });
   });
 

@@ -59,24 +59,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
       logError("AUTH_INVALID_CREDENTIALS", error, {
         component: "RegisterForm",
       });
-      const axiosError = error as {
-        response?: { status?: number; data?: { detail?: string } };
-      };
-      const detail = axiosError.response?.data?.detail;
-      const isEmailConflict =
-        typeof detail === "string" && detail.toLowerCase().includes("email");
-
-      if (axiosError.response?.status === 409 || isEmailConflict) {
-        setApiError({
-          response: {
-            data: {
-              detail: "An account with this email already exists.",
-            },
-          },
-        });
-      } else {
-        setApiError(error);
-      }
+      setApiError(error);
     },
   });
 

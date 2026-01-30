@@ -121,3 +121,4 @@ npm run type-check
 - Implement responsive design using Tailwind's mobile-first approach
 - Prefer TypeScript strict mode and comprehensive type coverage
 - **Always use the `frontend-design` skill** for any design/template writing, UI components, or visual interface work
+- Every `npm` command should be run inside `web/` folder where `package.json` is located

@@ -1,11 +1,28 @@
 import React from "react";
 
+/**
+ * Props for the Button component
+ * @extends React.ButtonHTMLAttributes - Inherits all native button attributes
+ */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Visual style variant of the button */
   variant?: "primary" | "secondary" | "ghost";
+  /** Content to display inside the button */
   children: React.ReactNode;
+  /** Size variant of the button */
   size?: "sm" | "md" | "lg";
 }
 
+/**
+ * Button component with multiple visual variants and sizes.
+ *
+ * @example
+ * ```tsx
+ * <Button variant="primary" size="md">Click me</Button>
+ * <Button variant="secondary" onClick={handleClick}>Cancel</Button>
+ * <Button variant="ghost" size="sm">Close</Button>
+ * ```
+ */
 export const Button: React.FC<ButtonProps> = ({
   variant = "primary",
   size = "md",
@@ -14,7 +31,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "font-medium rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 relative overflow-hidden group";
+    "font-medium rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 relative overflow-hidden group cursor-pointer inline-flex items-center justify-center";
 
   const sizeClasses = {
     sm: "py-2 px-4 text-sm",

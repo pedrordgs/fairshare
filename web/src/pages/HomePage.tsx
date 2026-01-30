@@ -1,18 +1,16 @@
 import React from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@components/ui/Card";
+import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Button } from "@components/ui/Button";
+
+import { useAuthModal } from "@hooks/useAuthModal";
 import MoneyIcon from "@assets/icons/money-icon.svg";
 import GroupsIcon from "@assets/icons/groups-icon.svg";
 import CheckIcon from "@assets/icons/check-icon.svg";
 
 export const HomePage: React.FC = () => {
+  const { openAuthModal } = useAuthModal();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50 relative overflow-hidden">
+    <div className="relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div
@@ -22,26 +20,6 @@ export const HomePage: React.FC = () => {
           }}
         />
       </div>
-
-      {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-sm border-b border-primary-100 z-10">
-        <div className="container-max">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">F</span>
-              </div>
-              <h1 className="text-2xl font-bold text-gradient">FairShare</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" className="hidden sm:inline-flex">
-                Log In
-              </Button>
-              <Button>Sign Up</Button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Hero Section */}
       <main className="relative">
@@ -67,7 +45,11 @@ export const HomePage: React.FC = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button size="lg" className="text-lg shadow-lg hover:shadow-xl">
+                <Button
+                  size="lg"
+                  className="text-lg shadow-lg hover:shadow-xl"
+                  onClick={() => openAuthModal({ tab: "register" })}
+                >
                   Get Started Free
                 </Button>
                 <Button variant="secondary" size="lg" className="text-lg">
@@ -183,10 +165,10 @@ export const HomePage: React.FC = () => {
                     <CardTitle className="text-2xl mb-3">
                       Effortless Tracking
                     </CardTitle>
-                    <CardDescription className="text-lg leading-relaxed">
+                    <CardContent className="text-lg leading-relaxed">
                       Add expenses in seconds with smart categorization. See who
                       owes what in real-time with beautiful visualizations.
-                    </CardDescription>
+                    </CardContent>
                   </CardHeader>
                 </Card>
               </div>
@@ -204,10 +186,10 @@ export const HomePage: React.FC = () => {
                     <CardTitle className="text-2xl mb-3">
                       Smart Groups
                     </CardTitle>
-                    <CardDescription className="text-lg leading-relaxed">
+                    <CardContent className="text-lg leading-relaxed">
                       Create groups for trips, households, or events. Invite
                       members seamlessly and start splitting costs together.
-                    </CardDescription>
+                    </CardContent>
                   </CardHeader>
                 </Card>
               </div>
@@ -225,10 +207,10 @@ export const HomePage: React.FC = () => {
                     <CardTitle className="text-2xl mb-3">
                       Clear Settlements
                     </CardTitle>
-                    <CardDescription className="text-lg leading-relaxed">
+                    <CardContent className="text-lg leading-relaxed">
                       See exactly who owes whom and track repayments. Settle up
                       confidently with everyone on the same page.
-                    </CardDescription>
+                    </CardContent>
                   </CardHeader>
                 </Card>
               </div>
@@ -253,6 +235,7 @@ export const HomePage: React.FC = () => {
                   <Button
                     size="lg"
                     className="bg-white text-accent-600 hover:bg-gray-50 text-lg shadow-xl hover:shadow-2xl"
+                    onClick={() => openAuthModal({ tab: "register" })}
                   >
                     Start Your First Group
                   </Button>
@@ -276,34 +259,6 @@ export const HomePage: React.FC = () => {
           </div>
         </section>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white section-padding">
-        <div className="container-max">
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">F</span>
-              </div>
-              <h3 className="text-xl font-bold">FairShare</h3>
-            </div>
-            <p className="text-slate-400">
-              © 2024 FairShare. Built with care for fair expense splitting.
-            </p>
-            <div className="flex items-center justify-center space-x-6 text-sm text-slate-500">
-              <a href="#" className="hover:text-white transition-colors">
-                Privacy
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                Terms
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

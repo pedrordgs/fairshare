@@ -40,12 +40,6 @@ This project follows a modular structure within the `src/` directory, inspired b
 # Install dependencies
 uv sync
 
-# Run development server
-docker compose up --build
-
-# Run tests
-docker compose exec api uv run pytest
-
 # Run linter
 uv run ruff check .
 
@@ -66,19 +60,15 @@ uv run alembic history
 
 # View current revision
 uv run alembic current
-
-# In Docker (migrations auto-run on startup):
-# Migrations run automatically via entrypoint.sh
-# To manually run: docker compose exec api uv run alembic upgrade head
 ```
 
 ### Important Notes
 
-- Every command should be run inside docker container.
 - Always check existing patterns in the codebase before implementing
 - Use `uv` for Python dependency management
 - Prefer async functions for I/O operations
 - Incude type hints
+- Commands should be run inside `api` docker container
 
 
 ## WebApp
@@ -121,4 +111,19 @@ npm run type-check
 - Implement responsive design using Tailwind's mobile-first approach
 - Prefer TypeScript strict mode and comprehensive type coverage
 - **Always use the `frontend-design` skill** for any design/template writing, UI components, or visual interface work
-- Every `npm` command should be run inside `web/` folder where `package.json` is located
+- Commands should be run inside `web` docker container
+
+
+## Local enviroment
+
+This projects uses `docker` and `docker compose` to setup and run a development local environment. Every development command should be run inside respective docker container where the app is running.
+
+### Useful commands
+
+```bash
+# Run local enviroment
+docker compose up
+
+# Build and run local enviroment
+docker compose up --build
+```

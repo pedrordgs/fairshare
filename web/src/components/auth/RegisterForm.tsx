@@ -29,6 +29,7 @@ export interface RegisterFormProps {
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const { login } = useAuth();
+  const [apiError, setApiError] = React.useState<string | null>(null);
 
   const {
     register,
@@ -42,18 +43,33 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const registerMutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: (data) => {
+      // Clear any previous errors
+      setApiError(null);
       // Store token and update auth state
       login(data.access_token);
-
       // Let parent handle navigation via onSuccess callback
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: (error: {
+      response?: { status?: number; data?: { detail?: string } };
+    }) => {
       console.error("Registration failed:", error);
+      // Handle specific error cases
+      if (
+        error.response?.status === 409 ||
+        error.response?.data?.detail?.toLowerCase().includes("email")
+      ) {
+        setApiError("An account with this email already exists.");
+      } else if (error.response?.status === 400) {
+        setApiError("Please check your information and try again.");
+      } else {
+        setApiError("An error occurred. Please try again later.");
+      }
     },
   });
 
   const onSubmit = (data: RegisterFormData) => {
+    setApiError(null);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData);
@@ -61,6 +77,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {apiError && (
+        <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
+          {apiError}
+        </div>
+      )}
       <Input
         {...register("name")}
         id="name"

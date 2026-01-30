@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { api } from "./api";
 import * as authModule from "./auth";
+import * as errorUtils from "@utils/errorUtils";
 
 // Mock the auth module
 vi.mock("./auth", () => ({
@@ -8,18 +9,17 @@ vi.mock("./auth", () => ({
   removeAuthToken: vi.fn(),
 }));
 
-describe("API Interceptors", () => {
-  const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+// Mock the errorUtils module
+vi.mock("@utils/errorUtils", () => ({
+  logError: vi.fn(),
+}));
 
+describe("API Interceptors", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset window.location
     delete (window as Window & { location: Location }).location;
     window.location = { href: "" } as Location;
-  });
-
-  afterEach(() => {
-    consoleSpy.mockClear();
   });
 
   describe("Request Interceptor", () => {
@@ -107,14 +107,14 @@ describe("API Interceptors", () => {
         // Expected to throw
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "API Error 500:",
+      expect(errorUtils.logError).toHaveBeenCalledWith(
+        "SERVER_ERROR",
+        error,
         expect.objectContaining({
           url: "/api/data",
           method: "post",
           status: 500,
           data: { error: "Internal Server Error" },
-          timestamp: expect.any(String),
         }),
       );
     });
@@ -123,7 +123,7 @@ describe("API Interceptors", () => {
       const error = {
         request: {},
         message: "Network Error",
-        config: { url: "/api/data" },
+        config: { url: "/api/data", method: "get" },
       };
 
       try {
@@ -132,12 +132,12 @@ describe("API Interceptors", () => {
         // Expected to throw
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "API Network Error:",
+      expect(errorUtils.logError).toHaveBeenCalledWith(
+        "NETWORK_ERROR",
+        error,
         expect.objectContaining({
-          message: "Network Error",
           url: "/api/data",
-          timestamp: expect.any(String),
+          method: "get",
         }),
       );
     });
@@ -145,6 +145,7 @@ describe("API Interceptors", () => {
     it("logs request errors when request cannot be made", async () => {
       const error = {
         message: "Request failed",
+        config: { url: "/api/data", method: "post" },
       };
 
       try {
@@ -153,11 +154,12 @@ describe("API Interceptors", () => {
         // Expected to throw
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "API Request Error:",
+      expect(errorUtils.logError).toHaveBeenCalledWith(
+        "UNKNOWN",
+        error,
         expect.objectContaining({
-          message: "Request failed",
-          timestamp: expect.any(String),
+          url: "/api/data",
+          method: "post",
         }),
       );
     });

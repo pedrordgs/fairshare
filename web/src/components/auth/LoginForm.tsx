@@ -8,6 +8,8 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@services/auth";
 import { useAuth } from "@context/AuthContext";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
+import { useApiFormErrors } from "@hooks/useApiFormErrors";
+import { logError } from "@utils/errorUtils";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,7 +24,13 @@ export interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { login } = useAuth();
-  const [apiError, setApiError] = React.useState<string | null>(null);
+  const {
+    fieldErrors,
+    generalError,
+    isGeneralError,
+    setApiError,
+    clearApiErrors,
+  } = useApiFormErrors();
 
   const {
     register,
@@ -36,34 +44,37 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     mutationFn: (data: LoginFormData) =>
       authApi.login(data.email, data.password),
     onSuccess: (data) => {
-      // Clear any previous errors
-      setApiError(null);
-      // Store token and update auth state
+      clearApiErrors();
       login(data.access_token);
-      // Let parent handle navigation via onSuccess callback
       onSuccess?.();
     },
-    onError: (error: { response?: { status?: number } }) => {
-      console.error("Login failed:", error);
-      // Handle 401 specifically for wrong credentials
-      if (error.response?.status === 401) {
-        setApiError("Invalid email or password. Please try again.");
+    onError: (error: unknown) => {
+      logError("AUTH_INVALID_CREDENTIALS", error, { component: "LoginForm" });
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 401) {
+        setApiError({
+          response: {
+            data: {
+              detail: "Invalid email or password. Please try again.",
+            },
+          },
+        });
       } else {
-        setApiError("An error occurred. Please try again later.");
+        setApiError(error);
       }
     },
   });
 
   const onSubmit = (data: LoginFormData) => {
-    setApiError(null);
+    clearApiErrors();
     loginMutation.mutate(data);
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {apiError && (
+      {isGeneralError && generalError && (
         <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
-          {apiError}
+          {generalError}
         </div>
       )}
       <Input
@@ -72,7 +83,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         type="email"
         label="Email"
         placeholder="Enter your email"
-        error={errors.email?.message}
+        error={errors.email?.message || fieldErrors.email}
         autoComplete="email"
       />
 
@@ -82,7 +93,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         type="password"
         label="Password"
         placeholder="Enter your password"
-        error={errors.password?.message}
+        error={errors.password?.message || fieldErrors.password}
         autoComplete="current-password"
       />
 

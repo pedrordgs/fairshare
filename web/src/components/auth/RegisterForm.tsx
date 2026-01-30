@@ -8,6 +8,8 @@ import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@services/auth";
 import { useAuth } from "@context/AuthContext";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
+import { useApiFormErrors } from "@hooks/useApiFormErrors";
+import { logError } from "@utils/errorUtils";
 
 const registerSchema = z
   .object({
@@ -29,12 +31,18 @@ export interface RegisterFormProps {
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const { login } = useAuth();
-  const [apiError, setApiError] = React.useState<string | null>(null);
+  const {
+    fieldErrors,
+    generalError,
+    isGeneralError,
+    setApiError,
+    clearApiErrors,
+  } = useApiFormErrors();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: "onChange",
@@ -43,33 +51,20 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const registerMutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: (data) => {
-      // Clear any previous errors
-      setApiError(null);
-      // Store token and update auth state
+      clearApiErrors();
       login(data.access_token);
-      // Let parent handle navigation via onSuccess callback
       onSuccess?.();
     },
-    onError: (error: {
-      response?: { status?: number; data?: { detail?: string } };
-    }) => {
-      console.error("Registration failed:", error);
-      // Handle specific error cases
-      if (
-        error.response?.status === 409 ||
-        error.response?.data?.detail?.toLowerCase().includes("email")
-      ) {
-        setApiError("An account with this email already exists.");
-      } else if (error.response?.status === 400) {
-        setApiError("Please check your information and try again.");
-      } else {
-        setApiError("An error occurred. Please try again later.");
-      }
+    onError: (error: unknown) => {
+      logError("AUTH_INVALID_CREDENTIALS", error, {
+        component: "RegisterForm",
+      });
+      setApiError(error);
     },
   });
 
   const onSubmit = (data: RegisterFormData) => {
-    setApiError(null);
+    clearApiErrors();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData);
@@ -77,9 +72,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      {apiError && (
+      {isGeneralError && generalError && (
         <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md">
-          {apiError}
+          {generalError}
         </div>
       )}
       <Input
@@ -88,7 +83,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         type="text"
         label="Full Name"
         placeholder="Enter your full name"
-        error={errors.name?.message}
+        error={errors.name?.message || fieldErrors.name}
         autoComplete="name"
       />
 
@@ -98,7 +93,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         type="email"
         label="Email"
         placeholder="Enter your email"
-        error={errors.email?.message}
+        error={errors.email?.message || fieldErrors.email}
         autoComplete="email"
       />
 
@@ -108,7 +103,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         type="password"
         label="Password"
         placeholder="Create a password (min 6 characters)"
-        error={errors.password?.message}
+        error={errors.password?.message || fieldErrors.password}
         autoComplete="new-password"
       />
 
@@ -118,14 +113,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         type="password"
         label="Confirm Password"
         placeholder="Confirm your password"
-        error={errors.confirmPassword?.message}
+        error={errors.confirmPassword?.message || fieldErrors.confirmPassword}
         autoComplete="new-password"
       />
 
       <Button
         type="submit"
         className="w-full"
-        disabled={registerMutation.isPending}
+        disabled={isSubmitting || registerMutation.isPending}
       >
         {registerMutation.isPending ? (
           <span className="flex items-center justify-center gap-2">

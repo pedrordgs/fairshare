@@ -4,10 +4,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { useNavigate } from "@tanstack/react-router";
 
 import { useAuth } from "@context/AuthContext";
+import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
+import { CreateGroupModal } from "@components/groups/CreateGroupModal";
 
 export const DashboardPage: React.FC = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { openCreateGroupModal } = useCreateGroupModal();
 
   if (isLoading) {
     return (
@@ -61,7 +64,9 @@ export const DashboardPage: React.FC = () => {
               <p className="text-slate-600 mb-4">
                 Start a new expense group for trips, household bills, or events.
               </p>
-              <Button className="w-full">Create Group</Button>
+              <Button className="w-full" onClick={openCreateGroupModal}>
+                Create Group
+              </Button>
             </CardContent>
           </Card>
 
@@ -144,6 +149,7 @@ export const DashboardPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+      <CreateGroupModal />
     </div>
   );
 };

@@ -165,10 +165,10 @@ describe("LoginForm", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(AuthService.authApi.login).toHaveBeenCalledWith({
-          email: "test@example.com",
-          password: "password123",
-        });
+        expect(AuthService.authApi.login).toHaveBeenCalledWith(
+          "test@example.com",
+          "password123",
+        );
       });
     });
 
@@ -192,16 +192,45 @@ describe("LoginForm", () => {
         expect(mockLogin).toHaveBeenCalledWith("test-token-123");
       });
     });
+
+    it("calls onSuccess callback after successful login", async () => {
+      const user = userEvent.setup();
+      const onSuccessMock = vi.fn();
+      const mockToken = { access_token: "test-token-123" };
+
+      vi.mocked(AuthService.authApi.login).mockResolvedValue(mockToken);
+
+      renderWithProviders(<LoginForm onSuccess={onSuccessMock} />);
+
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const submitButton = screen.getByRole("button", { name: /sign in/i });
+
+      await user.type(emailInput, "test@example.com");
+      await user.type(passwordInput, "password123");
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onSuccessMock).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 
   describe("Error Handling", () => {
-    it("displays user-friendly error message on login failure", async () => {
+    it("displays user-friendly error message on 401 login failure", async () => {
       const user = userEvent.setup();
-      const errorMessage = "Invalid credentials";
 
-      vi.mocked(AuthService.authApi.login).mockRejectedValue(
-        new Error(errorMessage),
-      );
+      // Mock 401 error with axios structure that useApiFormErrors expects
+      const axiosError = {
+        response: {
+          status: 401,
+          data: {
+            detail: "Invalid email or password. Please try again.",
+          },
+        },
+      };
+
+      vi.mocked(AuthService.authApi.login).mockRejectedValue(axiosError);
 
       renderWithProviders(<LoginForm />);
 
@@ -214,17 +243,26 @@ describe("LoginForm", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        // Should show user-friendly error message instead of raw error
+        // Should show user-friendly error message from the error response
         expect(
           screen.getByText(/invalid email or password/i),
         ).toBeInTheDocument();
       });
     });
 
-    it("displays generic error message for unknown errors", async () => {
+    it("displays generic error message for non-401 errors", async () => {
       const user = userEvent.setup();
 
-      vi.mocked(AuthService.authApi.login).mockRejectedValue("Unknown error");
+      // Mock general error with axios structure
+      const axiosError = {
+        response: {
+          data: {
+            detail: "An error occurred. Please try again later.",
+          },
+        },
+      };
+
+      vi.mocked(AuthService.authApi.login).mockRejectedValue(axiosError);
 
       renderWithProviders(<LoginForm />);
 
@@ -237,8 +275,74 @@ describe("LoginForm", () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/login failed/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/an error occurred. please try again later/i),
+        ).toBeInTheDocument();
       });
+    });
+
+    it("displays field-level validation errors from API", async () => {
+      const user = userEvent.setup();
+
+      const validationError = {
+        response: {
+          data: {
+            detail: [
+              {
+                type: "value_error",
+                loc: ["body", "email"],
+                msg: "Invalid email format from server",
+                input: "test@example",
+              },
+            ],
+          },
+        },
+      };
+
+      vi.mocked(AuthService.authApi.login).mockRejectedValue(validationError);
+
+      renderWithProviders(<LoginForm />);
+
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const submitButton = screen.getByRole("button", { name: /sign in/i });
+
+      await user.type(emailInput, "test@example");
+      await user.type(passwordInput, "password123");
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/invalid email format from server/i),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("handles network errors gracefully", async () => {
+      const user = userEvent.setup();
+
+      const networkError = new Error("Network Error");
+
+      vi.mocked(AuthService.authApi.login).mockRejectedValue(networkError);
+
+      renderWithProviders(<LoginForm />);
+
+      const emailInput = screen.getByLabelText(/email/i);
+      const passwordInput = screen.getByLabelText(/password/i);
+      const submitButton = screen.getByRole("button", { name: /sign in/i });
+
+      await user.type(emailInput, "test@example.com");
+      await user.type(passwordInput, "password123");
+      await user.click(submitButton);
+
+      // Form should not crash and button should be re-enabled after error
+      await waitFor(() => {
+        expect(submitButton).not.toBeDisabled();
+      });
+
+      // Email and password fields should still be present
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     });
   });
 

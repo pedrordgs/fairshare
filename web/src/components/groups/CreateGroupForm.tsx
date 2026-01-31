@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import {
   ExpenseGroupCreateSchema,
   type ExpenseGroupCreate,
+  type ExpenseGroup,
 } from "@schema/groups";
 import { groupsApi } from "@services/groups";
 import { Button } from "@components/ui/Button";
@@ -15,7 +16,7 @@ import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 
 interface CreateGroupFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (group: ExpenseGroup) => void;
 }
 
 export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
@@ -39,10 +40,10 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
 
   const createGroupMutation = useMutation({
     mutationFn: (data: ExpenseGroupCreate) => groupsApi.createGroup(data),
-    onSuccess: () => {
+    onSuccess: (group: ExpenseGroup) => {
       clearApiErrors();
       toast.success("Group created successfully!");
-      onSuccess?.();
+      onSuccess?.(group);
     },
     onError: (error: unknown) => {
       setApiError(error);

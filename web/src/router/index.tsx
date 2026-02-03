@@ -8,9 +8,21 @@ import {
 import { HomePage } from "@pages/HomePage";
 import { DashboardPage } from "@pages/DashboardPage";
 import { StyleguidePage } from "@pages/StyleguidePage";
+import { GroupDetailPage } from "@pages/GroupDetailPage";
 import { Header, Footer } from "@components/layout";
 import { AuthModal } from "@components/auth/AuthModal";
 import { getAuthToken } from "@services/auth";
+
+/**
+ * Authentication guard for protected routes.
+ * Redirects to home page if user is not authenticated.
+ */
+const requireAuth = () => {
+  const token = getAuthToken();
+  if (!token) {
+    throw redirect({ to: "/" });
+  }
+};
 
 // Create the root route with layout
 const rootRoute = createRootRoute({
@@ -43,12 +55,7 @@ const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/dashboard",
   component: DashboardPage,
-  beforeLoad: () => {
-    const token = getAuthToken();
-    if (!token) {
-      throw redirect({ to: "/" });
-    }
-  },
+  beforeLoad: requireAuth,
 });
 
 // Create styleguide route
@@ -58,12 +65,21 @@ const styleguideRoute = createRoute({
   component: StyleguidePage,
 });
 
+// Create group detail route with auth guard
+const groupDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/groups/$groupId",
+  component: GroupDetailPage,
+  beforeLoad: requireAuth,
+});
+
 // Create the router
 export const router = createRouter({
   routeTree: rootRoute.addChildren([
     indexRoute,
     dashboardRoute,
     styleguideRoute,
+    groupDetailRoute,
   ]),
 });
 

@@ -1,0 +1,232 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { groupsApi } from "./groups";
+import api from "./api";
+
+// Mock the api module
+vi.mock("./api", () => ({
+  default: {
+    post: vi.fn(),
+    get: vi.fn(),
+  },
+}));
+
+describe("Groups Service", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("groupsApi.createGroup", () => {
+    it("sends POST request to /groups/ with group data", async () => {
+      const mockResponse = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+        },
+      };
+      vi.mocked(api.post).mockResolvedValue(mockResponse);
+
+      const groupData = { name: "Test Group" };
+      const result = await groupsApi.createGroup(groupData);
+
+      expect(api.post).toHaveBeenCalledWith("/groups/", groupData);
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("validates response data against schema", async () => {
+      const validResponse = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+        },
+      };
+      vi.mocked(api.post).mockResolvedValue(validResponse);
+
+      const result = await groupsApi.createGroup({ name: "Test Group" });
+
+      expect(result).toEqual(validResponse.data);
+    });
+
+    it("throws error when response data is invalid", async () => {
+      const invalidResponse = {
+        data: {
+          id: -1, // Invalid: should be positive
+          name: "Test Group",
+          created_by: 1,
+        },
+      };
+      vi.mocked(api.post).mockResolvedValue(invalidResponse);
+
+      await expect(
+        groupsApi.createGroup({ name: "Test Group" }),
+      ).rejects.toThrow();
+    });
+
+    it("throws error when required fields are missing", async () => {
+      const incompleteResponse = {
+        data: {
+          id: 1,
+          // Missing name and created_by
+        },
+      };
+      vi.mocked(api.post).mockResolvedValue(incompleteResponse);
+
+      await expect(
+        groupsApi.createGroup({ name: "Test Group" }),
+      ).rejects.toThrow();
+    });
+
+    it("throws error on API failure", async () => {
+      const apiError = new Error("Network Error");
+      vi.mocked(api.post).mockRejectedValue(apiError);
+
+      await expect(
+        groupsApi.createGroup({ name: "Test Group" }),
+      ).rejects.toThrow("Network Error");
+    });
+  });
+
+  describe("groupsApi.getGroup", () => {
+    it("sends GET request to /groups/${groupId}", async () => {
+      const mockResponse = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+          members: [
+            {
+              user_id: 1,
+              name: "John Doe",
+              email: "john@example.com",
+            },
+          ],
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(mockResponse);
+
+      const result = await groupsApi.getGroup(1);
+
+      expect(api.get).toHaveBeenCalledWith("/groups/1");
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it("validates response data against ExpenseGroupDetailSchema", async () => {
+      const validResponse = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+          members: [
+            {
+              user_id: 1,
+              name: "John Doe",
+              email: "john@example.com",
+            },
+          ],
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(validResponse);
+
+      const result = await groupsApi.getGroup(1);
+
+      expect(result).toEqual(validResponse.data);
+    });
+
+    it("throws error when groupId is not a positive integer", async () => {
+      await expect(groupsApi.getGroup(0)).rejects.toThrow("Invalid group ID");
+      await expect(groupsApi.getGroup(-1)).rejects.toThrow("Invalid group ID");
+      await expect(groupsApi.getGroup(1.5)).rejects.toThrow("Invalid group ID");
+      await expect(groupsApi.getGroup(NaN)).rejects.toThrow("Invalid group ID");
+    });
+
+    it("throws error when response data is invalid", async () => {
+      const invalidResponse = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+          members: [
+            {
+              user_id: -1, // Invalid: should be positive
+              name: "John Doe",
+              email: "john@example.com",
+            },
+          ],
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(invalidResponse);
+
+      await expect(groupsApi.getGroup(1)).rejects.toThrow();
+    });
+
+    it("throws error when members field is missing", async () => {
+      const incompleteResponse = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+          // Missing members array
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(incompleteResponse);
+
+      await expect(groupsApi.getGroup(1)).rejects.toThrow();
+    });
+
+    it("throws error on 404 response", async () => {
+      const notFoundError = {
+        response: {
+          status: 404,
+          data: {
+            detail: "Group not found",
+          },
+        },
+      };
+      vi.mocked(api.get).mockRejectedValue(notFoundError);
+
+      await expect(groupsApi.getGroup(999)).rejects.toEqual(notFoundError);
+    });
+
+    it("throws error on 403 response", async () => {
+      const forbiddenError = {
+        response: {
+          status: 403,
+          data: {
+            detail: "Access denied",
+          },
+        },
+      };
+      vi.mocked(api.get).mockRejectedValue(forbiddenError);
+
+      await expect(groupsApi.getGroup(1)).rejects.toEqual(forbiddenError);
+    });
+
+    it("throws error on network failure", async () => {
+      const networkError = new Error("Network Error");
+      vi.mocked(api.get).mockRejectedValue(networkError);
+
+      await expect(groupsApi.getGroup(1)).rejects.toThrow("Network Error");
+    });
+
+    it("handles empty members array", async () => {
+      const responseWithNoMembers = {
+        data: {
+          id: 1,
+          name: "Test Group",
+          created_by: 1,
+          members: [],
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(responseWithNoMembers);
+
+      const result = await groupsApi.getGroup(1);
+
+      expect(result.members).toEqual([]);
+    });
+  });
+});

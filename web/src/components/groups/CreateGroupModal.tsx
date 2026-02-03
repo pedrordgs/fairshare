@@ -1,7 +1,11 @@
 import React from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Modal, ModalHeader, ModalContent } from "@components/ui/Modal";
 import { CreateGroupForm } from "./CreateGroupForm";
 import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
+import { type ExpenseGroup } from "@schema/groups";
+import { logError } from "@utils/errorUtils";
+import { toast } from "react-hot-toast";
 
 /**
  * Global create group modal component.
@@ -18,9 +22,26 @@ import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
  */
 export const CreateGroupModal: React.FC = () => {
   const { isOpen, closeCreateGroupModal } = useCreateGroupModal();
+  const navigate = useNavigate();
 
-  const handleSuccess = () => {
+  const handleSuccess = (group: ExpenseGroup) => {
     closeCreateGroupModal();
+    try {
+      navigate({
+        to: "/groups/$groupId",
+        params: { groupId: String(group.id) },
+      });
+    } catch (navError) {
+      logError("UNKNOWN", navError as Error, {
+        groupId: group.id,
+        destination: "/groups/$groupId",
+        component: "CreateGroupModal",
+      });
+      toast.error(
+        "Group created but couldn't navigate to it. Please find it in your dashboard.",
+      );
+      navigate({ to: "/dashboard" });
+    }
   };
 
   if (!isOpen) {

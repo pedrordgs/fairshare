@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const ExpenseGroupSchema = z.object({
-  id: z.number(),
-  name: z.string().min(1),
-  created_by: z.number(),
+  id: z.number().positive(),
+  name: z.string().min(1).max(100),
+  created_by: z.number().positive(),
 });
 
 export const ExpenseGroupCreateSchema = z.object({
@@ -15,8 +15,8 @@ export const ExpenseGroupUpdateSchema = z.object({
 });
 
 export const ExpenseGroupMemberSchema = z.object({
-  user_id: z.number(),
-  name: z.string().min(1),
+  user_id: z.number().positive(),
+  name: z.string().min(1).max(100),
   email: z.string().email(),
 });
 

@@ -6,6 +6,7 @@ import { Button } from "@components/ui/Button";
 import { groupsApi } from "@services/groups";
 import { useAuth } from "@context/AuthContext";
 import { logError } from "@utils/errorUtils";
+import receiptIcon from "@assets/icons/receipt-icon.svg";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -248,7 +249,11 @@ export const GroupDetailPage: React.FC = () => {
             <CardContent>
               <div className="text-center py-16">
                 <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🧾</span>
+                  <img
+                    src={receiptIcon}
+                    alt="Receipt"
+                    className="w-8 h-8 text-primary-600"
+                  />
                 </div>
                 <p className="text-slate-600 font-medium mb-2">
                   No expenses yet

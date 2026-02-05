@@ -5,7 +5,7 @@ import { CreateGroupForm } from "./CreateGroupForm";
 import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
 import { type ExpenseGroup } from "@schema/groups";
 import { logError } from "@utils/errorUtils";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 /**
  * Global create group modal component.

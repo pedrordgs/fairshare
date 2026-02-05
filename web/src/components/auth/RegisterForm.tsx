@@ -42,7 +42,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: "onChange",
@@ -69,6 +69,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
     const { confirmPassword, ...registerData } = data;
     registerMutation.mutate(registerData);
   };
+
+  const isLoading = registerMutation.isPending;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -117,12 +119,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess }) => {
         autoComplete="new-password"
       />
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isSubmitting || registerMutation.isPending}
-      >
-        {registerMutation.isPending ? (
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <LoadingSpinnerIcon className="w-4 h-4 animate-spin" />
             Creating account...

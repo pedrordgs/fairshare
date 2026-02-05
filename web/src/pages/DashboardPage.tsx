@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@context/AuthContext";
 import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
 import { CreateGroupModal } from "@components/groups/CreateGroupModal";
+import { GroupsList } from "@components/groups/GroupsList";
 
 export const DashboardPage: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -99,55 +100,8 @@ export const DashboardPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Getting Started */}
-        <Card className="slide-up stagger-2">
-          <CardHeader>
-            <CardTitle className="text-2xl">Getting Started</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3 p-4 bg-primary-50 rounded-lg">
-                <div className="w-6 h-6 bg-accent-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  1
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">
-                    Create Your First Group
-                  </h3>
-                  <p className="text-slate-600">
-                    Set up a group for your next trip, household, or event.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3 p-4 bg-primary-50 rounded-lg">
-                <div className="w-6 h-6 bg-accent-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  2
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">Add Members</h3>
-                  <p className="text-slate-600">
-                    Invite friends, family, or roommates to join your group.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3 p-4 bg-primary-50 rounded-lg">
-                <div className="w-6 h-6 bg-accent-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  3
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900">
-                    Start Splitting Expenses
-                  </h3>
-                  <p className="text-slate-600">
-                    Add expenses and watch the magic happen!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Groups Section */}
+        <GroupsList onCreateGroup={openCreateGroupModal} />
       </div>
       <CreateGroupModal />
     </div>

@@ -35,9 +35,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    mode: "onTouched",
   });
 
   const loginMutation = useMutation({
@@ -70,6 +71,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     loginMutation.mutate(data);
   };
 
+  const isLoading = loginMutation.isPending;
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {isGeneralError && generalError && (
@@ -97,12 +100,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         autoComplete="current-password"
       />
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isSubmitting || loginMutation.isPending}
-      >
-        {isSubmitting ? (
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <LoadingSpinnerIcon className="w-4 h-4 animate-spin" />
             Signing in...

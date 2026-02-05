@@ -77,6 +77,12 @@ export function isFastAPIHTTPException(
   return typeof detail === "string";
 }
 
+function shouldLogInConsole(): boolean {
+  const isVitest =
+    (import.meta.env as unknown as { VITEST?: boolean }).VITEST === true;
+  return import.meta.env.DEV && !isVitest && import.meta.env.MODE !== "test";
+}
+
 /**
  * Extracts field errors from FastAPI validation error response
  * Maps field paths like ["body", "name"] to field names like "name"
@@ -91,13 +97,15 @@ function extractFieldErrors(
     const fieldPath = error.loc.slice(1);
 
     if (fieldPath.length === 0) {
-      logError(
-        "VALIDATION_ERROR",
-        new Error("Validation error missing field location"),
-        {
-          errorDetail: error,
-        },
-      );
+      if (shouldLogInConsole()) {
+        logError(
+          "VALIDATION_ERROR",
+          new Error("Validation error missing field location"),
+          {
+            errorDetail: error,
+          },
+        );
+      }
       continue;
     }
 
@@ -210,20 +218,12 @@ export function useApiFormErrors(): UseApiFormErrorsReturn {
     return extractFieldErrors(error.response.data.detail);
   }, [error]);
 
-  const isValidationError = useMemo(() => {
-    return isFastAPIValidationError(error);
-  }, [error]);
-
-  const isGeneralError = useMemo(() => {
-    return isFastAPIHTTPException(error);
-  }, [error]);
-
-  const generalError = useMemo(() => {
-    if (isFastAPIHTTPException(error)) {
-      return error.response.data.detail;
-    }
-    return null;
-  }, [error]);
+  // Simple primitive derivations - no useMemo needed per React best practices
+  const isValidationError = isFastAPIValidationError(error);
+  const isGeneralError = isFastAPIHTTPException(error);
+  const generalError = isFastAPIHTTPException(error)
+    ? error.response.data.detail
+    : null;
 
   const getFieldError = useCallback(
     (fieldName: string): string | undefined => {

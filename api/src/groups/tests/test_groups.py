@@ -40,7 +40,8 @@ class TestListGroups:
         client, _ = authenticated_client
         response = client.get("/groups/")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert data == {"items": [], "total": 0, "offset": 0, "limit": 12}
 
     def test_list_user_groups(self, authenticated_client: AuthenticatedClient) -> None:
         client, user = authenticated_client
@@ -51,8 +52,12 @@ class TestListGroups:
         response = client.get("/groups/")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        names = [g["name"] for g in data]
+        items = data["items"]
+        assert data["total"] == 2
+        assert data["offset"] == 0
+        assert data["limit"] == 12
+        assert len(items) == 2
+        names = [g["name"] for g in items]
         assert "Group 1" in names
         assert "Group 2" in names
 
@@ -68,8 +73,10 @@ class TestListGroups:
         response = client.get("/groups/")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["name"] == "My Group"
+        items = data["items"]
+        assert data["total"] == 1
+        assert len(items) == 1
+        assert items[0]["name"] == "My Group"
 
     def test_no_token(self, client: TestClient) -> None:
         response = client.get("/groups/")
@@ -131,6 +138,7 @@ class TestUpdateGroup:
         # Add current user as member (not owner)
         from groups.service import add_member
 
+        assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 
         response = client.patch(f"/groups/{other_group.id}", json={"name": "Hijacked Name"})
@@ -169,6 +177,7 @@ class TestDeleteGroup:
         # Add current user as member
         from groups.service import add_member
 
+        assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 
         response = client.delete(f"/groups/{other_group.id}")
@@ -233,6 +242,7 @@ class TestAddMember:
         # Add current user as member
         from groups.service import add_member
 
+        assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 
         # Create a third user to try to add
@@ -298,8 +308,10 @@ class TestRemoveMember:
         # Add current user and a third user as members
         from groups.service import add_member
 
+        assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
         third_user, _ = create_test_user(session, "third@example.com")
+        assert third_user.id is not None
         add_member(session=session, group=other_group, user_id=third_user.id)
 
         # Try to remove third user (not owner)

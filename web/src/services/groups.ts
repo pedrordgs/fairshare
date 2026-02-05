@@ -3,8 +3,10 @@ import {
   type ExpenseGroup,
   type ExpenseGroupCreate,
   type ExpenseGroupDetail,
+  type PaginatedGroupsResponse,
   ExpenseGroupSchema,
   ExpenseGroupDetailSchema,
+  PaginatedGroupsResponseSchema,
 } from "@schema/groups";
 
 /**
@@ -17,6 +19,11 @@ const validateGroupId = (groupId: number): void => {
     );
   }
 };
+
+export interface GetUserGroupsParams {
+  offset?: number;
+  limit?: number;
+}
 
 export const groupsApi = {
   /**
@@ -43,5 +50,22 @@ export const groupsApi = {
     const response = await api.get(`/groups/${groupId}`);
     // Runtime validation with Zod schema
     return ExpenseGroupDetailSchema.parse(response.data);
+  },
+
+  /**
+   * Fetches paginated list of groups where the authenticated user is a member.
+   *
+   * @param params - Pagination parameters (offset and limit)
+   * @returns Promise resolving to paginated groups response
+   */
+  getUserGroups: async (
+    params: GetUserGroupsParams = {},
+  ): Promise<PaginatedGroupsResponse> => {
+    const { offset = 0, limit = 12 } = params;
+    const response = await api.get("/groups/", {
+      params: { offset, limit },
+    });
+    // Runtime validation with Zod schema
+    return PaginatedGroupsResponseSchema.parse(response.data);
   },
 };

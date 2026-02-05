@@ -210,6 +210,10 @@ export function logError(
   error: unknown,
   context?: Record<string, unknown>,
 ): void {
+  const isVitest =
+    (import.meta.env as unknown as { VITEST?: boolean }).VITEST === true;
+  if (isVitest) return;
+
   const timestamp = new Date().toISOString();
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
@@ -226,13 +230,12 @@ export function logError(
     url: typeof window !== "undefined" ? window.location.href : undefined,
   };
 
-  // In development, log to console
-  if (process.env.NODE_ENV === "development") {
+  const shouldLogInConsole =
+    import.meta.env.DEV && !isVitest && import.meta.env.MODE !== "test";
+
+  // In development, log structured errors. In production, prefer sending to a tracker.
+  if (shouldLogInConsole) {
     console.error(`[ERROR] ${category}:`, logEntry);
-  } else {
-    // In production, you would send this to your error tracking service
-    // Example: Sentry.captureException(error, { extra: context });
-    console.error(`[ERROR] ${category}:`, errorMessage);
   }
 }
 

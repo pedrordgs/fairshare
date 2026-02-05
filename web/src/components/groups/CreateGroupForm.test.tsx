@@ -166,6 +166,33 @@ describe("CreateGroupForm", () => {
       });
     });
 
+    it("invalidates groups list queries on success", async () => {
+      const user = userEvent.setup();
+      const mockGroup = {
+        id: 1,
+        name: "Test Group",
+        created_by: 1,
+      };
+
+      vi.mocked(GroupsService.groupsApi.createGroup).mockResolvedValue(
+        mockGroup,
+      );
+
+      const invalidateQueriesSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+      renderWithProviders(<CreateGroupForm />);
+
+      await user.type(screen.getByLabelText(/group name/i), "Test Group");
+      await user.click(screen.getByRole("button", { name: /create group/i }));
+
+      await waitFor(() => {
+        expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+          queryKey: ["groups", "list"],
+          exact: false,
+        });
+      });
+    });
+
     it("calls onSuccess callback with created group", async () => {
       const user = userEvent.setup();
       const onSuccessMock = vi.fn();

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as AuthService from "@services/auth";
@@ -33,6 +34,9 @@ describe("AuthContext", () => {
 
     vi.clearAllMocks();
     window.location.href = "";
+
+    vi.mocked(AuthService.setAuthToken).mockReturnValue(true);
+    vi.mocked(AuthService.removeAuthToken).mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -160,6 +164,7 @@ describe("AuthContext", () => {
 
   describe("Login Function", () => {
     it("stores token and updates state on login", async () => {
+      const user = userEvent.setup();
       vi.mocked(AuthService.getAuthToken).mockReturnValue(null);
       vi.mocked(AuthService.authApi.getMe).mockResolvedValue({
         id: 1,
@@ -176,7 +181,7 @@ describe("AuthContext", () => {
 
       // Trigger login
       const loginButton = screen.getByRole("button", { name: "Login" });
-      loginButton.click();
+      await user.click(loginButton);
 
       await waitFor(() => {
         expect(AuthService.setAuthToken).toHaveBeenCalledWith("test-token");
@@ -184,12 +189,13 @@ describe("AuthContext", () => {
     });
 
     it("invalidates queries after login", async () => {
+      const user = userEvent.setup();
       vi.mocked(AuthService.getAuthToken).mockReturnValue(null);
 
       renderWithProviders(<TestComponent />);
 
       const loginButton = screen.getByRole("button", { name: "Login" });
-      loginButton.click();
+      await user.click(loginButton);
 
       // The query invalidation happens internally, we verify the token was set
       await waitFor(() => {
@@ -200,6 +206,7 @@ describe("AuthContext", () => {
 
   describe("Logout Function", () => {
     it("clears token and redirects on logout", async () => {
+      const user = userEvent.setup();
       vi.mocked(AuthService.getAuthToken).mockReturnValue("test-token");
       vi.mocked(AuthService.authApi.getMe).mockResolvedValue({
         id: 1,
@@ -218,7 +225,7 @@ describe("AuthContext", () => {
 
       // Trigger logout
       const logoutButton = screen.getByRole("button", { name: "Logout" });
-      logoutButton.click();
+      await user.click(logoutButton);
 
       await waitFor(() => {
         expect(AuthService.removeAuthToken).toHaveBeenCalled();
@@ -228,6 +235,7 @@ describe("AuthContext", () => {
     });
 
     it("clears query client on logout", async () => {
+      const user = userEvent.setup();
       vi.mocked(AuthService.getAuthToken).mockReturnValue("test-token");
       vi.mocked(AuthService.authApi.getMe).mockResolvedValue({
         id: 1,
@@ -246,7 +254,7 @@ describe("AuthContext", () => {
 
       // Trigger logout
       const logoutButton = screen.getByRole("button", { name: "Logout" });
-      logoutButton.click();
+      await user.click(logoutButton);
 
       await waitFor(() => {
         expect(AuthService.removeAuthToken).toHaveBeenCalled();

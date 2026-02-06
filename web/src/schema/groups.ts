@@ -22,10 +22,10 @@ export const ExpenseGroupMemberSchema = z.object({
 
 export const ExpenseGroupDetailSchema = ExpenseGroupSchema.extend({
   members: z.array(ExpenseGroupMemberSchema),
-  created_at: z.string().datetime(),
+  created_at: z.iso.datetime({ local: true }),
   expense_count: z.number().nonnegative(),
   user_balance: z.number(),
-  last_activity_at: z.string().datetime().nullable(),
+  last_activity_at: z.iso.datetime({ local: true }).nullable(),
 });
 
 export const PaginatedGroupsResponseSchema = z.object({

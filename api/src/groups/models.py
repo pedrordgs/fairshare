@@ -63,25 +63,8 @@ class ExpenseGroupDetail(ExpenseGroupPublic):
 
     @field_serializer("user_balance")
     def _serialize_user_balance(self, user_balance: Decimal) -> float:
-        # JSON has no Decimal type; we expose this as a numeric field.
         return float(user_balance)
-
-    @field_serializer("created_at", "last_activity_at")
-    def _serialize_datetimes(self, value: datetime | None) -> str | None:
-        if value is None:
-            return None
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=UTC)
-        # Use Z for UTC to match frontend ISO datetime validation.
-        return value.isoformat().replace("+00:00", "Z")
 
 
 class AddMemberRequest(SQLModel):
     user_id: int
-
-
-class PaginatedGroupsResponse(SQLModel):
-    items: list[ExpenseGroupDetail]
-    total: int
-    offset: int
-    limit: int

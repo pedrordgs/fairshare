@@ -5,13 +5,9 @@ from auth.service import get_user_by_id
 from db.dependencies import DbSession
 
 from .dependencies import GroupAsMember, GroupAsOwner
-from .models import (
-    AddMemberRequest,
-    ExpenseGroupCreate,
-    ExpenseGroupDetail,
-    ExpenseGroupUpdate,
-    PaginatedGroupsResponse,
-)
+from core.models import PaginatedResponse
+
+from .models import AddMemberRequest, ExpenseGroupCreate, ExpenseGroupDetail, ExpenseGroupUpdate
 from .service import (
     add_member,
     create_group,
@@ -36,20 +32,20 @@ async def create_expense_group(
     return get_group_detail(session=session, group=group)
 
 
-@router.get("/", response_model=PaginatedGroupsResponse)
+@router.get("/", response_model=PaginatedResponse[ExpenseGroupDetail])
 async def list_expense_groups(
     *,
     session: DbSession,
     authenticated_user: AuthenticatedUser,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=12, ge=1, le=100),
-) -> PaginatedGroupsResponse:
+) -> PaginatedResponse[ExpenseGroupDetail]:
     """List expense groups where the authenticated user is a member with pagination."""
     assert authenticated_user.id is not None
     total = get_user_groups_count(session=session, user_id=authenticated_user.id)
     groups = get_user_groups_paginated(session=session, user_id=authenticated_user.id, offset=offset, limit=limit)
     items = [get_group_detail(session=session, group=group) for group in groups]
-    return PaginatedGroupsResponse(items=items, total=total, offset=offset, limit=limit)
+    return PaginatedResponse[ExpenseGroupDetail](items=items, total=total, offset=offset, limit=limit)
 
 
 @router.get("/{group_id}", response_model=ExpenseGroupDetail)

@@ -22,6 +22,17 @@ export const ExpenseGroupMemberSchema = z.object({
 
 export const ExpenseGroupDetailSchema = ExpenseGroupSchema.extend({
   members: z.array(ExpenseGroupMemberSchema),
+  created_at: z.iso.datetime({ local: true }),
+  expense_count: z.number().nonnegative(),
+  user_balance: z.number(),
+  last_activity_at: z.iso.datetime({ local: true }).nullable(),
+});
+
+export const PaginatedGroupsResponseSchema = z.object({
+  items: z.array(ExpenseGroupDetailSchema),
+  total: z.number().nonnegative(),
+  offset: z.number().nonnegative(),
+  limit: z.number().positive(),
 });
 
 export const AddMemberRequestSchema = z.object({
@@ -33,4 +44,7 @@ export type ExpenseGroupCreate = z.infer<typeof ExpenseGroupCreateSchema>;
 export type ExpenseGroupUpdate = z.infer<typeof ExpenseGroupUpdateSchema>;
 export type ExpenseGroupMember = z.infer<typeof ExpenseGroupMemberSchema>;
 export type ExpenseGroupDetail = z.infer<typeof ExpenseGroupDetailSchema>;
+export type PaginatedGroupsResponse = z.infer<
+  typeof PaginatedGroupsResponseSchema
+>;
 export type AddMemberRequest = z.infer<typeof AddMemberRequestSchema>;

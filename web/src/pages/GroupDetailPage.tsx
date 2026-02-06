@@ -81,10 +81,7 @@ export const GroupDetailPage: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
 
   // Validate and parse the groupId parameter
-  const groupId = React.useMemo(
-    () => parseGroupId(groupIdParam),
-    [groupIdParam],
-  );
+  const groupId = parseGroupId(groupIdParam);
 
   const {
     data: group,

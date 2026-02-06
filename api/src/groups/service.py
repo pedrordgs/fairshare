@@ -1,4 +1,8 @@
-from sqlmodel import Session, select, col
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from random import randint
+
+from sqlmodel import Session, col, func, select
 
 from auth.models import User
 
@@ -35,6 +39,8 @@ def create_group(*, session: Session, user: User, group_in: ExpenseGroupCreate) 
     session.refresh(db_group)
 
     # Add creator as a member
+    assert db_group.id is not None
+    assert user.id is not None
     add_member(session=session, group=db_group, user_id=user.id)
 
     return db_group
@@ -70,6 +76,7 @@ def is_member(*, session: Session, group_id: int, user_id: int) -> bool:
 
 def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
     """Add a user to a group."""
+    assert group.id is not None
     db_member = ExpenseGroupMember(group_id=group.id, user_id=user_id)
     session.add(db_member)
     session.commit()
@@ -79,6 +86,7 @@ def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> Expens
 
 def remove_member(*, session: Session, group: ExpenseGroup, user_id: int) -> None:
     """Remove a user from a group."""
+    assert group.id is not None
     member = get_member(session=session, group_id=group.id, user_id=user_id)
     if member:
         session.delete(member)
@@ -96,7 +104,52 @@ def get_group_members(*, session: Session, group_id: int) -> list[ExpenseGroupMe
     return [ExpenseGroupMemberPublic(user_id=user_id, name=name, email=email) for user_id, name, email in results]
 
 
+def get_user_groups_count(*, session: Session, user_id: int) -> int:
+    """Count total groups where user is a member."""
+    statement = (
+        select(func.count(col(ExpenseGroup.id)))
+        .join(ExpenseGroupMember, col(ExpenseGroup.id) == col(ExpenseGroupMember.group_id))
+        .where(ExpenseGroupMember.user_id == user_id)
+    )
+    return session.exec(statement).one()
+
+
+def get_user_groups_paginated(
+    *, session: Session, user_id: int, offset: int = 0, limit: int = 12
+) -> list[ExpenseGroup]:
+    """Get paginated expense groups where user is a member, sorted by creation date."""
+    statement = (
+        select(ExpenseGroup)
+        .join(ExpenseGroupMember, col(ExpenseGroup.id) == col(ExpenseGroupMember.group_id))
+        .where(ExpenseGroupMember.user_id == user_id)
+        .order_by(col(ExpenseGroup.created_at).desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return list(session.exec(statement).all())
+
+
+def _generate_dummy_group_data(group_id: int) -> dict:
+    """Generate dummy data for a group (placeholder until real calculations are implemented)."""
+    expense_count = randint(0, 50)
+    user_balance = Decimal(randint(-10000, 10000)) / 100
+    hours_ago = randint(1, 168)
+    last_activity = datetime.now(UTC) - timedelta(hours=hours_ago) if expense_count > 0 else None
+    return {"expense_count": expense_count, "user_balance": user_balance, "last_activity_at": last_activity}
+
+
 def get_group_detail(*, session: Session, group: ExpenseGroup) -> ExpenseGroupDetail:
     """Get expense group with members details."""
+    assert group.id is not None
     members = get_group_members(session=session, group_id=group.id)
-    return ExpenseGroupDetail(id=group.id, name=group.name, created_by=group.created_by, members=members)
+    dummy_data = _generate_dummy_group_data(group.id)
+    return ExpenseGroupDetail(
+        id=group.id,
+        name=group.name,
+        created_by=group.created_by,
+        members=members,
+        created_at=group.created_at,
+        expense_count=dummy_data["expense_count"],
+        user_balance=dummy_data["user_balance"],
+        last_activity_at=dummy_data["last_activity_at"],
+    )

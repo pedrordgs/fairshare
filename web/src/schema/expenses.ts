@@ -7,8 +7,8 @@ export const ExpenseSchema = z.object({
   value: z.number().positive(),
   group_id: z.number(),
   created_by: z.number(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  created_at: z.iso.datetime({ local: true }),
+  updated_at: z.iso.datetime({ local: true }),
 });
 
 export const ExpenseCreateSchema = z.object({

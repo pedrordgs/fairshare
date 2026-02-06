@@ -1,7 +1,7 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ExpenseGroupCreateSchema,
@@ -22,6 +22,7 @@ interface CreateGroupFormProps {
 export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
   onSuccess,
 }) => {
+  const queryClient = useQueryClient();
   const {
     fieldErrors,
     generalError,
@@ -43,6 +44,14 @@ export const CreateGroupForm: React.FC<CreateGroupFormProps> = ({
     onSuccess: (group: ExpenseGroup) => {
       clearApiErrors();
       toast.success("Group created successfully!");
+
+      // Ensure any groups lists/preview counts update when navigating back.
+      // We invalidate broadly because list queries use different params.
+      queryClient.invalidateQueries({
+        queryKey: ["groups", "list"],
+        exact: false,
+      });
+
       onSuccess?.(group);
     },
     onError: (error: unknown) => {

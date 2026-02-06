@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
+import { createExternalStore } from "@utils/externalStore";
 
 /**
  * State type for the authentication modal
@@ -10,29 +11,7 @@ type AuthModalState =
   | { isOpen: false; initialTab?: undefined; redirectTo?: undefined }
   | { isOpen: true; initialTab?: "login" | "register"; redirectTo?: string };
 
-/**
- * Creates a global store for the auth modal state following React best practices.
- * This uses the external store pattern with useSyncExternalStore for proper React integration.
- */
-function createAuthModalStore() {
-  let state: AuthModalState = { isOpen: false };
-  const listeners = new Set<() => void>();
-
-  return {
-    getState: () => state,
-    setState: (newState: AuthModalState) => {
-      state = newState;
-      listeners.forEach((listener) => listener());
-    },
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-}
-
-// Singleton store instance
-const authModalStore = createAuthModalStore();
+const authModalStore = createExternalStore<AuthModalState>({ isOpen: false });
 
 /**
  * Hook for managing the authentication modal state globally.
@@ -58,13 +37,13 @@ export const useAuthModal = () => {
   // Subscribe to the external store using React's recommended pattern
   const state = useSyncExternalStore(
     authModalStore.subscribe,
-    authModalStore.getState,
-    authModalStore.getState, // Server snapshot (same as client for this case)
+    authModalStore.getSnapshot,
+    authModalStore.getSnapshot,
   );
 
   const openAuthModal = useCallback(
     (options?: { redirectTo?: string; tab?: "login" | "register" }) => {
-      authModalStore.setState({
+      authModalStore.setSnapshot({
         isOpen: true,
         initialTab: options?.tab,
         redirectTo: options?.redirectTo,
@@ -74,7 +53,7 @@ export const useAuthModal = () => {
   );
 
   const closeAuthModal = useCallback(() => {
-    authModalStore.setState({ isOpen: false });
+    authModalStore.setSnapshot({ isOpen: false });
   }, []);
 
   return {
@@ -107,7 +86,7 @@ export const useAuthModal = () => {
  */
 export const useAuthModalSubscription = () => {
   return {
-    getState: authModalStore.getState,
+    getState: authModalStore.getSnapshot,
     subscribe: authModalStore.subscribe,
   };
 };

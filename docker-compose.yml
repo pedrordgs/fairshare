@@ -25,7 +25,7 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./api:/home/fairshare
       - /home/fairshare/.venv
@@ -49,7 +49,7 @@ services:
     volumes:
       - ./api/data/db:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U dbuser -d db']
       interval: 5s
@@ -67,7 +67,7 @@ services:
       - ./api/data/pgadmin:/root/.pgadmin
       - ./api/docker/servers.json:/pgadmin4/servers.json
     ports:
-      - "8080:80"
+      - "8081:80"
     depends_on:
       db:
         condition: service_healthy

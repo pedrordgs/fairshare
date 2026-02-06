@@ -10,6 +10,23 @@ export interface ModalProps {
   descriptionId?: string;
 }
 
+// Hoisted static class strings to avoid recreating on each render
+const BACKDROP_CLASSES =
+  "fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in";
+const BACKDROP_GRADIENT_CLASSES =
+  "absolute inset-0 bg-gradient-to-br from-slate-900/20 via-slate-800/30 to-slate-900/40 backdrop-blur-md pointer-events-none";
+const BACKDROP_OVERLAY_CLASSES =
+  "absolute inset-0 bg-black/30 pointer-events-none";
+const ANIMATION_OVERLAY_CLASSES =
+  "absolute inset-0 opacity-5 pointer-events-none";
+
+// Static JSX element for the animation overlay - hoisted outside component
+const AnimationOverlay = () => (
+  <div className={ANIMATION_OVERLAY_CLASSES}>
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" />
+  </div>
+);
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -67,19 +84,16 @@ export const Modal: React.FC<ModalProps> = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+      className={BACKDROP_CLASSES}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/20 via-slate-800/30 to-slate-900/40 backdrop-blur-md pointer-events-none" />
-      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
-
-      <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" />
-      </div>
+      <div className={BACKDROP_GRADIENT_CLASSES} />
+      <div className={BACKDROP_OVERLAY_CLASSES} />
+      <AnimationOverlay />
 
       <div
         ref={modalRef}

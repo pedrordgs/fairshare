@@ -9,8 +9,8 @@ import { HomePage } from "@pages/HomePage";
 import { DashboardPage } from "@pages/DashboardPage";
 import { StyleguidePage } from "@pages/StyleguidePage";
 import { GroupDetailPage } from "@pages/GroupDetailPage";
-import { Header, Footer } from "@components/layout";
-import { AuthModal } from "@components/auth/AuthModal";
+import { HeaderWithAuth } from "@components/layout/Header";
+import { FooterWithAuth } from "@components/layout/Footer";
 import { getAuthToken } from "@services/auth";
 
 /**
@@ -24,20 +24,28 @@ const requireAuth = () => {
   }
 };
 
+/**
+ * Auth redirect guard for public routes.
+ * Redirects to dashboard if user is already authenticated.
+ */
+const redirectIfAuthenticated = () => {
+  const token = getAuthToken();
+  if (token) {
+    throw redirect({ to: "/dashboard" });
+  }
+};
+
 // Create the root route with layout
 const rootRoute = createRootRoute({
   component: () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
         <div id="modal-root" />
-        <Header />
+        <HeaderWithAuth />
         <main>
           <Outlet />
         </main>
-        <Footer showAuth={true} />
-
-        {/* Global auth modal */}
-        <AuthModal />
+        <FooterWithAuth />
       </div>
     );
   },
@@ -48,6 +56,7 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: HomePage,
+  beforeLoad: redirectIfAuthenticated,
 });
 
 // Create dashboard route with auth guard

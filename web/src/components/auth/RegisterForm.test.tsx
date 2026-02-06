@@ -209,7 +209,10 @@ describe("RegisterForm", () => {
   describe("Successful Registration", () => {
     it("calls register mutation with correct data (without confirmPassword)", async () => {
       const user = userEvent.setup();
-      const mockToken = { access_token: "test-token-123" };
+      const mockToken = {
+        access_token: "test-token-123",
+        token_type: "bearer" as const,
+      };
 
       vi.mocked(AuthService.authApi.register).mockResolvedValue(mockToken);
 
@@ -242,7 +245,10 @@ describe("RegisterForm", () => {
 
     it("calls context login function with token on success", async () => {
       const user = userEvent.setup();
-      const mockToken = { access_token: "test-token-123" };
+      const mockToken = {
+        access_token: "test-token-123",
+        token_type: "bearer" as const,
+      };
 
       vi.mocked(AuthService.authApi.register).mockResolvedValue(mockToken);
 
@@ -265,7 +271,10 @@ describe("RegisterForm", () => {
     it("calls onSuccess callback after successful registration", async () => {
       const user = userEvent.setup();
       const onSuccessMock = vi.fn();
-      const mockToken = { access_token: "test-token-123" };
+      const mockToken = {
+        access_token: "test-token-123",
+        token_type: "bearer" as const,
+      };
 
       vi.mocked(AuthService.authApi.register).mockResolvedValue(mockToken);
 
@@ -314,7 +323,7 @@ describe("RegisterForm", () => {
       await waitFor(() => {
         // Should show user-friendly error message for existing email
         expect(
-          screen.getByText(/an account with this email already exists/i),
+          screen.getByText(/a user with this email already exists/i),
         ).toBeInTheDocument();
       });
     });
@@ -428,7 +437,14 @@ describe("RegisterForm", () => {
       vi.mocked(AuthService.authApi.register).mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(() => resolve({ access_token: "token" }), 100),
+            setTimeout(
+              () =>
+                resolve({
+                  access_token: "token",
+                  token_type: "bearer" as const,
+                }),
+              100,
+            ),
           ),
       );
 
@@ -454,7 +470,14 @@ describe("RegisterForm", () => {
       vi.mocked(AuthService.authApi.register).mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(() => resolve({ access_token: "token" }), 100),
+            setTimeout(
+              () =>
+                resolve({
+                  access_token: "token",
+                  token_type: "bearer" as const,
+                }),
+              100,
+            ),
           ),
       );
 

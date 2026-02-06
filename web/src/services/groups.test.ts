@@ -92,21 +92,25 @@ describe("Groups Service", () => {
   });
 
   describe("groupsApi.getGroup", () => {
-    it("sends GET request to /groups/${groupId}", async () => {
-      const mockResponse = {
-        data: {
-          id: 1,
-          name: "Test Group",
-          created_by: 1,
-          members: [
-            {
-              user_id: 1,
-              name: "John Doe",
-              email: "john@example.com",
-            },
-          ],
+    const validGroupDetail = {
+      id: 1,
+      name: "Test Group",
+      created_by: 1,
+      members: [
+        {
+          user_id: 1,
+          name: "John Doe",
+          email: "john@example.com",
         },
-      };
+      ],
+      created_at: "2026-01-05T10:30:00Z",
+      expense_count: 5,
+      user_balance: 25.5,
+      last_activity_at: "2026-01-05T14:20:00Z",
+    };
+
+    it("sends GET request to /groups/${groupId}", async () => {
+      const mockResponse = { data: validGroupDetail };
       vi.mocked(api.get).mockResolvedValue(mockResponse);
 
       const result = await groupsApi.getGroup(1);
@@ -116,20 +120,7 @@ describe("Groups Service", () => {
     });
 
     it("validates response data against ExpenseGroupDetailSchema", async () => {
-      const validResponse = {
-        data: {
-          id: 1,
-          name: "Test Group",
-          created_by: 1,
-          members: [
-            {
-              user_id: 1,
-              name: "John Doe",
-              email: "john@example.com",
-            },
-          ],
-        },
-      };
+      const validResponse = { data: validGroupDetail };
       vi.mocked(api.get).mockResolvedValue(validResponse);
 
       const result = await groupsApi.getGroup(1);
@@ -157,6 +148,10 @@ describe("Groups Service", () => {
               email: "john@example.com",
             },
           ],
+          created_at: "2026-01-05T10:30:00Z",
+          expense_count: 5,
+          user_balance: "25.5",
+          last_activity_at: "2026-01-05T14:20:00Z",
         },
       };
       vi.mocked(api.get).mockResolvedValue(invalidResponse);
@@ -170,6 +165,10 @@ describe("Groups Service", () => {
           id: 1,
           name: "Test Group",
           created_by: 1,
+          created_at: "2026-01-05T10:30:00Z",
+          expense_count: 5,
+          user_balance: "25.5",
+          last_activity_at: "2026-01-05T14:20:00Z",
           // Missing members array
         },
       };
@@ -220,6 +219,10 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           members: [],
+          created_at: "2026-01-05T10:30:00Z",
+          expense_count: 0,
+          user_balance: 0,
+          last_activity_at: null,
         },
       };
       vi.mocked(api.get).mockResolvedValue(responseWithNoMembers);

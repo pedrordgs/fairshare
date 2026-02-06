@@ -39,6 +39,8 @@ dev = [
 target-version = "py312"
 line-length = 120
 
+exclude = [".cache", ".venv"]
+
 format.skip-magic-trailing-comma = true
 lint.isort.split-on-trailing-comma = false
 

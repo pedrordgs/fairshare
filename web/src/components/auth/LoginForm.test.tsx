@@ -129,7 +129,17 @@ describe("LoginForm", () => {
 
       // Mock a delayed login response
       vi.mocked(AuthService.authApi.login).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100)),
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  access_token: "token",
+                  token_type: "bearer" as const,
+                }),
+              100,
+            ),
+          ),
       );
 
       renderWithProviders(<LoginForm />);
@@ -150,7 +160,10 @@ describe("LoginForm", () => {
   describe("Successful Login", () => {
     it("calls login mutation with correct credentials", async () => {
       const user = userEvent.setup();
-      const mockToken = { access_token: "test-token-123" };
+      const mockToken = {
+        access_token: "test-token-123",
+        token_type: "bearer" as const,
+      };
 
       vi.mocked(AuthService.authApi.login).mockResolvedValue(mockToken);
 
@@ -174,7 +187,10 @@ describe("LoginForm", () => {
 
     it("calls context login function with token on success", async () => {
       const user = userEvent.setup();
-      const mockToken = { access_token: "test-token-123" };
+      const mockToken = {
+        access_token: "test-token-123",
+        token_type: "bearer" as const,
+      };
 
       vi.mocked(AuthService.authApi.login).mockResolvedValue(mockToken);
 
@@ -196,7 +212,10 @@ describe("LoginForm", () => {
     it("calls onSuccess callback after successful login", async () => {
       const user = userEvent.setup();
       const onSuccessMock = vi.fn();
-      const mockToken = { access_token: "test-token-123" };
+      const mockToken = {
+        access_token: "test-token-123",
+        token_type: "bearer" as const,
+      };
 
       vi.mocked(AuthService.authApi.login).mockResolvedValue(mockToken);
 
@@ -307,7 +326,8 @@ describe("LoginForm", () => {
       const passwordInput = screen.getByLabelText(/password/i);
       const submitButton = screen.getByRole("button", { name: /sign in/i });
 
-      await user.type(emailInput, "test@example");
+      // Use a client-valid email so submission reaches the server.
+      await user.type(emailInput, "test@example.com");
       await user.type(passwordInput, "password123");
       await user.click(submitButton);
 
@@ -354,7 +374,14 @@ describe("LoginForm", () => {
       vi.mocked(AuthService.authApi.login).mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(() => resolve({ access_token: "token" }), 100),
+            setTimeout(
+              () =>
+                resolve({
+                  access_token: "token",
+                  token_type: "bearer" as const,
+                }),
+              100,
+            ),
           ),
       );
 
@@ -380,7 +407,14 @@ describe("LoginForm", () => {
       vi.mocked(AuthService.authApi.login).mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(() => resolve({ access_token: "token" }), 100),
+            setTimeout(
+              () =>
+                resolve({
+                  access_token: "token",
+                  token_type: "bearer" as const,
+                }),
+              100,
+            ),
           ),
       );
 

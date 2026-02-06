@@ -1,28 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
+import { createExternalStore } from "@utils/externalStore";
 
-/**
- * Creates a global store for the create group modal state following React best practices.
- * This uses the external store pattern with useSyncExternalStore for proper React integration.
- */
-function createCreateGroupModalStore() {
-  let isOpen = false;
-  const listeners = new Set<() => void>();
-
-  return {
-    getState: () => isOpen,
-    setState: (value: boolean) => {
-      isOpen = value;
-      listeners.forEach((listener) => listener());
-    },
-    subscribe: (listener: () => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-}
-
-// Singleton store instance
-const createGroupModalStore = createCreateGroupModalStore();
+const createGroupModalStore = createExternalStore(false);
 
 /**
  * Hook to control the create group modal visibility globally.
@@ -40,16 +19,16 @@ const createGroupModalStore = createCreateGroupModalStore();
 export function useCreateGroupModal() {
   const isOpen = useSyncExternalStore(
     createGroupModalStore.subscribe,
-    createGroupModalStore.getState,
+    createGroupModalStore.getSnapshot,
     () => false,
   );
 
   const openCreateGroupModal = useCallback(() => {
-    createGroupModalStore.setState(true);
+    createGroupModalStore.setSnapshot(true);
   }, []);
 
   const closeCreateGroupModal = useCallback(() => {
-    createGroupModalStore.setState(false);
+    createGroupModalStore.setSnapshot(false);
   }, []);
 
   return {

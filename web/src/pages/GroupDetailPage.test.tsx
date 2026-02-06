@@ -72,6 +72,17 @@ describe("GroupDetailPage", () => {
     );
   };
 
+  const baseGroup = {
+    id: 1,
+    name: "Test Group",
+    created_by: 1,
+    members: [],
+    created_at: "2026-01-05T10:30:00Z",
+    expense_count: 0,
+    user_balance: 0,
+    last_activity_at: null,
+  };
+
   describe("Loading States", () => {
     it("shows loading spinner when auth is loading", () => {
       vi.mocked(AuthContext.useAuth).mockReturnValue({
@@ -92,11 +103,7 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockImplementation(
         () =>
           new Promise((resolve) =>
-            setTimeout(
-              () =>
-                resolve({ id: 1, name: "Test", created_by: 1, members: [] }),
-              100,
-            ),
+            setTimeout(() => resolve({ ...baseGroup, name: "Test" }), 100),
           ),
       );
 
@@ -109,9 +116,8 @@ describe("GroupDetailPage", () => {
   describe("Successful Group Display", () => {
     it("renders group name in header", async () => {
       const mockGroup = {
-        id: 1,
+        ...baseGroup,
         name: "Weekend Trip",
-        created_by: 1,
         members: [{ user_id: 1, name: "John Doe", email: "john@example.com" }],
       };
 
@@ -126,9 +132,7 @@ describe("GroupDetailPage", () => {
 
     it("displays correct member count", async () => {
       const mockGroup = {
-        id: 1,
-        name: "Test Group",
-        created_by: 1,
+        ...baseGroup,
         members: [
           { user_id: 1, name: "John Doe", email: "john@example.com" },
           { user_id: 2, name: "Jane Smith", email: "jane@example.com" },
@@ -146,10 +150,8 @@ describe("GroupDetailPage", () => {
 
     it("displays group ID", async () => {
       const mockGroup = {
+        ...baseGroup,
         id: 42,
-        name: "Test Group",
-        created_by: 1,
-        members: [],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -163,9 +165,7 @@ describe("GroupDetailPage", () => {
 
     it("renders member list with avatars", async () => {
       const mockGroup = {
-        id: 1,
-        name: "Test Group",
-        created_by: 1,
+        ...baseGroup,
         members: [{ user_id: 1, name: "John Doe", email: "john@example.com" }],
       };
 
@@ -181,10 +181,7 @@ describe("GroupDetailPage", () => {
 
     it("shows 'No members yet' when members array is empty", async () => {
       const mockGroup = {
-        id: 1,
-        name: "Test Group",
-        created_by: 1,
-        members: [],
+        ...baseGroup,
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -198,10 +195,7 @@ describe("GroupDetailPage", () => {
 
     it("displays back to dashboard button", async () => {
       const mockGroup = {
-        id: 1,
-        name: "Test Group",
-        created_by: 1,
-        members: [],
+        ...baseGroup,
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -326,10 +320,7 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup)
         .mockRejectedValueOnce(serverError)
         .mockResolvedValueOnce({
-          id: 1,
-          name: "Test Group",
-          created_by: 1,
-          members: [],
+          ...baseGroup,
         });
 
       renderWithProviders(<GroupDetailPage />);
@@ -391,10 +382,7 @@ describe("GroupDetailPage", () => {
       });
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue({
-        id: 1,
-        name: "Test Group",
-        created_by: 1,
-        members: [],
+        ...baseGroup,
       });
 
       renderWithProviders(<GroupDetailPage />);

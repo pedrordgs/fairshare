@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { InternalAxiosRequestConfig } from "axios";
 import { api } from "./api";
 import * as authModule from "./auth";
 import * as errorUtils from "@utils/errorUtils";
@@ -15,11 +16,14 @@ vi.mock("@utils/errorUtils", () => ({
 }));
 
 describe("API Interceptors", () => {
+  const requestHandlers = api.interceptors.request
+    .handlers as unknown as Array<{ fulfilled?: unknown; rejected?: unknown }>;
+  const responseHandlers = api.interceptors.response
+    .handlers as unknown as Array<{ fulfilled?: unknown; rejected?: unknown }>;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset window.location
-    delete (window as Window & { location: Location }).location;
-    window.location = { href: "" } as Location;
+    vi.stubGlobal("location", { href: "" });
   });
 
   describe("Request Interceptor", () => {
@@ -27,14 +31,12 @@ describe("API Interceptors", () => {
       vi.mocked(authModule.getAuthToken).mockReturnValue("test-token");
 
       // Create a mock request config
-      const requestConfig = { headers: {} };
+      const requestConfig = { headers: {} } as InternalAxiosRequestConfig;
 
       // Get the request interceptor function and call it directly
-      const requestInterceptor = api.interceptors.request.handlers.find(
-        (h: { fulfilled: unknown }) => h.fulfilled,
-      )?.fulfilled as (config: { headers: Record<string, string> }) => {
-        headers: Record<string, string>;
-      };
+      const requestInterceptor = requestHandlers[0]?.fulfilled as unknown as (
+        config: InternalAxiosRequestConfig,
+      ) => InternalAxiosRequestConfig;
 
       const result = requestInterceptor(requestConfig);
 
@@ -44,13 +46,11 @@ describe("API Interceptors", () => {
     it("does not attach Authorization header when no token exists", () => {
       vi.mocked(authModule.getAuthToken).mockReturnValue(null);
 
-      const requestConfig = { headers: {} };
+      const requestConfig = { headers: {} } as InternalAxiosRequestConfig;
 
-      const requestInterceptor = api.interceptors.request.handlers.find(
-        (h: { fulfilled: unknown }) => h.fulfilled,
-      )?.fulfilled as (config: { headers: Record<string, string> }) => {
-        headers: Record<string, string>;
-      };
+      const requestInterceptor = requestHandlers[0]?.fulfilled as unknown as (
+        config: InternalAxiosRequestConfig,
+      ) => InternalAxiosRequestConfig;
 
       const result = requestInterceptor(requestConfig);
 
@@ -65,11 +65,12 @@ describe("API Interceptors", () => {
         status: 200,
         statusText: "OK",
         headers: {},
-        config: { url: "/test" },
+        config: { url: "/test", headers: {} } as InternalAxiosRequestConfig,
       };
 
-      const result =
-        await api.interceptors.response.handlers[0].fulfilled(mockResponse);
+      const result = await (
+        responseHandlers[0]!.fulfilled as (v: unknown) => unknown
+      )(mockResponse);
       expect(result).toEqual(mockResponse);
     });
 
@@ -83,7 +84,7 @@ describe("API Interceptors", () => {
       };
 
       try {
-        await api.interceptors.response.handlers[0].rejected(error);
+        await (responseHandlers[0]!.rejected as (v: unknown) => unknown)(error);
       } catch {
         // Expected to throw
       }
@@ -102,7 +103,7 @@ describe("API Interceptors", () => {
       };
 
       try {
-        await api.interceptors.response.handlers[0].rejected(error);
+        await (responseHandlers[0]!.rejected as (v: unknown) => unknown)(error);
       } catch {
         // Expected to throw
       }
@@ -127,7 +128,7 @@ describe("API Interceptors", () => {
       };
 
       try {
-        await api.interceptors.response.handlers[0].rejected(error);
+        await (responseHandlers[0]!.rejected as (v: unknown) => unknown)(error);
       } catch {
         // Expected to throw
       }
@@ -149,7 +150,7 @@ describe("API Interceptors", () => {
       };
 
       try {
-        await api.interceptors.response.handlers[0].rejected(error);
+        await (responseHandlers[0]!.rejected as (v: unknown) => unknown)(error);
       } catch {
         // Expected to throw
       }
@@ -174,7 +175,7 @@ describe("API Interceptors", () => {
       };
 
       try {
-        await api.interceptors.response.handlers[0].rejected(error);
+        await (responseHandlers[0]!.rejected as (v: unknown) => unknown)(error);
       } catch {
         // Expected to throw
       }
@@ -193,7 +194,9 @@ describe("API Interceptors", () => {
       };
 
       await expect(
-        api.interceptors.response.handlers[0].rejected(error),
+        (responseHandlers[0]!.rejected as (v: unknown) => Promise<unknown>)(
+          error,
+        ),
       ).rejects.toEqual(error);
     });
   });

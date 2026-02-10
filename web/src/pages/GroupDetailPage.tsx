@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Button } from "@components/ui/Button";
+import { toast } from "sonner";
 import { groupsApi } from "@services/groups";
 import { useAuth } from "@context/AuthContext";
 import { logError } from "@utils/errorUtils";
@@ -201,6 +202,36 @@ export const GroupDetailPage: React.FC = () => {
               <p className="text-slate-500 text-sm mb-4">
                 {group.members.length} people in this group
               </p>
+              <div className="mb-4 rounded-lg border border-primary-100 bg-primary-50/40 px-3 py-2">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Invite Code
+                </p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span className="font-mono text-sm text-slate-900">
+                    {group.invite_code}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(group.invite_code);
+                        toast.success("Invite code copied");
+                      } catch (error) {
+                        logError("UNKNOWN", error as Error, {
+                          groupId: group.id,
+                          action: "copy_invite_code",
+                        });
+                        toast.error(
+                          "Couldn't copy the code. Please copy it manually.",
+                        );
+                      }
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
               {group.members.length > 0 ? (
                 <div className="space-y-3">
                   {group.members.map((member) => (

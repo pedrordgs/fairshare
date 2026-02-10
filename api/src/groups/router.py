@@ -1,22 +1,21 @@
 from fastapi import APIRouter, HTTPException, Query, status
 
 from auth.dependencies import AuthenticatedUser
-from auth.service import get_user_by_id
 from db.dependencies import DbSession
 
 from .dependencies import GroupAsMember, GroupAsOwner
 from core.models import PaginatedResponse
 
-from .models import AddMemberRequest, ExpenseGroupCreate, ExpenseGroupDetail, ExpenseGroupUpdate
+from .models import ExpenseGroupCreate, ExpenseGroupDetail, ExpenseGroupUpdate, JoinGroupRequest
 from .service import (
     add_member,
     create_group,
     delete_group,
     get_group_detail,
+    get_group_by_invite_code,
     get_member,
     get_user_groups_count,
     get_user_groups_paginated,
-    remove_member,
     update_group,
 )
 
@@ -69,36 +68,19 @@ async def delete_expense_group(*, session: DbSession, group: GroupAsOwner) -> No
     delete_group(session=session, group=group)
 
 
-@router.post("/{group_id}/members", response_model=ExpenseGroupDetail, status_code=status.HTTP_201_CREATED)
-async def add_group_member(
-    *, session: DbSession, group: GroupAsOwner, member_in: AddMemberRequest
+@router.post("/join", response_model=ExpenseGroupDetail)
+async def join_group_by_code(
+    *, session: DbSession, authenticated_user: AuthenticatedUser, join_in: JoinGroupRequest
 ) -> ExpenseGroupDetail:
-    """Add a user to the expense group. Only the owner can add members."""
-    # Check if user exists
-    user = get_user_by_id(session=session, user_id=member_in.user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    """Join an expense group using an invite code."""
+    assert authenticated_user.id is not None
+    group = get_group_by_invite_code(session=session, code=join_in.code)
+    if not group:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    assert group.id is not None
 
-    # Check if user is already a member
-    if get_member(session=session, group_id=group.id, user_id=member_in.user_id):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member of this group")
+    if get_member(session=session, group_id=group.id, user_id=authenticated_user.id):
+        return get_group_detail(session=session, group=group)
 
-    add_member(session=session, group=group, user_id=member_in.user_id)
-    return get_group_detail(session=session, group=group)
-
-
-@router.delete("/{group_id}/members/{user_id}", response_model=ExpenseGroupDetail)
-async def remove_group_member(*, session: DbSession, group: GroupAsOwner, user_id: int) -> ExpenseGroupDetail:
-    """Remove a user from the expense group. Only the owner can remove members. Owner cannot remove themselves."""
-    # Owner cannot remove themselves
-    if group.created_by == user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Owner cannot remove themselves from the group"
-        )
-
-    # Check if user is a member
-    if not get_member(session=session, group_id=group.id, user_id=user_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User is not a member of this group")
-
-    remove_member(session=session, group=group, user_id=user_id)
+    add_member(session=session, group=group, user_id=authenticated_user.id)
     return get_group_detail(session=session, group=group)

@@ -14,6 +14,7 @@ from .models import (
     ExpenseGroupMemberPublic,
     ExpenseGroupUpdate,
 )
+from .utils import generate_invite_code, normalize_invite_code
 
 
 def get_group_by_id(*, session: Session, group_id: int) -> ExpenseGroup | None:
@@ -33,7 +34,8 @@ def get_user_groups(*, session: Session, user_id: int) -> list[ExpenseGroup]:
 
 def create_group(*, session: Session, user: User, group_in: ExpenseGroupCreate) -> ExpenseGroup:
     """Create a new expense group and add the creator as a member."""
-    db_group = ExpenseGroup.model_validate(group_in, update={"created_by": user.id})
+    invite_code = ensure_invite_code_unique(session=session)
+    db_group = ExpenseGroup.model_validate(group_in, update={"created_by": user.id, "invite_code": invite_code})
     session.add(db_group)
     session.commit()
     session.refresh(db_group)
@@ -67,6 +69,22 @@ def get_member(*, session: Session, group_id: int, user_id: int) -> ExpenseGroup
         ExpenseGroupMember.group_id == group_id, ExpenseGroupMember.user_id == user_id
     )
     return session.exec(statement).one_or_none()
+
+
+def get_group_by_invite_code(*, session: Session, code: str) -> ExpenseGroup | None:
+    """Get an expense group by invite code."""
+    normalized = normalize_invite_code(code)
+    statement = select(ExpenseGroup).where(ExpenseGroup.invite_code == normalized)
+    return session.exec(statement).one_or_none()
+
+
+def ensure_invite_code_unique(*, session: Session) -> str:
+    """Generate a unique invite code."""
+    for _ in range(10):
+        code = generate_invite_code()
+        if not get_group_by_invite_code(session=session, code=code):
+            return code
+    raise ValueError("Could not generate a unique invite code")
 
 
 def is_member(*, session: Session, group_id: int, user_id: int) -> bool:
@@ -147,6 +165,7 @@ def get_group_detail(*, session: Session, group: ExpenseGroup) -> ExpenseGroupDe
         id=group.id,
         name=group.name,
         created_by=group.created_by,
+        invite_code=group.invite_code,
         members=members,
         created_at=group.created_at,
         expense_count=dummy_data["expense_count"],

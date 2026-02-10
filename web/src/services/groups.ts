@@ -3,9 +3,11 @@ import {
   type ExpenseGroup,
   type ExpenseGroupCreate,
   type ExpenseGroupDetail,
+  type JoinGroupRequest,
   type PaginatedGroupsResponse,
   ExpenseGroupSchema,
   ExpenseGroupDetailSchema,
+  JoinGroupRequestSchema,
   PaginatedGroupsResponseSchema,
 } from "@schema/groups";
 
@@ -67,5 +69,17 @@ export const groupsApi = {
     });
     // Runtime validation with Zod schema
     return PaginatedGroupsResponseSchema.parse(response.data);
+  },
+
+  /**
+   * Joins an expense group using an invite code.
+   *
+   * @param code - The invite code provided by the group owner
+   * @returns Promise resolving to the joined group detail
+   */
+  joinGroup: async (code: string): Promise<ExpenseGroupDetail> => {
+    const payload: JoinGroupRequest = JoinGroupRequestSchema.parse({ code });
+    const response = await api.post("/groups/join", payload);
+    return ExpenseGroupDetailSchema.parse(response.data);
   },
 };

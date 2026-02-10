@@ -4,6 +4,7 @@ export const ExpenseGroupSchema = z.object({
   id: z.number().positive(),
   name: z.string().min(1).max(100),
   created_by: z.number().positive(),
+  invite_code: z.string().min(1),
 });
 
 export const ExpenseGroupCreateSchema = z.object({
@@ -35,8 +36,8 @@ export const PaginatedGroupsResponseSchema = z.object({
   limit: z.number().positive(),
 });
 
-export const AddMemberRequestSchema = z.object({
-  user_id: z.number(),
+export const JoinGroupRequestSchema = z.object({
+  code: z.string().trim().min(1),
 });
 
 export type ExpenseGroup = z.infer<typeof ExpenseGroupSchema>;
@@ -47,4 +48,4 @@ export type ExpenseGroupDetail = z.infer<typeof ExpenseGroupDetailSchema>;
 export type PaginatedGroupsResponse = z.infer<
   typeof PaginatedGroupsResponseSchema
 >;
-export type AddMemberRequest = z.infer<typeof AddMemberRequestSchema>;
+export type JoinGroupRequest = z.infer<typeof JoinGroupRequestSchema>;

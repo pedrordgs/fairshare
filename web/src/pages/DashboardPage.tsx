@@ -5,13 +5,16 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { useAuth } from "@context/AuthContext";
 import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
+import { useJoinGroupModal } from "@hooks/useJoinGroupModal";
 import { CreateGroupModal } from "@components/groups/CreateGroupModal";
+import { JoinGroupModal } from "@components/groups/JoinGroupModal";
 import { GroupsList } from "@components/groups/GroupsList";
 
 export const DashboardPage: React.FC = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const { openCreateGroupModal } = useCreateGroupModal();
+  const { openJoinGroupModal } = useJoinGroupModal();
 
   if (isLoading) {
     return (
@@ -87,14 +90,18 @@ export const DashboardPage: React.FC = () => {
 
           <Card className="hover:shadow-md transform hover:-translate-y-1 transition-all duration-300">
             <CardHeader>
-              <CardTitle>Invite Friends</CardTitle>
+              <CardTitle>Join a Group</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-600 mb-4">
-                Bring more people into your groups to split costs together.
+                Have a code? Join a group instantly and start tracking expenses.
               </p>
-              <Button variant="secondary" className="w-full">
-                Send Invite
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={openJoinGroupModal}
+              >
+                Enter Code
               </Button>
             </CardContent>
           </Card>
@@ -104,6 +111,7 @@ export const DashboardPage: React.FC = () => {
         <GroupsList onCreateGroup={openCreateGroupModal} />
       </div>
       <CreateGroupModal />
+      <JoinGroupModal />
     </div>
   );
 };

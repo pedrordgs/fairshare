@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Button } from "@components/ui/Button";
-import { toast } from "sonner";
 import { groupsApi } from "@services/groups";
 import { useAuth } from "@context/AuthContext";
 import { logError } from "@utils/errorUtils";
+import { copyToClipboard } from "@utils/clipboard";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
 
 const routeApi = getRouteApi("/groups/$groupId");
@@ -99,6 +99,18 @@ export const GroupDetailPage: React.FC = () => {
     },
     enabled: !isAuthLoading && !!user && !!groupId,
   });
+
+  const inviteCode = group?.invite_code;
+
+  const handleCopyInviteCode = React.useCallback(() => {
+    if (!inviteCode) {
+      return;
+    }
+    copyToClipboard(inviteCode, {
+      successMessage: "Invite code copied",
+      errorMessage: "Couldn't copy the code. Please copy it manually.",
+    });
+  }, [inviteCode]);
 
   // Log query errors for debugging
   React.useEffect(() => {
@@ -213,20 +225,7 @@ export const GroupDetailPage: React.FC = () => {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(group.invite_code);
-                        toast.success("Invite code copied");
-                      } catch (error) {
-                        logError("UNKNOWN", error as Error, {
-                          groupId: group.id,
-                          action: "copy_invite_code",
-                        });
-                        toast.error(
-                          "Couldn't copy the code. Please copy it manually.",
-                        );
-                      }
-                    }}
+                    onClick={handleCopyInviteCode}
                   >
                     Copy
                   </Button>

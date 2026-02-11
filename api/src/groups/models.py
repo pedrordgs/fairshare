@@ -17,12 +17,10 @@ class ExpenseGroupBase(SQLModel):
 
 
 class ExpenseGroup(ExpenseGroupBase, table=True):
-    __table_args__ = (UniqueConstraint("invite_code"),)
-
     id: int | None = Field(default=None, primary_key=True)
     created_by: int = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    invite_code: str = Field(index=True, unique=True)
+    invite_code: str = Field(unique=True)
 
 
 class ExpenseGroupMember(SQLModel, table=True):

@@ -114,6 +114,7 @@ describe("CreateGroupForm", () => {
         id: 1,
         name: "Test Group",
         created_by: 1,
+        invite_code: "ABCD1234EF",
       };
 
       vi.mocked(GroupsService.groupsApi.createGroup).mockResolvedValue(
@@ -143,6 +144,7 @@ describe("CreateGroupForm", () => {
         id: 1,
         name: "Test Group",
         created_by: 1,
+        invite_code: "ABCD1234EF",
       };
 
       vi.mocked(GroupsService.groupsApi.createGroup).mockResolvedValue(
@@ -172,6 +174,7 @@ describe("CreateGroupForm", () => {
         id: 1,
         name: "Test Group",
         created_by: 1,
+        invite_code: "ABCD1234EF",
       };
 
       vi.mocked(GroupsService.groupsApi.createGroup).mockResolvedValue(
@@ -200,6 +203,7 @@ describe("CreateGroupForm", () => {
         id: 1,
         name: "Test Group",
         created_by: 1,
+        invite_code: "ABCD1234EF",
       };
 
       vi.mocked(GroupsService.groupsApi.createGroup).mockResolvedValue(
@@ -227,6 +231,7 @@ describe("CreateGroupForm", () => {
         id: 1,
         name: "Test Group",
         created_by: 1,
+        invite_code: "ABCD1234EF",
       };
 
       // First fail, then succeed
@@ -372,7 +377,13 @@ describe("CreateGroupForm", () => {
         () =>
           new Promise((resolve) =>
             setTimeout(
-              () => resolve({ id: 1, name: "Test", created_by: 1 }),
+              () =>
+                resolve({
+                  id: 1,
+                  name: "Test",
+                  created_by: 1,
+                  invite_code: "ABCD1234EF",
+                }),
               100,
             ),
           ),
@@ -400,7 +411,13 @@ describe("CreateGroupForm", () => {
         () =>
           new Promise((resolve) =>
             setTimeout(
-              () => resolve({ id: 1, name: "Test", created_by: 1 }),
+              () =>
+                resolve({
+                  id: 1,
+                  name: "Test",
+                  created_by: 1,
+                  invite_code: "ABCD1234EF",
+                }),
               100,
             ),
           ),

@@ -6,6 +6,7 @@ import { Button } from "@components/ui/Button";
 import { groupsApi } from "@services/groups";
 import { useAuth } from "@context/AuthContext";
 import { logError } from "@utils/errorUtils";
+import { copyToClipboard } from "@utils/clipboard";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
 
 const routeApi = getRouteApi("/groups/$groupId");
@@ -98,6 +99,18 @@ export const GroupDetailPage: React.FC = () => {
     },
     enabled: !isAuthLoading && !!user && !!groupId,
   });
+
+  const inviteCode = group?.invite_code;
+
+  const handleCopyInviteCode = React.useCallback(() => {
+    if (!inviteCode) {
+      return;
+    }
+    copyToClipboard(inviteCode, {
+      successMessage: "Invite code copied",
+      errorMessage: "Couldn't copy the code. Please copy it manually.",
+    });
+  }, [inviteCode]);
 
   // Log query errors for debugging
   React.useEffect(() => {
@@ -201,6 +214,23 @@ export const GroupDetailPage: React.FC = () => {
               <p className="text-slate-500 text-sm mb-4">
                 {group.members.length} people in this group
               </p>
+              <div className="mb-4 rounded-lg border border-primary-100 bg-primary-50/40 px-3 py-2">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Invite Code
+                </p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span className="font-mono text-sm text-slate-900">
+                    {group.invite_code}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleCopyInviteCode}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
               {group.members.length > 0 ? (
                 <div className="space-y-3">
                   {group.members.map((member) => (

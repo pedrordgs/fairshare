@@ -26,6 +26,7 @@ describe("Groups Service", () => {
           id: 1,
           name: "Test Group",
           created_by: 1,
+          invite_code: "ABCD1234EF",
         },
       };
       vi.mocked(api.post).mockResolvedValue(mockResponse);
@@ -43,6 +44,7 @@ describe("Groups Service", () => {
           id: 1,
           name: "Test Group",
           created_by: 1,
+          invite_code: "ABCD1234EF",
         },
       };
       vi.mocked(api.post).mockResolvedValue(validResponse);
@@ -58,6 +60,7 @@ describe("Groups Service", () => {
           id: -1, // Invalid: should be positive
           name: "Test Group",
           created_by: 1,
+          invite_code: "ABCD1234EF",
         },
       };
       vi.mocked(api.post).mockResolvedValue(invalidResponse);
@@ -96,6 +99,7 @@ describe("Groups Service", () => {
       id: 1,
       name: "Test Group",
       created_by: 1,
+      invite_code: "ABCD1234EF",
       members: [
         {
           user_id: 1,
@@ -141,6 +145,7 @@ describe("Groups Service", () => {
           id: 1,
           name: "Test Group",
           created_by: 1,
+          invite_code: "ABCD1234EF",
           members: [
             {
               user_id: -1, // Invalid: should be positive
@@ -165,6 +170,7 @@ describe("Groups Service", () => {
           id: 1,
           name: "Test Group",
           created_by: 1,
+          invite_code: "ABCD1234EF",
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 5,
           user_balance: "25.5",
@@ -218,6 +224,7 @@ describe("Groups Service", () => {
           id: 1,
           name: "Test Group",
           created_by: 1,
+          invite_code: "ABCD1234EF",
           members: [],
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 0,
@@ -230,6 +237,60 @@ describe("Groups Service", () => {
       const result = await groupsApi.getGroup(1);
 
       expect(result.members).toEqual([]);
+    });
+  });
+
+  describe("groupsApi.joinGroup", () => {
+    const validGroupDetail = {
+      id: 1,
+      name: "Joined Group",
+      created_by: 2,
+      invite_code: "JOIN1234AB",
+      members: [
+        {
+          user_id: 2,
+          name: "Owner",
+          email: "owner@example.com",
+        },
+        {
+          user_id: 1,
+          name: "Member",
+          email: "member@example.com",
+        },
+      ],
+      created_at: "2026-01-05T10:30:00Z",
+      expense_count: 0,
+      user_balance: 0,
+      last_activity_at: null,
+    };
+
+    it("sends POST request to /groups/join with code", async () => {
+      vi.mocked(api.post).mockResolvedValue({ data: validGroupDetail });
+      const result = await groupsApi.joinGroup("JOIN1234AB");
+
+      expect(api.post).toHaveBeenCalledWith("/groups/join", {
+        code: "JOIN1234AB",
+      });
+      expect(result).toEqual(validGroupDetail);
+    });
+
+    it("validates response data against schema", async () => {
+      vi.mocked(api.post).mockResolvedValue({ data: validGroupDetail });
+      const result = await groupsApi.joinGroup("JOIN1234AB");
+      expect(result).toEqual(validGroupDetail);
+    });
+
+    it("throws error for invalid response", async () => {
+      vi.mocked(api.post).mockResolvedValue({
+        data: {
+          id: 1,
+          name: "Joined Group",
+          created_by: 2,
+          members: [],
+        },
+      });
+
+      await expect(groupsApi.joinGroup("JOIN1234AB")).rejects.toThrow();
     });
   });
 });

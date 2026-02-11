@@ -76,6 +76,7 @@ describe("GroupDetailPage", () => {
     id: 1,
     name: "Test Group",
     created_by: 1,
+    invite_code: "ABCD1234EF",
     members: [],
     created_at: "2026-01-05T10:30:00Z",
     expense_count: 0,

@@ -4,7 +4,7 @@ from decimal import Decimal
 from pydantic import EmailStr, field_serializer, field_validator
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from .utils import _validate_group_name
+from .utils import _validate_group_name, normalize_invite_code
 
 
 class ExpenseGroupBase(SQLModel):
@@ -20,6 +20,7 @@ class ExpenseGroup(ExpenseGroupBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     created_by: int = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    invite_code: str = Field(unique=True)
 
 
 class ExpenseGroupMember(SQLModel, table=True):
@@ -46,6 +47,7 @@ class ExpenseGroupUpdate(SQLModel):
 class ExpenseGroupPublic(ExpenseGroupBase):
     id: int
     created_by: int
+    invite_code: str
 
 
 class ExpenseGroupMemberPublic(SQLModel):
@@ -66,5 +68,13 @@ class ExpenseGroupDetail(ExpenseGroupPublic):
         return float(user_balance)
 
 
-class AddMemberRequest(SQLModel):
-    user_id: int
+class JoinGroupRequest(SQLModel):
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def _normalize_code(cls, value: str) -> str:
+        normalized = normalize_invite_code(value)
+        if not normalized:
+            raise ValueError("Invite code must not be empty")
+        return normalized

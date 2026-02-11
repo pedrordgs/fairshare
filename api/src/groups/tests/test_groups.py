@@ -25,6 +25,7 @@ class TestCreateGroup:
         assert data["name"] == "Test Group"
         assert data["created_by"] == user.id
         assert "id" in data
+        assert "invite_code" in data
         # Creator should be auto-added as member
         assert len(data["members"]) == 1
         assert data["members"][0]["user_id"] == user.id
@@ -193,136 +194,47 @@ class TestDeleteGroup:
         assert response.status_code == 401
 
 
-class TestAddMember:
+class TestJoinGroup:
     def test_success(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        client, owner = authenticated_client
-        create_response = client.post("/groups/", json={"name": "Test Group"})
-        group_id = create_response.json()["id"]
-
-        # Create another user to add
-        new_user, _ = create_test_user(session, "newmember@example.com", "New Member")
-
-        response = client.post(f"/groups/{group_id}/members", json={"user_id": new_user.id})
-        assert response.status_code == 201
-        data = response.json()
-        assert len(data["members"]) == 2
-        member_ids = [m["user_id"] for m in data["members"]]
-        assert owner.id in member_ids
-        assert new_user.id in member_ids
-
-    def test_user_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
-        create_response = client.post("/groups/", json={"name": "Test Group"})
-        group_id = create_response.json()["id"]
+        owner, _ = create_test_user(session, "owner@example.com", "Owner")
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Join Group"))
 
-        response = client.post(f"/groups/{group_id}/members", json={"user_id": 99999})
-        assert response.status_code == 404
-        assert response.json()["detail"] == "User not found"
-
-    def test_user_already_member(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        client, _ = authenticated_client
-        create_response = client.post("/groups/", json={"name": "Test Group"})
-        group_id = create_response.json()["id"]
-
-        # Create and add a user
-        new_user, _ = create_test_user(session, "newmember@example.com")
-        client.post(f"/groups/{group_id}/members", json={"user_id": new_user.id})
-
-        # Try to add them again
-        response = client.post(f"/groups/{group_id}/members", json={"user_id": new_user.id})
-        assert response.status_code == 400
-        assert response.json()["detail"] == "User is already a member of this group"
-
-    def test_not_owner(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        client, user = authenticated_client
-        # Create another user who owns the group
-        other_user, _ = create_test_user(session, "other@example.com")
-        other_group = create_group(session=session, user=other_user, group_in=ExpenseGroupCreate(name="Other Group"))
-
-        # Add current user as member
-        from groups.service import add_member
-
-        assert user.id is not None
-        add_member(session=session, group=other_group, user_id=user.id)
-
-        # Create a third user to try to add
-        third_user, _ = create_test_user(session, "third@example.com")
-
-        response = client.post(f"/groups/{other_group.id}/members", json={"user_id": third_user.id})
-        assert response.status_code == 403
-
-    def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
-        client, _ = authenticated_client
-        response = client.post("/groups/99999/members", json={"user_id": 1})
-        assert response.status_code == 404
-
-    def test_no_token(self, client: TestClient) -> None:
-        response = client.post("/groups/1/members", json={"user_id": 1})
-        assert response.status_code == 401
-
-
-class TestRemoveMember:
-    def test_success(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        client, owner = authenticated_client
-        create_response = client.post("/groups/", json={"name": "Test Group"})
-        group_id = create_response.json()["id"]
-
-        # Add a member
-        new_user, _ = create_test_user(session, "newmember@example.com")
-        client.post(f"/groups/{group_id}/members", json={"user_id": new_user.id})
-
-        # Remove the member
-        response = client.delete(f"/groups/{group_id}/members/{new_user.id}")
+        response = client.post("/groups/join", json={"code": group.invite_code})
         assert response.status_code == 200
         data = response.json()
-        assert len(data["members"]) == 1
-        assert data["members"][0]["user_id"] == owner.id
-
-    def test_owner_cannot_remove_self(self, authenticated_client: AuthenticatedClient) -> None:
-        client, owner = authenticated_client
-        create_response = client.post("/groups/", json={"name": "Test Group"})
-        group_id = create_response.json()["id"]
-
-        response = client.delete(f"/groups/{group_id}/members/{owner.id}")
-        assert response.status_code == 400
-        assert response.json()["detail"] == "Owner cannot remove themselves from the group"
-
-    def test_user_not_a_member(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        client, _ = authenticated_client
-        create_response = client.post("/groups/", json={"name": "Test Group"})
-        group_id = create_response.json()["id"]
-
-        # Create a user but don't add them
-        other_user, _ = create_test_user(session, "other@example.com")
-
-        response = client.delete(f"/groups/{group_id}/members/{other_user.id}")
-        assert response.status_code == 404
-        assert response.json()["detail"] == "User is not a member of this group"
-
-    def test_not_owner(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        client, user = authenticated_client
-        # Create another user who owns the group
-        other_user, _ = create_test_user(session, "other@example.com")
-        other_group = create_group(session=session, user=other_user, group_in=ExpenseGroupCreate(name="Other Group"))
-
-        # Add current user and a third user as members
-        from groups.service import add_member
-
-        assert user.id is not None
-        add_member(session=session, group=other_group, user_id=user.id)
-        third_user, _ = create_test_user(session, "third@example.com")
-        assert third_user.id is not None
-        add_member(session=session, group=other_group, user_id=third_user.id)
-
-        # Try to remove third user (not owner)
-        response = client.delete(f"/groups/{other_group.id}/members/{third_user.id}")
-        assert response.status_code == 403
+        assert data["id"] == group.id
+        member_ids = [m["user_id"] for m in data["members"]]
+        assert len(member_ids) == 2
 
     def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
-        response = client.delete("/groups/99999/members/1")
+        response = client.post("/groups/join", json={"code": "NOTACODE"})
         assert response.status_code == 404
+        assert response.json()["detail"] == "Group not found"
+
+    def test_idempotent(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, user = authenticated_client
+        group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="My Group"))
+        response = client.post("/groups/join", json={"code": group.invite_code})
+        assert response.status_code == 200
+        data = response.json()
+        member_ids = [m["user_id"] for m in data["members"]]
+        assert member_ids.count(user.id) == 1
 
     def test_no_token(self, client: TestClient) -> None:
-        response = client.delete("/groups/1/members/1")
+        response = client.post("/groups/join", json={"code": "TESTCODE"})
         assert response.status_code == 401
+
+    def test_user_not_found(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, user = authenticated_client
+        group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Join Group"))
+        user_id = user.id
+        assert user_id is not None
+
+        session.delete(user)
+        session.commit()
+
+        response = client.post("/groups/join", json={"code": group.invite_code})
+        assert response.status_code == 404
+        assert response.json()["detail"] == "User not found"

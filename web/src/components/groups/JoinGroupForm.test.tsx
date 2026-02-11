@@ -33,7 +33,10 @@ describe("JoinGroupForm", () => {
       members: [],
       created_at: "2026-01-05T10:30:00Z",
       expense_count: 0,
-      user_balance: 0,
+      owed_by_user_total: 0,
+      owed_to_user_total: 0,
+      owed_by_user: [],
+      owed_to_user: [],
       last_activity_at: null,
     });
 
@@ -58,7 +61,10 @@ describe("JoinGroupForm", () => {
       members: [],
       created_at: "2026-01-05T10:30:00Z",
       expense_count: 0,
-      user_balance: 0,
+      owed_by_user_total: 0,
+      owed_to_user_total: 0,
+      owed_by_user: [],
+      owed_to_user: [],
       last_activity_at: null,
     };
     vi.mocked(groupsApi.joinGroup).mockResolvedValue(group);

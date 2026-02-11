@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
@@ -5,8 +7,10 @@ from auth.models import UserCreate
 from auth.security import create_access_token
 from auth.service import create_user
 from conftest import AuthenticatedClient
+from expenses.models import ExpenseCreate
+from expenses.service import create_expense
 from groups.models import ExpenseGroupCreate
-from groups.service import create_group
+from groups.service import create_group, get_group_by_id
 
 
 def create_test_user(session: Session, email: str, name: str = "Test User") -> tuple:
@@ -96,6 +100,79 @@ class TestGetGroup:
         assert data["name"] == "Test Group"
         assert data["created_by"] == user.id
         assert len(data["members"]) == 1
+        assert data["expense_count"] == 0
+        assert data["owed_by_user_total"] == 0.0
+        assert data["owed_to_user_total"] == 0.0
+        assert data["owed_by_user"] == []
+        assert data["owed_to_user"] == []
+        assert data["last_activity_at"] is None
+
+    def test_returns_calculated_debts(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, user = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Balance Group"})
+        group_id = create_response.json()["id"]
+
+        other_user, _ = create_test_user(session, "other@example.com")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert other_user.id is not None
+        from groups.service import add_member
+
+        assert group.id is not None
+        add_member(session=session, group=group, user_id=other_user.id)
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=other_user.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("10.00")),
+        )
+
+        response = client.get(f"/groups/{group_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["owed_by_user_total"] == 5.0
+        assert data["owed_to_user_total"] == 0.0
+        assert data["owed_by_user"] == [{"user_id": other_user.id, "amount": 5.0}]
+        assert data["owed_to_user"] == []
+
+    def test_returns_netted_pairwise_debts(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, john = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Debt Group"})
+        group_id = create_response.json()["id"]
+
+        jane, _ = create_test_user(session, "jane@example.com", "Jane")
+        david, _ = create_test_user(session, "david@example.com", "David")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert jane.id is not None
+        assert david.id is not None
+        from groups.service import add_member
+
+        add_member(session=session, group=group, user_id=jane.id)
+        add_member(session=session, group=group, user_id=david.id)
+
+        assert group.id is not None
+        assert john.id is not None
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=john.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
+        )
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=jane.id,
+            expense_in=ExpenseCreate(name="Taxi", value=Decimal("6.00")),
+        )
+
+        response = client.get(f"/groups/{group_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["owed_by_user_total"] == 0.0
+        assert data["owed_to_user_total"] == 6.0
+        assert data["owed_by_user"] == []
+        assert data["owed_to_user"] == [{"user_id": david.id, "amount": 6.0}]
 
     def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
@@ -116,6 +193,49 @@ class TestGetGroup:
     def test_no_token(self, client: TestClient) -> None:
         response = client.get("/groups/1")
         assert response.status_code == 401
+
+
+class TestGroupSettlementPlan:
+    def test_returns_minimized_user_debts(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, john = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement Group"})
+        group_id = create_response.json()["id"]
+
+        jane, _ = create_test_user(session, "jane2@example.com", "Jane")
+        david, _ = create_test_user(session, "david2@example.com", "David")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert jane.id is not None
+        assert david.id is not None
+        from groups.service import add_member
+
+        add_member(session=session, group=group, user_id=jane.id)
+        add_member(session=session, group=group, user_id=david.id)
+
+        assert group.id is not None
+        assert john.id is not None
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=john.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
+        )
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=jane.id,
+            expense_in=ExpenseCreate(name="Taxi", value=Decimal("6.00")),
+        )
+
+        jane_token = create_access_token(user=jane)
+        client.headers["Authorization"] = f"Bearer {jane_token}"
+        response = client.get(f"/groups/{group_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["owed_by_user_total"] == 0.0
+        assert data["owed_to_user_total"] == 0.0
+        assert data["owed_by_user"] == []
+        assert data["owed_to_user"] == []
 
 
 class TestUpdateGroup:

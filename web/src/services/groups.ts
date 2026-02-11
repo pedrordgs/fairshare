@@ -1,11 +1,10 @@
 import api from "./api";
 import {
-  type ExpenseGroup,
   type ExpenseGroupCreate,
   type ExpenseGroupDetail,
   type JoinGroupRequest,
   type PaginatedGroupsResponse,
-  ExpenseGroupSchema,
+  ExpenseGroupListItemSchema,
   ExpenseGroupDetailSchema,
   JoinGroupRequestSchema,
   PaginatedGroupsResponseSchema,
@@ -34,10 +33,12 @@ export const groupsApi = {
    * @param groupData - The group data containing the name
    * @returns Promise resolving to the created group
    */
-  createGroup: async (groupData: ExpenseGroupCreate): Promise<ExpenseGroup> => {
+  createGroup: async (
+    groupData: ExpenseGroupCreate,
+  ): Promise<ExpenseGroupDetail> => {
     const response = await api.post("/groups/", groupData);
     // Runtime validation with Zod schema
-    return ExpenseGroupSchema.parse(response.data);
+    return ExpenseGroupDetailSchema.parse(response.data);
   },
 
   /**
@@ -68,7 +69,13 @@ export const groupsApi = {
       params: { offset, limit },
     });
     // Runtime validation with Zod schema
-    return PaginatedGroupsResponseSchema.parse(response.data);
+    PaginatedGroupsResponseSchema.parse(response.data);
+    return {
+      ...response.data,
+      items: response.data.items.map((item: unknown) =>
+        ExpenseGroupListItemSchema.parse(item),
+      ),
+    } as PaginatedGroupsResponse;
   },
 
   /**

@@ -1,10 +1,10 @@
 from decimal import Decimal
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from auth.models import UserCreate
 from auth.service import create_user
-from expenses.models import ExpenseCreate, ExpenseUpdate
+from expenses.models import ExpenseCreate, ExpenseUpdate, ExpenseSplit
 from expenses.service import (
     count_expenses_for_group,
     create_expense,
@@ -14,7 +14,7 @@ from expenses.service import (
     update_expense,
 )
 from groups.models import ExpenseGroupCreate
-from groups.service import create_group
+from groups.service import add_member, create_group
 
 
 class TestCreateExpense:
@@ -24,6 +24,8 @@ class TestCreateExpense:
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
 
+        assert group.id is not None
+        assert user.id is not None
         expense = create_expense(
             session=session,
             group_id=group.id,
@@ -40,6 +42,47 @@ class TestCreateExpense:
         assert expense.created_at is not None
         assert expense.updated_at is not None
 
+    def test_rounds_value_up(self, session: Session) -> None:
+        user = create_user(
+            session=session, user_in=UserCreate(name="Test", email="round@example.com", password="password")
+        )
+        group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Round Group"))
+
+        assert group.id is not None
+        assert user.id is not None
+        expense = create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=user.id,
+            expense_in=ExpenseCreate(name="Coffee", value=Decimal("10.001")),
+        )
+
+        assert expense.value == Decimal("10.01")
+
+    def test_creates_splits_for_members(self, session: Session) -> None:
+        user = create_user(
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+        )
+        other = create_user(
+            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="password")
+        )
+        group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Split Group"))
+        assert other.id is not None
+        add_member(session=session, group=group, user_id=other.id)
+
+        assert group.id is not None
+        assert user.id is not None
+        expense = create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=user.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("10.00")),
+        )
+
+        splits = session.exec(select(ExpenseSplit).where(ExpenseSplit.expense_id == expense.id)).all()
+        assert len(splits) == 2
+        assert sum(split.share for split in splits) == Decimal("10.00")
+
 
 class TestGetExpenseById:
     def test_returns_expense(self, session: Session) -> None:
@@ -47,6 +90,8 @@ class TestGetExpenseById:
             session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
+        assert group.id is not None
+        assert user.id is not None
         created = create_expense(
             session=session,
             group_id=group.id,
@@ -54,6 +99,7 @@ class TestGetExpenseById:
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
         )
 
+        assert created.id is not None
         expense = get_expense_by_id(session=session, expense_id=created.id)
         assert expense is not None
         assert expense.id == created.id
@@ -71,6 +117,8 @@ class TestGetExpensesForGroup:
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
 
         # Create expenses
+        assert group.id is not None
+        assert user.id is not None
         create_expense(
             session=session,
             group_id=group.id,
@@ -96,6 +144,8 @@ class TestGetExpensesForGroup:
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
 
+        assert group.id is not None
+        assert user.id is not None
         for i in range(5):
             create_expense(
                 session=session,
@@ -122,7 +172,8 @@ class TestCountExpensesForGroup:
             session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
-
+        assert group.id is not None
+        assert user.id is not None
         assert count_expenses_for_group(session=session, group_id=group.id) == 0
 
         create_expense(
@@ -148,6 +199,8 @@ class TestUpdateExpense:
             session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
+        assert group.id is not None
+        assert user.id is not None
         expense = create_expense(
             session=session,
             group_id=group.id,
@@ -172,6 +225,8 @@ class TestUpdateExpense:
             session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
+        assert group.id is not None
+        assert user.id is not None
         expense = create_expense(
             session=session,
             group_id=group.id,
@@ -193,6 +248,8 @@ class TestDeleteExpense:
             session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
+        assert group.id is not None
+        assert user.id is not None
         expense = create_expense(
             session=session,
             group_id=group.id,
@@ -203,4 +260,5 @@ class TestDeleteExpense:
 
         delete_expense(session=session, expense=expense)
 
+        assert expense_id is not None
         assert get_expense_by_id(session=session, expense_id=expense_id) is None

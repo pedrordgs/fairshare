@@ -7,10 +7,10 @@ import {
   formatRelativeTime,
   formatDate,
 } from "@utils/formatUtils";
-import type { ExpenseGroupDetail } from "@schema/groups";
+import type { ExpenseGroupListItem } from "@schema/groups";
 
 interface GroupCardProps {
-  group: ExpenseGroupDetail;
+  group: ExpenseGroupListItem;
   currentUserId: number;
 }
 
@@ -20,9 +20,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isAdmin = group.created_by === currentUserId;
-  const balance = group.user_balance;
-  const isPositive = balance > 0;
-  const isSettled = balance === 0;
+  const owedByTotal = group.owed_by_user_total;
+  const owedToTotal = group.owed_to_user_total;
+  const isSettled = owedByTotal === 0 && owedToTotal === 0;
 
   const handleClick = () => {
     navigate({ to: "/groups/$groupId", params: { groupId: String(group.id) } });
@@ -55,21 +55,37 @@ export const GroupCard: React.FC<GroupCardProps> = ({
 
       <CardContent className="space-y-3">
         {/* Balance Display */}
-        <div className="flex items-center gap-2">
-          <span className="text-slate-600 text-sm">Balance:</span>
-          {isSettled ? (
-            <span className="text-slate-500 font-medium">
-              You're all settled
-            </span>
-          ) : isPositive ? (
-            <span className="text-green-600 font-semibold">
-              You are owed {formatCurrency(balance)}
-            </span>
-          ) : (
-            <span className="text-red-600 font-semibold">
-              You owe {formatCurrency(balance)}
-            </span>
-          )}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-slate-600 text-sm">Status:</span>
+            {isSettled ? (
+              <span className="text-slate-500 font-medium">
+                You're all settled
+              </span>
+            ) : (
+              <span className="text-slate-500 font-medium">
+                Here's the current split
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex items-center justify-between rounded-lg bg-rose-50 px-3 py-2">
+              <span className="text-xs uppercase tracking-wide text-rose-700">
+                You owe
+              </span>
+              <span className="text-sm font-semibold text-rose-700">
+                {formatCurrency(owedByTotal)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2">
+              <span className="text-xs uppercase tracking-wide text-emerald-700">
+                Owed to you
+              </span>
+              <span className="text-sm font-semibold text-emerald-700">
+                {formatCurrency(owedToTotal)}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Stats Row */}

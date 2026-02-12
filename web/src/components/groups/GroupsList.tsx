@@ -4,7 +4,7 @@ import { GroupCard } from "./GroupCard";
 import { GroupCardSkeleton } from "./GroupCardSkeleton";
 import { useInfiniteScroll } from "@hooks/useInfiniteScroll";
 import { groupsApi } from "@services/groups";
-import type { ExpenseGroupDetail } from "@schema/groups";
+import type { ExpenseGroupListItem } from "@schema/groups";
 import { Button } from "@components/ui/Button";
 import { GettingStartedGuide } from "./GettingStartedGuide";
 import { useAuth } from "@context/AuthContext";
@@ -92,7 +92,7 @@ export const GroupsList: React.FC<GroupsListProps> = ({ onCreateGroup }) => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allGroups.map((group: ExpenseGroupDetail) => (
+            {allGroups.map((group: ExpenseGroupListItem) => (
               <GroupCard
                 key={group.id}
                 group={group}

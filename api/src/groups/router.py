@@ -6,13 +6,15 @@ from db.dependencies import DbSession
 from .dependencies import GroupAsMember, GroupAsOwner
 from core.models import PaginatedResponse
 
-from .models import ExpenseGroupCreate, ExpenseGroupDetail, ExpenseGroupUpdate, JoinGroupRequest
+from .models import ExpenseGroupCreate, ExpenseGroupDetail, ExpenseGroupListItem, ExpenseGroupUpdate, JoinGroupRequest
 from .service import (
     add_member,
+    calculate_user_debt_totals,
     create_group,
     delete_group,
     get_group_detail,
     get_group_by_invite_code,
+    get_group_list_item,
     get_member,
     get_user_groups_count,
     get_user_groups_paginated,
@@ -28,38 +30,42 @@ async def create_expense_group(
 ) -> ExpenseGroupDetail:
     """Create a new expense group. The creator is automatically added as a member."""
     group = create_group(session=session, user=authenticated_user, group_in=group_in)
-    return get_group_detail(session=session, group=group)
+    return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
-@router.get("/", response_model=PaginatedResponse[ExpenseGroupDetail])
+@router.get("/", response_model=PaginatedResponse[ExpenseGroupListItem])
 async def list_expense_groups(
     *,
     session: DbSession,
     authenticated_user: AuthenticatedUser,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=12, ge=1, le=100),
-) -> PaginatedResponse[ExpenseGroupDetail]:
+) -> PaginatedResponse[ExpenseGroupListItem]:
     """List expense groups where the authenticated user is a member with pagination."""
     assert authenticated_user.id is not None
     total = get_user_groups_count(session=session, user_id=authenticated_user.id)
     groups = get_user_groups_paginated(session=session, user_id=authenticated_user.id, offset=offset, limit=limit)
-    items = [get_group_detail(session=session, group=group) for group in groups]
-    return PaginatedResponse[ExpenseGroupDetail](items=items, total=total, offset=offset, limit=limit)
+    group_ids = [group.id for group in groups if group.id is not None]
+    totals_by_group = calculate_user_debt_totals(session=session, group_ids=group_ids, user_id=authenticated_user.id)
+    items = [get_group_list_item(session=session, group=group, totals_by_group=totals_by_group) for group in groups]
+    return PaginatedResponse[ExpenseGroupListItem](items=items, total=total, offset=offset, limit=limit)
 
 
 @router.get("/{group_id}", response_model=ExpenseGroupDetail)
-async def get_expense_group(*, session: DbSession, group: GroupAsMember) -> ExpenseGroupDetail:
+async def get_expense_group(
+    *, session: DbSession, group: GroupAsMember, authenticated_user: AuthenticatedUser
+) -> ExpenseGroupDetail:
     """Get details of an expense group including members."""
-    return get_group_detail(session=session, group=group)
+    return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
 @router.patch("/{group_id}", response_model=ExpenseGroupDetail)
 async def update_expense_group(
-    *, session: DbSession, group: GroupAsOwner, group_in: ExpenseGroupUpdate
+    *, session: DbSession, group: GroupAsOwner, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
 ) -> ExpenseGroupDetail:
     """Update an expense group. Only the owner can update."""
     group = update_group(session=session, group=group, group_in=group_in)
-    return get_group_detail(session=session, group=group)
+    return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
 @router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -80,7 +86,7 @@ async def join_group_by_code(
     assert group.id is not None
 
     if get_member(session=session, group_id=group.id, user_id=authenticated_user.id):
-        return get_group_detail(session=session, group=group)
+        return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
     add_member(session=session, group=group, user_id=authenticated_user.id)
-    return get_group_detail(session=session, group=group)
+    return get_group_detail(session=session, group=group, user_id=authenticated_user.id)

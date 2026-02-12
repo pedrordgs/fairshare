@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { GroupDetailPage } from "./GroupDetailPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as GroupsService from "@services/groups";
+import * as ExpensesService from "@services/expenses";
 import * as AuthContext from "@context/AuthContext";
 import * as ErrorUtils from "@utils/errorUtils";
 
@@ -15,6 +16,13 @@ vi.mock("@services/groups", () => ({
   groupsApi: {
     createGroup: vi.fn(),
     getGroup: vi.fn(),
+  },
+}));
+
+vi.mock("@services/expenses", () => ({
+  expensesApi: {
+    listGroupExpenses: vi.fn(),
+    listAllGroupExpenses: vi.fn(),
   },
 }));
 
@@ -60,6 +68,15 @@ describe("GroupDetailPage", () => {
       login: vi.fn(),
       logout: vi.fn(),
     });
+
+    vi.mocked(
+      ExpensesService.expensesApi.listAllGroupExpenses,
+    ).mockResolvedValue({
+      items: [],
+      total: 0,
+      offset: 0,
+      limit: 20,
+    });
   });
 
   afterEach(() => {
@@ -80,7 +97,10 @@ describe("GroupDetailPage", () => {
     members: [],
     created_at: "2026-01-05T10:30:00Z",
     expense_count: 0,
-    user_balance: 0,
+    owed_by_user_total: 0,
+    owed_to_user_total: 0,
+    owed_by_user: [],
+    owed_to_user: [],
     last_activity_at: null,
   };
 
@@ -123,6 +143,25 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [
+          {
+            id: 1,
+            name: "Dinner",
+            description: "Team dinner",
+            value: 45.5,
+            group_id: 1,
+            created_by: 1,
+            created_at: "2026-01-05T12:00:00Z",
+            updated_at: "2026-01-05T12:00:00Z",
+          },
+        ],
+        total: 1,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -141,6 +180,14 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -156,6 +203,14 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -171,6 +226,14 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -186,6 +249,14 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -200,6 +271,14 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -221,6 +300,14 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockRejectedValue(
         notFoundError,
       );
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -240,6 +327,14 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockRejectedValue(
         forbiddenError,
       );
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -259,6 +354,14 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockRejectedValue(
         serverError,
       );
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -274,6 +377,14 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockRejectedValue(
         new Error("Network Error"),
       );
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -294,6 +405,14 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockRejectedValue(
         notFoundError,
       );
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -323,6 +442,14 @@ describe("GroupDetailPage", () => {
         .mockResolvedValueOnce({
           ...baseGroup,
         });
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -385,6 +512,14 @@ describe("GroupDetailPage", () => {
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue({
         ...baseGroup,
       });
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -403,6 +538,14 @@ describe("GroupDetailPage", () => {
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockRejectedValue(apiError);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
 
       renderWithProviders(<GroupDetailPage />);
 

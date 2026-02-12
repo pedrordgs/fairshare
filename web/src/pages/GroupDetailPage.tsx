@@ -4,10 +4,13 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Button } from "@components/ui/Button";
 import { groupsApi } from "@services/groups";
+import { expensesApi } from "@services/expenses";
 import { useAuth } from "@context/AuthContext";
 import { logError } from "@utils/errorUtils";
 import { copyToClipboard } from "@utils/clipboard";
+import { formatCurrency, formatDate } from "@utils/formatUtils";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
+import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -80,6 +83,7 @@ export const GroupDetailPage: React.FC = () => {
   const { groupId: groupIdParam } = routeApi.useParams();
   const navigate = useNavigate();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
 
   // Validate and parse the groupId parameter
   const groupId = parseGroupId(groupIdParam);
@@ -96,6 +100,21 @@ export const GroupDetailPage: React.FC = () => {
         throw new Error("Invalid group ID");
       }
       return groupsApi.getGroup(groupId);
+    },
+    enabled: !isAuthLoading && !!user && !!groupId,
+  });
+
+  const {
+    data: expensesData,
+    isLoading: isExpensesLoading,
+    error: expensesError,
+  } = useQuery({
+    queryKey: ["expenses", groupId],
+    queryFn: () => {
+      if (!groupId) {
+        throw new Error("Invalid group ID");
+      }
+      return expensesApi.listAllGroupExpenses(groupId);
     },
     enabled: !isAuthLoading && !!user && !!groupId,
   });
@@ -121,6 +140,58 @@ export const GroupDetailPage: React.FC = () => {
       });
     }
   }, [queryError, groupIdParam, user?.id]);
+
+  React.useEffect(() => {
+    if (expensesError) {
+      logError("EXPENSES_LOAD_FAILED", expensesError, {
+        groupId: groupIdParam,
+        userId: user?.id,
+      });
+    }
+  }, [expensesError, groupIdParam, user?.id]);
+
+  const totalExpenses = React.useMemo(() => {
+    if (!expensesData) {
+      return 0;
+    }
+    return expensesData.items.reduce(
+      (total, expense) => total + expense.value,
+      0,
+    );
+  }, [expensesData]);
+
+  const currentUserId = user?.id ?? null;
+
+  const membersById = React.useMemo(() => {
+    if (!group) {
+      return new Map<number, string>();
+    }
+    return new Map(
+      group.members.map((member) => [member.user_id, member.name]),
+    );
+  }, [group]);
+
+  const owedByUserEntries = React.useMemo(() => {
+    if (!group) {
+      return [] as Array<{ user_id: number; name: string; amount: number }>;
+    }
+    return group.owed_by_user.map((entry) => ({
+      user_id: entry.user_id,
+      name: membersById.get(entry.user_id) ?? "Member",
+      amount: entry.amount,
+    }));
+  }, [group, membersById]);
+
+  const owedToUserEntries = React.useMemo(() => {
+    if (!group) {
+      return [] as Array<{ user_id: number; name: string; amount: number }>;
+    }
+    return group.owed_to_user.map((entry) => ({
+      user_id: entry.user_id,
+      name: membersById.get(entry.user_id) ?? "Member",
+      amount: entry.amount,
+    }));
+  }, [group, membersById]);
 
   if (isAuthLoading || isGroupLoading) {
     return (
@@ -269,26 +340,94 @@ export const GroupDetailPage: React.FC = () => {
                 <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
                 Expenses
               </CardTitle>
-              <Button size="sm" className="opacity-50 cursor-not-allowed">
+              <Button size="sm" onClick={() => setIsAddExpenseOpen(true)}>
                 + Add Expense
               </Button>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <img
-                    src={receiptIcon}
-                    alt="Receipt"
-                    className="w-8 h-8 text-primary-600"
-                  />
+              {isExpensesLoading ? (
+                <div className="text-center py-16">
+                  <div className="w-8 h-8 border-4 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-slate-600">Loading expenses...</p>
                 </div>
-                <p className="text-slate-600 font-medium mb-2">
-                  No expenses yet
-                </p>
-                <p className="text-slate-400 text-sm">
-                  Start tracking shared costs by adding your first expense
-                </p>
-              </div>
+              ) : expensesError ? (
+                <div className="text-center py-12">
+                  <p className="text-slate-600 font-medium mb-2">
+                    Couldn't load expenses
+                  </p>
+                  <p className="text-slate-400 text-sm">
+                    Please try again in a moment.
+                  </p>
+                </div>
+              ) : expensesData && expensesData.items.length > 0 ? (
+                <div className="space-y-4">
+                  {expensesData.items.map((expense) => {
+                    const creatorName = membersById.get(expense.created_by);
+                    const isCurrentUserExpense =
+                      currentUserId !== null &&
+                      expense.created_by === currentUserId;
+                    const expenseMeta = `${
+                      creatorName
+                        ? `Created by ${creatorName}`
+                        : "Created by member"
+                    } · ${formatDate(expense.created_at)}`;
+                    return (
+                      <div
+                        key={expense.id}
+                        className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${
+                          isCurrentUserExpense
+                            ? "border-sky-200 bg-sky-50/60"
+                            : "border-primary-100 bg-white/70"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-slate-900 truncate">
+                                {expense.name}
+                              </p>
+                              {isCurrentUserExpense && (
+                                <span className="inline-flex items-center rounded-full border border-sky-300/70 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            {expense.description && (
+                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                                {expense.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-slate-400 mt-2">
+                              {expenseMeta}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-slate-900">
+                              {formatCurrency(expense.value)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <img
+                      src={receiptIcon}
+                      alt="Receipt"
+                      className="w-8 h-8 text-primary-600"
+                    />
+                  </div>
+                  <p className="text-slate-600 font-medium mb-2">
+                    No expenses yet
+                  </p>
+                  <p className="text-slate-400 text-sm">
+                    Start tracking shared costs by adding your first expense
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -305,16 +444,80 @@ export const GroupDetailPage: React.FC = () => {
             <CardContent className="space-y-6">
               <div className="p-4 bg-gradient-to-br from-accent-50 to-accent-100/50 rounded-xl">
                 <p className="text-sm text-slate-600 mb-1">Total Expenses</p>
-                <p className="text-3xl font-bold text-slate-900">$0.00</p>
+                <p className="text-3xl font-bold text-slate-900">
+                  {formatCurrency(totalExpenses)}
+                </p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <p className="text-sm font-medium text-slate-700">
-                  Your Balance
+                  Your Balances
                 </p>
-                <div className="p-3 bg-primary-50 rounded-lg">
-                  <p className="text-lg font-semibold text-slate-700">$0.00</p>
-                  <p className="text-xs text-slate-500">You're all settled</p>
+                <div className="grid gap-3">
+                  <div className="rounded-lg bg-rose-50 px-3 py-3">
+                    <p className="text-xs uppercase tracking-wide text-rose-700">
+                      You owe
+                    </p>
+                    <p className="text-lg font-semibold text-rose-700">
+                      {formatCurrency(group.owed_by_user_total)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-emerald-50 px-3 py-3">
+                    <p className="text-xs uppercase tracking-wide text-emerald-700">
+                      Owed to you
+                    </p>
+                    <p className="text-lg font-semibold text-emerald-700">
+                      {formatCurrency(group.owed_to_user_total)}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    You owe
+                  </p>
+                  {owedByUserEntries.length === 0 ? (
+                    <p className="text-sm text-slate-400">No one right now.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {owedByUserEntries.map((entry) => (
+                        <div
+                          key={`owed-${entry.user_id}`}
+                          className="flex items-center justify-between rounded-lg border border-rose-100 bg-rose-50/60 px-3 py-2"
+                        >
+                          <span className="text-sm text-slate-700">
+                            {entry.name}
+                          </span>
+                          <span className="text-sm font-semibold text-rose-700">
+                            {formatCurrency(entry.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    Owed to you
+                  </p>
+                  {owedToUserEntries.length === 0 ? (
+                    <p className="text-sm text-slate-400">No one right now.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {owedToUserEntries.map((entry) => (
+                        <div
+                          key={`owed-to-${entry.user_id}`}
+                          className="flex items-center justify-between rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2"
+                        >
+                          <span className="text-sm text-slate-700">
+                            {entry.name}
+                          </span>
+                          <span className="text-sm font-semibold text-emerald-700">
+                            {formatCurrency(entry.amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -325,6 +528,13 @@ export const GroupDetailPage: React.FC = () => {
           </Card>
         </div>
       </div>
+      {groupId && (
+        <AddExpenseModal
+          groupId={groupId}
+          isOpen={isAddExpenseOpen}
+          onClose={() => setIsAddExpenseOpen(false)}
+        />
+      )}
     </div>
   );
 };

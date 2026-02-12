@@ -56,16 +56,48 @@ class ExpenseGroupMemberPublic(SQLModel):
     email: EmailStr
 
 
+class ExpenseGroupDebtItem(SQLModel):
+    user_id: int
+    amount: Decimal
+
+    @field_serializer("amount")
+    def _serialize_amount(self, amount: Decimal) -> float:
+        return float(amount)
+
+
+class ExpenseGroupListItem(ExpenseGroupPublic):
+    created_at: datetime
+    expense_count: int
+    owed_by_user_total: Decimal
+    owed_to_user_total: Decimal
+    last_activity_at: datetime | None
+
+    @field_serializer("owed_by_user_total")
+    def _serialize_owed_by_user_total(self, owed_by_user_total: Decimal) -> float:
+        return float(owed_by_user_total)
+
+    @field_serializer("owed_to_user_total")
+    def _serialize_owed_to_user_total(self, owed_to_user_total: Decimal) -> float:
+        return float(owed_to_user_total)
+
+
 class ExpenseGroupDetail(ExpenseGroupPublic):
     members: list[ExpenseGroupMemberPublic] = []
     created_at: datetime
     expense_count: int
-    user_balance: Decimal
+    owed_by_user_total: Decimal
+    owed_to_user_total: Decimal
+    owed_by_user: list[ExpenseGroupDebtItem] = []
+    owed_to_user: list[ExpenseGroupDebtItem] = []
     last_activity_at: datetime | None
 
-    @field_serializer("user_balance")
-    def _serialize_user_balance(self, user_balance: Decimal) -> float:
-        return float(user_balance)
+    @field_serializer("owed_by_user_total")
+    def _serialize_owed_by_user_total(self, owed_by_user_total: Decimal) -> float:
+        return float(owed_by_user_total)
+
+    @field_serializer("owed_to_user_total")
+    def _serialize_owed_to_user_total(self, owed_to_user_total: Decimal) -> float:
+        return float(owed_to_user_total)
 
 
 class JoinGroupRequest(SQLModel):

@@ -27,6 +27,14 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           invite_code: "ABCD1234EF",
+          members: [],
+          created_at: "2026-01-05T10:30:00Z",
+          expense_count: 0,
+          owed_by_user_total: 0,
+          owed_to_user_total: 0,
+          owed_by_user: [],
+          owed_to_user: [],
+          last_activity_at: null,
         },
       };
       vi.mocked(api.post).mockResolvedValue(mockResponse);
@@ -45,6 +53,14 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           invite_code: "ABCD1234EF",
+          members: [],
+          created_at: "2026-01-05T10:30:00Z",
+          expense_count: 0,
+          owed_by_user_total: 0,
+          owed_to_user_total: 0,
+          owed_by_user: [],
+          owed_to_user: [],
+          last_activity_at: null,
         },
       };
       vi.mocked(api.post).mockResolvedValue(validResponse);
@@ -61,6 +77,14 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           invite_code: "ABCD1234EF",
+          members: [],
+          created_at: "2026-01-05T10:30:00Z",
+          expense_count: 0,
+          owed_by_user_total: 0,
+          owed_to_user_total: 0,
+          owed_by_user: [],
+          owed_to_user: [],
+          last_activity_at: null,
         },
       };
       vi.mocked(api.post).mockResolvedValue(invalidResponse);
@@ -109,7 +133,10 @@ describe("Groups Service", () => {
       ],
       created_at: "2026-01-05T10:30:00Z",
       expense_count: 5,
-      user_balance: 25.5,
+      owed_by_user_total: 5.5,
+      owed_to_user_total: 31,
+      owed_by_user: [{ user_id: 2, amount: 5.5 }],
+      owed_to_user: [{ user_id: 3, amount: 31 }],
       last_activity_at: "2026-01-05T14:20:00Z",
     };
 
@@ -155,7 +182,10 @@ describe("Groups Service", () => {
           ],
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 5,
-          user_balance: "25.5",
+          owed_by_user_total: "25.5",
+          owed_to_user_total: 0,
+          owed_by_user: [],
+          owed_to_user: [],
           last_activity_at: "2026-01-05T14:20:00Z",
         },
       };
@@ -173,7 +203,10 @@ describe("Groups Service", () => {
           invite_code: "ABCD1234EF",
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 5,
-          user_balance: "25.5",
+          owed_by_user_total: "25.5",
+          owed_to_user_total: 0,
+          owed_by_user: [],
+          owed_to_user: [],
           last_activity_at: "2026-01-05T14:20:00Z",
           // Missing members array
         },
@@ -228,7 +261,10 @@ describe("Groups Service", () => {
           members: [],
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 0,
-          user_balance: 0,
+          owed_by_user_total: 0,
+          owed_to_user_total: 0,
+          owed_by_user: [],
+          owed_to_user: [],
           last_activity_at: null,
         },
       };
@@ -237,6 +273,76 @@ describe("Groups Service", () => {
       const result = await groupsApi.getGroup(1);
 
       expect(result.members).toEqual([]);
+    });
+  });
+
+  describe("groupsApi.getUserGroups", () => {
+    it("returns list items with totals", async () => {
+      const mockResponse = {
+        data: {
+          items: [
+            {
+              id: 1,
+              name: "Trip",
+              created_by: 1,
+              invite_code: "ABC123",
+              created_at: "2026-01-05T10:30:00Z",
+              expense_count: 2,
+              owed_by_user_total: 10,
+              owed_to_user_total: 5,
+              last_activity_at: null,
+            },
+          ],
+          total: 1,
+          offset: 0,
+          limit: 12,
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(mockResponse);
+
+      const result = await groupsApi.getUserGroups();
+
+      expect(result.items[0]).toEqual(mockResponse.data.items[0]);
+    });
+
+    it("ignores detail fields on list items", async () => {
+      const responseWithExtras = {
+        data: {
+          items: [
+            {
+              id: 1,
+              name: "Trip",
+              created_by: 1,
+              invite_code: "ABC123",
+              created_at: "2026-01-05T10:30:00Z",
+              expense_count: 2,
+              owed_by_user_total: 10,
+              owed_to_user_total: 5,
+              owed_by_user: [],
+              owed_to_user: [],
+              last_activity_at: null,
+            },
+          ],
+          total: 1,
+          offset: 0,
+          limit: 12,
+        },
+      };
+      vi.mocked(api.get).mockResolvedValue(responseWithExtras);
+
+      const result = await groupsApi.getUserGroups();
+
+      expect(result.items[0]).toEqual({
+        id: 1,
+        name: "Trip",
+        created_by: 1,
+        invite_code: "ABC123",
+        created_at: "2026-01-05T10:30:00Z",
+        expense_count: 2,
+        owed_by_user_total: 10,
+        owed_to_user_total: 5,
+        last_activity_at: null,
+      });
     });
   });
 
@@ -260,7 +366,10 @@ describe("Groups Service", () => {
       ],
       created_at: "2026-01-05T10:30:00Z",
       expense_count: 0,
-      user_balance: 0,
+      owed_by_user_total: 0,
+      owed_to_user_total: 0,
+      owed_by_user: [],
+      owed_to_user: [],
       last_activity_at: null,
     };
 

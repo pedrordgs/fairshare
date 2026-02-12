@@ -5,16 +5,17 @@ from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer
 
 from auth.service import get_user_by_id
-from core.conf import settings
+from core.conf import get_settings
 from db.dependencies import DbSession
 
 from .models import User
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token/")
 
 
 async def get_authenticated_user(session: DbSession, token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+    settings = get_settings()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials", headers={"WWW-Authenticate": "Bearer"}
     )

@@ -5,7 +5,7 @@ import pytest
 
 from auth.models import User
 from auth.security import create_access_token, get_password_hash, verify_password
-from core.conf import settings
+from core.conf import get_settings
 
 
 class TestVerifyPassword:
@@ -45,6 +45,7 @@ class TestCreateAccessToken:
     def test_returns_valid_jwt(self) -> None:
         user = User(id=1, name="Test User", email="test@example.com", hashed_password="hashed")
         token = create_access_token(user)
+        settings = get_settings()
         decoded = jwt.decode(token, settings.secret_key, algorithms=[settings.access_token_hashing_algorithm])
         assert decoded["sub"] == "1"
         assert "exp" in decoded
@@ -52,24 +53,28 @@ class TestCreateAccessToken:
     def test_token_contains_user_id_as_subject(self) -> None:
         user = User(id=42, name="Test User", email="test@example.com", hashed_password="hashed")
         token = create_access_token(user)
+        settings = get_settings()
         decoded = jwt.decode(token, settings.secret_key, algorithms=[settings.access_token_hashing_algorithm])
         assert decoded["sub"] == "42"
 
     def test_token_expiration(self) -> None:
         user = User(id=1, name="Test User", email="test@example.com", hashed_password="hashed")
         token = create_access_token(user)
+        settings = get_settings()
         decoded = jwt.decode(token, settings.secret_key, algorithms=[settings.access_token_hashing_algorithm])
         assert "exp" in decoded
 
-    @patch.object(settings, "access_token_expire_minutes", -1)
     def test_expired_token_raises_error(self) -> None:
         user = User(id=1, name="Test User", email="test@example.com", hashed_password="hashed")
-        token = create_access_token(user)
-        with pytest.raises(jwt.ExpiredSignatureError):
-            jwt.decode(token, settings.secret_key, algorithms=[settings.access_token_hashing_algorithm])
+        settings = get_settings()
+        with patch.object(settings, "access_token_expire_minutes", -1):
+            token = create_access_token(user)
+            with pytest.raises(jwt.ExpiredSignatureError):
+                jwt.decode(token, settings.secret_key, algorithms=[settings.access_token_hashing_algorithm])
 
     def test_invalid_secret_raises_error(self) -> None:
         user = User(id=1, name="Test User", email="test@example.com", hashed_password="hashed")
         token = create_access_token(user)
+        settings = get_settings()
         with pytest.raises(jwt.InvalidSignatureError):
             jwt.decode(token, "wrong-secret-key", algorithms=[settings.access_token_hashing_algorithm])

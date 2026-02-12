@@ -146,7 +146,7 @@ describe("Groups Service", () => {
 
       const result = await groupsApi.getGroup(1);
 
-      expect(api.get).toHaveBeenCalledWith("/groups/1");
+      expect(api.get).toHaveBeenCalledWith("/groups/1/");
       expect(result).toEqual(mockResponse.data);
     });
 
@@ -377,7 +377,7 @@ describe("Groups Service", () => {
       vi.mocked(api.post).mockResolvedValue({ data: validGroupDetail });
       const result = await groupsApi.joinGroup("JOIN1234AB");
 
-      expect(api.post).toHaveBeenCalledWith("/groups/join", {
+      expect(api.post).toHaveBeenCalledWith("/groups/join/", {
         code: "JOIN1234AB",
       });
       expect(result).toEqual(validGroupDetail);

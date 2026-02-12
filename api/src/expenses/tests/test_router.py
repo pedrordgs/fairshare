@@ -33,7 +33,7 @@ class TestCreateExpense:
         group_id = group_response.json()["id"]
 
         response = client.post(
-            f"/groups/{group_id}/expenses", json={"name": "Dinner", "description": "Team dinner", "value": "45.50"}
+            f"/groups/{group_id}/expenses/", json={"name": "Dinner", "description": "Team dinner", "value": "45.50"}
         )
         assert response.status_code == 201
         data = response.json()
@@ -51,7 +51,7 @@ class TestCreateExpense:
         group_response = client.post("/groups/", json={"name": "Test Group"})
         group_id = group_response.json()["id"]
 
-        response = client.post(f"/groups/{group_id}/expenses", json={"name": "Coffee", "value": "5.00"})
+        response = client.post(f"/groups/{group_id}/expenses/", json={"name": "Coffee", "value": "5.00"})
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Coffee"
@@ -64,17 +64,17 @@ class TestCreateExpense:
         other_user, _ = create_test_user(session, "other@example.com")
         other_group = create_test_group(session, other_user, "Other Group")
 
-        response = client.post(f"/groups/{other_group.id}/expenses", json={"name": "Expense", "value": "10.00"})
+        response = client.post(f"/groups/{other_group.id}/expenses/", json={"name": "Expense", "value": "10.00"})
         assert response.status_code == 404
         assert response.json()["detail"] == "Group not found"
 
     def test_group_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
-        response = client.post("/groups/99999/expenses", json={"name": "Expense", "value": "10.00"})
+        response = client.post("/groups/99999/expenses/", json={"name": "Expense", "value": "10.00"})
         assert response.status_code == 404
 
     def test_no_token(self, client: TestClient) -> None:
-        response = client.post("/groups/1/expenses", json={"name": "Expense", "value": "10.00"})
+        response = client.post("/groups/1/expenses/", json={"name": "Expense", "value": "10.00"})
         assert response.status_code == 401
 
     def test_invalid_data_missing_name(self, authenticated_client: AuthenticatedClient) -> None:
@@ -82,7 +82,7 @@ class TestCreateExpense:
         group_response = client.post("/groups/", json={"name": "Test Group"})
         group_id = group_response.json()["id"]
 
-        response = client.post(f"/groups/{group_id}/expenses", json={"value": "10.00"})
+        response = client.post(f"/groups/{group_id}/expenses/", json={"value": "10.00"})
         assert response.status_code == 422
 
     def test_invalid_data_missing_value(self, authenticated_client: AuthenticatedClient) -> None:
@@ -90,7 +90,7 @@ class TestCreateExpense:
         group_response = client.post("/groups/", json={"name": "Test Group"})
         group_id = group_response.json()["id"]
 
-        response = client.post(f"/groups/{group_id}/expenses", json={"name": "Expense"})
+        response = client.post(f"/groups/{group_id}/expenses/", json={"name": "Expense"})
         assert response.status_code == 422
 
 
@@ -100,7 +100,7 @@ class TestListExpenses:
         group_response = client.post("/groups/", json={"name": "Test Group"})
         group_id = group_response.json()["id"]
 
-        response = client.get(f"/groups/{group_id}/expenses")
+        response = client.get(f"/groups/{group_id}/expenses/")
         assert response.status_code == 200
         data = response.json()
         assert data["items"] == []
@@ -114,10 +114,10 @@ class TestListExpenses:
         group_id = group_response.json()["id"]
 
         # Create some expenses
-        client.post(f"/groups/{group_id}/expenses", json={"name": "Expense 1", "value": "10.00"})
-        client.post(f"/groups/{group_id}/expenses", json={"name": "Expense 2", "value": "20.00"})
+        client.post(f"/groups/{group_id}/expenses/", json={"name": "Expense 1", "value": "10.00"})
+        client.post(f"/groups/{group_id}/expenses/", json={"name": "Expense 2", "value": "20.00"})
 
-        response = client.get(f"/groups/{group_id}/expenses")
+        response = client.get(f"/groups/{group_id}/expenses/")
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 2
@@ -133,10 +133,10 @@ class TestListExpenses:
 
         # Create 5 expenses
         for i in range(5):
-            client.post(f"/groups/{group_id}/expenses", json={"name": f"Expense {i}", "value": "10.00"})
+            client.post(f"/groups/{group_id}/expenses/", json={"name": f"Expense {i}", "value": "10.00"})
 
         # Get first page
-        response = client.get(f"/groups/{group_id}/expenses?offset=0&limit=2")
+        response = client.get(f"/groups/{group_id}/expenses/?offset=0&limit=2")
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 2
@@ -145,13 +145,13 @@ class TestListExpenses:
         assert data["limit"] == 2
 
         # Get second page
-        response = client.get(f"/groups/{group_id}/expenses?offset=2&limit=2")
+        response = client.get(f"/groups/{group_id}/expenses/?offset=2&limit=2")
         data = response.json()
         assert len(data["items"]) == 2
         assert data["offset"] == 2
 
         # Get last page
-        response = client.get(f"/groups/{group_id}/expenses?offset=4&limit=2")
+        response = client.get(f"/groups/{group_id}/expenses/?offset=4&limit=2")
         data = response.json()
         assert len(data["items"]) == 1
         assert data["offset"] == 4
@@ -161,11 +161,11 @@ class TestListExpenses:
         other_user, _ = create_test_user(session, "other@example.com")
         other_group = create_test_group(session, other_user, "Other Group")
 
-        response = client.get(f"/groups/{other_group.id}/expenses")
+        response = client.get(f"/groups/{other_group.id}/expenses/")
         assert response.status_code == 404
 
     def test_no_token(self, client: TestClient) -> None:
-        response = client.get("/groups/1/expenses")
+        response = client.get("/groups/1/expenses/")
         assert response.status_code == 401
 
 
@@ -176,11 +176,11 @@ class TestGetExpense:
         group_id = group_response.json()["id"]
 
         create_response = client.post(
-            f"/groups/{group_id}/expenses", json={"name": "Dinner", "description": "Team dinner", "value": "45.50"}
+            f"/groups/{group_id}/expenses/", json={"name": "Dinner", "description": "Team dinner", "value": "45.50"}
         )
         expense_id = create_response.json()["id"]
 
-        response = client.get(f"/expenses/{expense_id}")
+        response = client.get(f"/expenses/{expense_id}/")
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == expense_id
@@ -192,7 +192,7 @@ class TestGetExpense:
 
     def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
-        response = client.get("/expenses/99999")
+        response = client.get("/expenses/99999/")
         assert response.status_code == 404
         assert response.json()["detail"] == "Expense not found"
 
@@ -201,6 +201,8 @@ class TestGetExpense:
         # Create another user with their own group and expense
         other_user, _ = create_test_user(session, "other@example.com")
         other_group = create_test_group(session, other_user, "Other Group")
+        assert other_group.id is not None
+        assert other_user.id is not None
         expense = create_expense(
             session=session,
             group_id=other_group.id,
@@ -208,12 +210,12 @@ class TestGetExpense:
             expense_in=ExpenseCreate(name="Other Expense", value=Decimal("10.00")),
         )
 
-        response = client.get(f"/expenses/{expense.id}")
+        response = client.get(f"/expenses/{expense.id}/")
         assert response.status_code == 404
         assert response.json()["detail"] == "Expense not found"
 
     def test_no_token(self, client: TestClient) -> None:
-        response = client.get("/expenses/1")
+        response = client.get("/expenses/1/")
         assert response.status_code == 401
 
 
@@ -224,12 +226,12 @@ class TestUpdateExpense:
         group_id = group_response.json()["id"]
 
         create_response = client.post(
-            f"/groups/{group_id}/expenses", json={"name": "Original", "description": "Original desc", "value": "10.00"}
+            f"/groups/{group_id}/expenses/", json={"name": "Original", "description": "Original desc", "value": "10.00"}
         )
         expense_id = create_response.json()["id"]
 
         response = client.patch(
-            f"/expenses/{expense_id}", json={"name": "Updated", "description": "Updated desc", "value": "25.00"}
+            f"/expenses/{expense_id}/", json={"name": "Updated", "description": "Updated desc", "value": "25.00"}
         )
         assert response.status_code == 200
         data = response.json()
@@ -243,12 +245,12 @@ class TestUpdateExpense:
         group_id = group_response.json()["id"]
 
         create_response = client.post(
-            f"/groups/{group_id}/expenses", json={"name": "Original", "description": "Original desc", "value": "10.00"}
+            f"/groups/{group_id}/expenses/", json={"name": "Original", "description": "Original desc", "value": "10.00"}
         )
         expense_id = create_response.json()["id"]
 
         # Only update name
-        response = client.patch(f"/expenses/{expense_id}", json={"name": "Updated Name"})
+        response = client.patch(f"/expenses/{expense_id}/", json={"name": "Updated Name"})
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "Updated Name"
@@ -262,9 +264,12 @@ class TestUpdateExpense:
         other_group = create_test_group(session, other_user, "Other Group")
 
         # Add current user as member
+        assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 
         # Other user creates an expense
+        assert other_group.id is not None
+        assert other_user.id is not None
         expense = create_expense(
             session=session,
             group_id=other_group.id,
@@ -273,17 +278,17 @@ class TestUpdateExpense:
         )
 
         # Current user tries to update it
-        response = client.patch(f"/expenses/{expense.id}", json={"name": "Hijacked"})
+        response = client.patch(f"/expenses/{expense.id}/", json={"name": "Hijacked"})
         assert response.status_code == 403
         assert response.json()["detail"] == "Not authorized to modify this expense"
 
     def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
-        response = client.patch("/expenses/99999", json={"name": "Updated"})
+        response = client.patch("/expenses/99999/", json={"name": "Updated"})
         assert response.status_code == 404
 
     def test_no_token(self, client: TestClient) -> None:
-        response = client.patch("/expenses/1", json={"name": "Updated"})
+        response = client.patch("/expenses/1/", json={"name": "Updated"})
         assert response.status_code == 401
 
 
@@ -293,14 +298,14 @@ class TestDeleteExpense:
         group_response = client.post("/groups/", json={"name": "Test Group"})
         group_id = group_response.json()["id"]
 
-        create_response = client.post(f"/groups/{group_id}/expenses", json={"name": "To Delete", "value": "10.00"})
+        create_response = client.post(f"/groups/{group_id}/expenses/", json={"name": "To Delete", "value": "10.00"})
         expense_id = create_response.json()["id"]
 
-        response = client.delete(f"/expenses/{expense_id}")
+        response = client.delete(f"/expenses/{expense_id}/")
         assert response.status_code == 204
 
         # Verify expense is deleted
-        get_response = client.get(f"/expenses/{expense_id}")
+        get_response = client.get(f"/expenses/{expense_id}/")
         assert get_response.status_code == 404
 
     def test_not_the_creator(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
@@ -310,9 +315,12 @@ class TestDeleteExpense:
         other_group = create_test_group(session, other_user, "Other Group")
 
         # Add current user as member
+        assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 
         # Other user creates an expense
+        assert other_group.id is not None
+        assert other_user.id is not None
         expense = create_expense(
             session=session,
             group_id=other_group.id,
@@ -321,16 +329,16 @@ class TestDeleteExpense:
         )
 
         # Current user tries to delete it
-        response = client.delete(f"/expenses/{expense.id}")
+        response = client.delete(f"/expenses/{expense.id}/")
         assert response.status_code == 403
 
     def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
-        response = client.delete("/expenses/99999")
+        response = client.delete("/expenses/99999/")
         assert response.status_code == 404
 
     def test_no_token(self, client: TestClient) -> None:
-        response = client.delete("/expenses/1")
+        response = client.delete("/expenses/1/")
         assert response.status_code == 401
 
 
@@ -344,12 +352,12 @@ class TestExpenseIsolation:
         group2 = client.post("/groups/", json={"name": "Group 2"}).json()
 
         # Create expenses in each group
-        client.post(f"/groups/{group1['id']}/expenses", json={"name": "Expense 1", "value": "10.00"})
-        client.post(f"/groups/{group2['id']}/expenses", json={"name": "Expense 2", "value": "20.00"})
+        client.post(f"/groups/{group1['id']}/expenses/", json={"name": "Expense 1", "value": "10.00"})
+        client.post(f"/groups/{group2['id']}/expenses/", json={"name": "Expense 2", "value": "20.00"})
 
         # Verify each group only sees its own expenses
-        group1_expenses = client.get(f"/groups/{group1['id']}/expenses").json()
-        group2_expenses = client.get(f"/groups/{group2['id']}/expenses").json()
+        group1_expenses = client.get(f"/groups/{group1['id']}/expenses/").json()
+        group2_expenses = client.get(f"/groups/{group2['id']}/expenses/").json()
 
         assert group1_expenses["total"] == 1
         assert group1_expenses["items"][0]["name"] == "Expense 1"

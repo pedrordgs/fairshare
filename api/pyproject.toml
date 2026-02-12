@@ -44,6 +44,10 @@ exclude = [".cache", ".venv"]
 format.skip-magic-trailing-comma = true
 lint.isort.split-on-trailing-comma = false
 
+[tool.pytest.ini_options]
+testpaths = ["src"]
+norecursedirs = ["data", ".venv", ".cache", ".ruff_cache", ".pytest_cache", "__pycache__"]
+
 [tool.pyproject-fmt]
 keep_full_version = true
 

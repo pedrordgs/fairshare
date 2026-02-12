@@ -8,10 +8,20 @@ from sqlmodel.pool import StaticPool
 from auth.models import User, UserCreate
 from auth.security import create_access_token
 from auth.service import create_user
+from core.conf import get_settings
 from db.dependencies import get_database_session
 from main import app
 
 type AuthenticatedClient = tuple[TestClient, User]
+
+
+@pytest.fixture(autouse=True)
+def settings_fixture(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    monkeypatch.setenv("DATABASE_DSN", "postgresql+psycopg://dummy")
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture(name="session")

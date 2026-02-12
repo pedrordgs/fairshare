@@ -1,16 +1,22 @@
-from fastapi import Depends
-from typing import Annotated
 from collections.abc import Generator
+from functools import lru_cache
+from typing import Annotated
 
+from fastapi import Depends
 from sqlmodel import Session, create_engine
+from sqlalchemy.engine import Engine
 
-from core.conf import settings
+from core.conf import get_settings
 
-engine = create_engine(str(settings.database_dsn), echo=settings.debug)
+
+@lru_cache
+def get_engine() -> Engine:
+    settings = get_settings()
+    return create_engine(str(settings.database_dsn), echo=settings.debug)
 
 
 def get_database_session() -> Generator[Session, None, None]:
-    with Session(engine) as session:
+    with Session(get_engine()) as session:
         yield session
 
 

@@ -146,7 +146,7 @@ describe("Auth Service", () => {
       const result = await authApi.login("test@example.com", "password123");
 
       expect(api.post).toHaveBeenCalledWith(
-        "/auth/token",
+        "/auth/token/",
         expect.any(FormData),
         {
           headers: {
@@ -200,7 +200,7 @@ describe("Auth Service", () => {
 
       const result = await authApi.register(userData);
 
-      expect(api.post).toHaveBeenCalledWith("/auth/register", userData);
+      expect(api.post).toHaveBeenCalledWith("/auth/register/", userData);
       expect(result).toEqual(mockResponse.data);
     });
 
@@ -245,7 +245,7 @@ describe("Auth Service", () => {
 
       const result = await authApi.getMe();
 
-      expect(api.get).toHaveBeenCalledWith("/auth/me");
+      expect(api.get).toHaveBeenCalledWith("/auth/me/");
       expect(result).toEqual(mockUser);
     });
 
@@ -277,7 +277,7 @@ describe("Auth Service", () => {
       const updateData = { name: "Updated Name" };
       const result = await authApi.updateMe(updateData);
 
-      expect(api.patch).toHaveBeenCalledWith("/auth/me", updateData);
+      expect(api.patch).toHaveBeenCalledWith("/auth/me/", updateData);
       expect(result).toEqual(mockUser);
     });
 
@@ -288,7 +288,7 @@ describe("Auth Service", () => {
       const updateData = { name: "New Name", email: "new@example.com" };
       const result = await authApi.updateMe(updateData);
 
-      expect(api.patch).toHaveBeenCalledWith("/auth/me", updateData);
+      expect(api.patch).toHaveBeenCalledWith("/auth/me/", updateData);
       expect(result).toEqual(mockUser);
     });
 

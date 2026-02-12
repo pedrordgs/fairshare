@@ -65,7 +65,7 @@ api.interceptors.response.use(
         }
       } else if (status === 401) {
         // Skip 401 handling for login endpoint - let LoginForm handle wrong credentials
-        if (error.config?.url === "/auth/token") {
+        if (error.config?.url === "/auth/token/") {
           return Promise.reject(error);
         }
         toast.error("Your session has expired. Please sign in again.");

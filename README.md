@@ -1,4 +1,4 @@
-# FairShare
+# FairShare - WIP
 
 An open-source expense splitting and settlement tracking application. Split bills fairly, track shared expenses, and settle up with friends.
 

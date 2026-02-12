@@ -4,7 +4,7 @@ import jwt
 from pwdlib import PasswordHash
 
 from auth.models import User
-from core.conf import settings
+from core.conf import get_settings
 
 password_hash = PasswordHash.recommended()
 
@@ -18,6 +18,7 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(user: User) -> str:
+    settings = get_settings()
     token_payload = {
         "sub": str(user.id),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes),

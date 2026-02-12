@@ -50,7 +50,7 @@ export const groupsApi = {
    */
   getGroup: async (groupId: number): Promise<ExpenseGroupDetail> => {
     validateGroupId(groupId);
-    const response = await api.get(`/groups/${groupId}`);
+    const response = await api.get(`/groups/${groupId}/`);
     // Runtime validation with Zod schema
     return ExpenseGroupDetailSchema.parse(response.data);
   },
@@ -86,7 +86,7 @@ export const groupsApi = {
    */
   joinGroup: async (code: string): Promise<ExpenseGroupDetail> => {
     const payload: JoinGroupRequest = JoinGroupRequestSchema.parse({ code });
-    const response = await api.post("/groups/join", payload);
+    const response = await api.post("/groups/join/", payload);
     return ExpenseGroupDetailSchema.parse(response.data);
   },
 };

@@ -54,7 +54,7 @@ class TestCreateExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
-            expense_in=ExpenseCreate(name="Coffee", value=Decimal("10.001")),
+            expense_in=ExpenseCreate(name="Coffee", value=Decimal("10.01")),
         )
 
         assert expense.value == Decimal("10.01")

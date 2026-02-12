@@ -6,7 +6,12 @@ from expenses.router import router as expenses_router
 from groups.router import router as groups_router
 
 app = FastAPI(
-    title="FairShare API", description="Backend API for the FairShare expense splitting application", version="0.1.0"
+    title="FairShare API",
+    description="Backend API for the FairShare expense splitting application",
+    version="0.1.0",
+    docs_url="/docs/",
+    redoc_url="/redoc/",
+    openapi_url="/openapi.json/",
 )
 
 app.add_middleware(

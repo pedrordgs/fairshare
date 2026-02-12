@@ -51,7 +51,7 @@ async def list_expense_groups(
     return PaginatedResponse[ExpenseGroupListItem](items=items, total=total, offset=offset, limit=limit)
 
 
-@router.get("/{group_id}", response_model=ExpenseGroupDetail)
+@router.get("/{group_id}/", response_model=ExpenseGroupDetail)
 async def get_expense_group(
     *, session: DbSession, group: GroupAsMember, authenticated_user: AuthenticatedUser
 ) -> ExpenseGroupDetail:
@@ -59,7 +59,7 @@ async def get_expense_group(
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
-@router.patch("/{group_id}", response_model=ExpenseGroupDetail)
+@router.patch("/{group_id}/", response_model=ExpenseGroupDetail)
 async def update_expense_group(
     *, session: DbSession, group: GroupAsOwner, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
 ) -> ExpenseGroupDetail:
@@ -68,13 +68,13 @@ async def update_expense_group(
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
-@router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{group_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_expense_group(*, session: DbSession, group: GroupAsOwner) -> None:
     """Delete an expense group. Only the owner can delete."""
     delete_group(session=session, group=group)
 
 
-@router.post("/join", response_model=ExpenseGroupDetail)
+@router.post("/join/", response_model=ExpenseGroupDetail)
 async def join_group_by_code(
     *, session: DbSession, authenticated_user: AuthenticatedUser, join_in: JoinGroupRequest
 ) -> ExpenseGroupDetail:

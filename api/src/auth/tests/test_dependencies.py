@@ -7,7 +7,7 @@ from auth.dependencies import get_authenticated_user
 from auth.models import User, UserCreate
 from auth.security import create_access_token
 from auth.service import create_user
-from core.conf import settings
+from core.conf import get_settings
 
 
 class TestGetAuthenticatedUser:
@@ -32,6 +32,7 @@ class TestGetAuthenticatedUser:
     @pytest.mark.asyncio
     async def test_raises_401_with_wrong_secret(self, session: Session) -> None:
         user = User(id=1, name="Test User", email="test@example.com", hashed_password="hashed")
+        settings = get_settings()
         token = jwt.encode({"sub": str(user.id)}, "wrong-secret", algorithm=settings.access_token_hashing_algorithm)
         with pytest.raises(HTTPException) as exc_info:
             await get_authenticated_user(session=session, token=token)
@@ -40,6 +41,7 @@ class TestGetAuthenticatedUser:
 
     @pytest.mark.asyncio
     async def test_raises_401_with_nonexistent_user(self, session: Session) -> None:
+        settings = get_settings()
         token = jwt.encode({"sub": "999"}, settings.secret_key, algorithm=settings.access_token_hashing_algorithm)
         with pytest.raises(HTTPException) as exc_info:
             await get_authenticated_user(session=session, token=token)
@@ -48,6 +50,7 @@ class TestGetAuthenticatedUser:
 
     @pytest.mark.asyncio
     async def test_raises_401_with_missing_sub_claim(self, session: Session) -> None:
+        settings = get_settings()
         token = jwt.encode({"foo": "bar"}, settings.secret_key, algorithm=settings.access_token_hashing_algorithm)
         with pytest.raises(HTTPException) as exc_info:
             await get_authenticated_user(session=session, token=token)
@@ -56,6 +59,7 @@ class TestGetAuthenticatedUser:
 
     @pytest.mark.asyncio
     async def test_raises_401_with_empty_sub_claim(self, session: Session) -> None:
+        settings = get_settings()
         token = jwt.encode({"sub": ""}, settings.secret_key, algorithm=settings.access_token_hashing_algorithm)
         with pytest.raises(HTTPException) as exc_info:
             await get_authenticated_user(session=session, token=token)
@@ -67,6 +71,7 @@ class TestGetAuthenticatedUser:
         user = create_user(
             session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="password123")
         )
+        settings = get_settings()
         token = jwt.encode(
             {"sub": str(user.id), "exp": 0}, settings.secret_key, algorithm=settings.access_token_hashing_algorithm
         )

@@ -1,1 +1,3 @@
 .opencode
+.ruff_cache/
+.cursor/

@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { JoinGroupForm } from "./JoinGroupForm";
 import { groupsApi } from "@services/groups";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@services/groups", () => ({
   groupsApi: {
@@ -19,9 +20,24 @@ vi.mock("sonner", () => ({
 }));
 
 describe("JoinGroupForm", () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
     vi.clearAllMocks();
   });
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    );
+  };
 
   it("submits invite code to join group", async () => {
     const user = userEvent.setup();
@@ -40,7 +56,7 @@ describe("JoinGroupForm", () => {
       last_activity_at: null,
     });
 
-    render(<JoinGroupForm />);
+    renderWithProviders(<JoinGroupForm />);
 
     await user.type(screen.getByLabelText(/invite code/i), "join-1234ab");
     await user.click(screen.getByRole("button", { name: /join group/i }));
@@ -69,7 +85,7 @@ describe("JoinGroupForm", () => {
     };
     vi.mocked(groupsApi.joinGroup).mockResolvedValue(group);
 
-    render(<JoinGroupForm onSuccess={onSuccess} />);
+    renderWithProviders(<JoinGroupForm onSuccess={onSuccess} />);
 
     await user.type(screen.getByLabelText(/invite code/i), "code123456");
     await user.click(screen.getByRole("button", { name: /join group/i }));

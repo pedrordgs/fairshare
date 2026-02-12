@@ -5,13 +5,14 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from core.conf import settings
+from core.conf import get_settings
 from sqlmodel import SQLModel
 
 # We need to import all models to ensure they are registered
 from db.models import *  # noqa: F403
 
 config = context.config
+settings = get_settings()
 config.set_main_option("sqlalchemy.url", str(settings.database_dsn))
 
 if config.config_file_name is not None:

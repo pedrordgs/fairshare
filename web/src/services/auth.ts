@@ -77,7 +77,7 @@ export const authApi = {
     formData.append("username", email);
     formData.append("password", password);
 
-    const response = await api.post("/auth/token", formData, {
+    const response = await api.post("/auth/token/", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -94,7 +94,7 @@ export const authApi = {
    */
   register: async (userData: UserCreate): Promise<Token> => {
     // First, register the user
-    await api.post("/auth/register", userData);
+    await api.post("/auth/register/", userData);
     // Then, login to get the access token
     return authApi.login(userData.email, userData.password);
   },
@@ -106,7 +106,7 @@ export const authApi = {
    * @returns Promise resolving to the current user's profile data
    */
   getMe: async (): Promise<User> => {
-    const response = await api.get("/auth/me");
+    const response = await api.get("/auth/me/");
     return response.data;
   },
 
@@ -118,7 +118,7 @@ export const authApi = {
    * @returns Promise resolving to the updated user profile
    */
   updateMe: async (userData: UserUpdate): Promise<User> => {
-    const response = await api.patch("/auth/me", userData);
+    const response = await api.patch("/auth/me/", userData);
     return response.data;
   },
 };

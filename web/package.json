@@ -24,7 +24,7 @@
     "@tailwindcss/postcss": "^4.1.18",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-router": "^1.157.16",
-    "axios": "^1.13.4",
+    "axios": "^1.13.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.71.1",

@@ -1,10 +1,8 @@
 from datetime import datetime
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, cast
 
 from sqlmodel import Session, col, func, select
-from sqlalchemy.sql import ColumnElement
 
 from auth.models import User
 
@@ -235,20 +233,12 @@ def calculate_user_debts(
 
 def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list[tuple[int, int, Decimal]]:
     """Calculate a minimized settlement plan for a group."""
-    split_table = cast(Any, ExpenseSplit).__table__
-    expense_table = cast(Any, Expense).__table__
-    split_user_id: ColumnElement[int] = split_table.c.user_id
-    expense_creator_id: ColumnElement[int] = expense_table.c.created_by
-    expense_group_id: ColumnElement[int] = expense_table.c.group_id
-    expense_id: ColumnElement[int] = expense_table.c.id
-    split_expense_id: ColumnElement[int] = split_table.c.expense_id
-
     statement = (
-        select(split_user_id, expense_creator_id, func.coalesce(func.sum(ExpenseSplit.share), 0))
-        .join(Expense, split_expense_id == expense_id)
-        .where(expense_group_id == group_id)
-        .where(split_user_id != expense_creator_id)
-        .group_by(split_user_id, expense_creator_id)
+        select(ExpenseSplit.user_id, Expense.created_by, func.coalesce(func.sum(ExpenseSplit.share), 0))
+        .join(Expense, ExpenseSplit.expense_id == Expense.id)
+        .where(Expense.group_id == group_id)
+        .where(ExpenseSplit.user_id != Expense.created_by)
+        .group_by(ExpenseSplit.user_id, Expense.created_by)
     )
 
     balances: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
@@ -301,20 +291,14 @@ def calculate_user_debt_totals(
     if not group_ids:
         return {}
 
-    split_table = cast(Any, ExpenseSplit).__table__
-    expense_table = cast(Any, Expense).__table__
-    split_user_id: ColumnElement[int] = split_table.c.user_id
-    expense_creator_id: ColumnElement[int] = expense_table.c.created_by
-    expense_group_id: ColumnElement[int] = expense_table.c.group_id
-    expense_id: ColumnElement[int] = expense_table.c.id
-    split_expense_id: ColumnElement[int] = split_table.c.expense_id
-
     statement = (
-        select(expense_group_id, split_user_id, expense_creator_id, func.coalesce(func.sum(ExpenseSplit.share), 0))
-        .join(Expense, split_expense_id == expense_id)
-        .where(expense_group_id.in_(group_ids))
-        .where(split_user_id != expense_creator_id)
-        .group_by(expense_group_id, split_user_id, expense_creator_id)
+        select(
+            Expense.group_id, ExpenseSplit.user_id, Expense.created_by, func.coalesce(func.sum(ExpenseSplit.share), 0)
+        )
+        .join(Expense, ExpenseSplit.expense_id == Expense.id)
+        .where(Expense.group_id.in_(group_ids))
+        .where(ExpenseSplit.user_id != Expense.created_by)
+        .group_by(Expense.group_id, ExpenseSplit.user_id, Expense.created_by)
     )
 
     balance_by_group: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))

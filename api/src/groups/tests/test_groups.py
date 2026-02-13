@@ -323,6 +323,110 @@ class TestGroupSettlementPayment:
         assert settlement_response.json()["detail"] == "Member not found"
 
 
+class TestListGroupSettlements:
+    def test_lists_group_settlements(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement History"})
+        group_id = create_response.json()["id"]
+
+        jane, jane_token = create_test_user(session, "jane-history@example.com", "Jane")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert group.id is not None
+        assert owner.id is not None
+        assert jane.id is not None
+
+        add_member(session=session, group=group, user_id=jane.id)
+
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=owner.id,
+            expense_in=ExpenseCreate(name="Lunch", value=Decimal("12.00")),
+        )
+
+        client.headers["Authorization"] = f"Bearer {jane_token}"
+        settlement_response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 4.0}
+        )
+        assert settlement_response.status_code == 201
+
+        history_response = client.get(f"/groups/{group_id}/settlements/?offset=0&limit=10")
+        assert history_response.status_code == 200
+        data = history_response.json()
+        assert data["total"] == 1
+        assert data["offset"] == 0
+        assert data["limit"] == 10
+        assert len(data["items"]) == 1
+        item = data["items"][0]
+        assert item["group_id"] == group_id
+        assert item["debtor_id"] == jane.id
+        assert item["creditor_id"] == owner.id
+        assert item["amount"] == 4.0
+        assert item["created_at"] is not None
+
+    def test_paginates_group_settlements(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement Paging"})
+        group_id = create_response.json()["id"]
+
+        jane, jane_token = create_test_user(session, "jane-paging@example.com", "Jane")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert group.id is not None
+        assert owner.id is not None
+        assert jane.id is not None
+
+        add_member(session=session, group=group, user_id=jane.id)
+
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=owner.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
+        )
+
+        client.headers["Authorization"] = f"Bearer {jane_token}"
+        settlement_response_1 = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 3.0}
+        )
+        assert settlement_response_1.status_code == 201
+        settlement_response_2 = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 2.0}
+        )
+        assert settlement_response_2.status_code == 201
+
+        page_one = client.get(f"/groups/{group_id}/settlements/?offset=0&limit=1")
+        assert page_one.status_code == 200
+        page_one_data = page_one.json()
+        assert page_one_data["total"] == 2
+        assert page_one_data["offset"] == 0
+        assert page_one_data["limit"] == 1
+        assert len(page_one_data["items"]) == 1
+
+        page_two = client.get(f"/groups/{group_id}/settlements/?offset=1&limit=1")
+        assert page_two.status_code == 200
+        page_two_data = page_two.json()
+        assert page_two_data["total"] == 2
+        assert page_two_data["offset"] == 1
+        assert page_two_data["limit"] == 1
+        assert len(page_two_data["items"]) == 1
+        assert page_one_data["items"][0]["id"] != page_two_data["items"][0]["id"]
+
+    def test_rejects_non_member(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement Access"})
+        group_id = create_response.json()["id"]
+
+        jane, jane_token = create_test_user(session, "jane-access@example.com", "Jane")
+        assert owner.id is not None
+        assert jane.id is not None
+
+        client.headers["Authorization"] = f"Bearer {jane_token}"
+        response = client.get(f"/groups/{group_id}/settlements/")
+        assert response.status_code == 404
+
+
 class TestUpdateGroup:
     def test_success(self, authenticated_client: AuthenticatedClient) -> None:
         client, user = authenticated_client

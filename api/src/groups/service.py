@@ -46,12 +46,7 @@ def create_group(*, session: Session, user: User, group_in: ExpenseGroupCreate) 
     session.add(db_group)
     session.commit()
     session.refresh(db_group)
-
-    # Add creator as a member
-    assert db_group.id is not None
-    assert user.id is not None
     add_member(session=session, group=db_group, user_id=user.id)
-
     return db_group
 
 
@@ -101,7 +96,6 @@ def is_member(*, session: Session, group_id: int, user_id: int) -> bool:
 
 def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
     """Add a user to a group."""
-    assert group.id is not None
     db_member = ExpenseGroupMember(group_id=group.id, user_id=user_id)
     session.add(db_member)
     session.commit()
@@ -111,7 +105,6 @@ def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> Expens
 
 def remove_member(*, session: Session, group: ExpenseGroup, user_id: int) -> None:
     """Remove a user from a group."""
-    assert group.id is not None
     member = get_member(session=session, group_id=group.id, user_id=user_id)
     if member:
         session.delete(member)
@@ -156,7 +149,6 @@ def get_user_groups_paginated(
 
 def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | None) -> ExpenseGroupDetail:
     """Get expense group with members details."""
-    assert group.id is not None
     members = get_group_members(session=session, group_id=group.id)
     expense_count = get_group_expense_count(session=session, group_id=group.id)
     last_activity_at = get_group_last_activity(session=session, group_id=group.id)
@@ -196,6 +188,30 @@ def get_group_last_activity(*, session: Session, group_id: int) -> datetime | No
     return session.exec(statement).one()
 
 
+def get_group_settlements_count(*, session: Session, group_id: int) -> int:
+    """Count total settlements in a group."""
+
+    statement = (
+        select(func.count()).select_from(ExpenseGroupSettlement).where(ExpenseGroupSettlement.group_id == group_id)
+    )
+    return session.exec(statement).one()
+
+
+def get_group_settlements_paginated(
+    *, session: Session, group_id: int, offset: int = 0, limit: int = 20
+) -> list[ExpenseGroupSettlement]:
+    """Get paginated settlements in a group, sorted by newest first."""
+
+    statement = select(ExpenseGroupSettlement).where(ExpenseGroupSettlement.group_id == group_id)
+
+    statement = (
+        statement.order_by(col(ExpenseGroupSettlement.created_at).desc(), col(ExpenseGroupSettlement.id).desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return list(session.exec(statement).all())
+
+
 def get_group_expense_counts(*, session: Session, group_ids: list[int]) -> dict[int, int]:
     """Get total expenses per group."""
     if not group_ids:
@@ -230,7 +246,6 @@ def get_group_list_item(
     last_activity_by_group: dict[int, datetime | None],
 ) -> ExpenseGroupListItem:
     """Get expense group list item for a user with totals."""
-    assert group.id is not None
     expense_count = expense_counts.get(group.id, 0)
     last_activity_at = last_activity_by_group.get(group.id)
     owed_by_user_total, owed_to_user_total = totals_by_group.get(group.id, (Decimal("0.00"), Decimal("0.00")))

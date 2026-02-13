@@ -20,6 +20,11 @@ fairshare/
 └── web/                    # React frontend
 ```
 
+## Important Notes
+
+- Always check existing patterns in the codebase before implementing
+- Never change `todo.md` file unless explicitly told to do so
+
 ## API
 
 ### Architecture Patterns
@@ -64,7 +69,6 @@ uv run alembic current
 
 ### Important Notes
 
-- Always check existing patterns in the codebase before implementing
 - Use `uv` for Python dependency management
 - Prefer async functions for I/O operations
 - Incude type hints

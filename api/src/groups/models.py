@@ -66,6 +66,19 @@ class ExpenseGroupMemberPublic(SQLModel):
     email: EmailStr
 
 
+class ExpenseGroupSettlementPublic(SQLModel):
+    id: int
+    group_id: int
+    debtor_id: int
+    creditor_id: int
+    amount: Decimal
+    created_at: datetime
+
+    @field_serializer("amount")
+    def _serialize_amount(self, amount: Decimal) -> float:
+        return float(amount)
+
+
 class ExpenseGroupDebtItem(SQLModel):
     user_id: int
     amount: Decimal

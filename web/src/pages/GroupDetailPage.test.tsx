@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GroupDetailPage } from "./GroupDetailPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as GroupsService from "@services/groups";
 import * as ExpensesService from "@services/expenses";
+import * as SettlementsService from "@services/settlements";
 import * as AuthContext from "@context/AuthContext";
 import * as ErrorUtils from "@utils/errorUtils";
 
@@ -23,6 +24,12 @@ vi.mock("@services/expenses", () => ({
   expensesApi: {
     listGroupExpenses: vi.fn(),
     listAllGroupExpenses: vi.fn(),
+  },
+}));
+
+vi.mock("@services/settlements", () => ({
+  settlementsApi: {
+    listGroupSettlements: vi.fn(),
   },
 }));
 
@@ -77,6 +84,8 @@ describe("GroupDetailPage", () => {
       offset: 0,
       limit: 20,
     });
+
+    mockSettlements();
   });
 
   afterEach(() => {
@@ -87,6 +96,27 @@ describe("GroupDetailPage", () => {
     return render(
       <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
     );
+  };
+
+  const mockSettlements = (
+    items: Array<{
+      id: number;
+      group_id: number;
+      debtor_id: number;
+      creditor_id: number;
+      amount: number;
+      created_at: string;
+    }> = [],
+    total = 0,
+  ) => {
+    vi.mocked(
+      SettlementsService.settlementsApi.listGroupSettlements,
+    ).mockResolvedValue({
+      items,
+      total,
+      offset: 0,
+      limit: 8,
+    });
   };
 
   const baseGroup = {
@@ -162,6 +192,19 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements(
+        [
+          {
+            id: 10,
+            group_id: 1,
+            debtor_id: 1,
+            creditor_id: 2,
+            amount: 25,
+            created_at: "2026-01-05T12:30:00Z",
+          },
+        ],
+        1,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -234,6 +277,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -257,6 +301,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -279,6 +324,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -308,6 +354,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -335,6 +382,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -362,6 +410,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -385,6 +434,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -413,6 +463,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -450,6 +501,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -520,6 +572,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -546,6 +599,7 @@ describe("GroupDetailPage", () => {
         offset: 0,
         limit: 20,
       });
+      mockSettlements();
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -558,6 +612,159 @@ describe("GroupDetailPage", () => {
             userId: 1,
           }),
         );
+      });
+    });
+  });
+
+  describe("Settlement History", () => {
+    it("renders settlement rows with member names", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [
+          { user_id: 1, name: "John Doe", email: "john@example.com" },
+          { user_id: 2, name: "Jane Smith", email: "jane@example.com" },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements(
+        [
+          {
+            id: 1,
+            group_id: 1,
+            debtor_id: 1,
+            creditor_id: 2,
+            amount: 12.5,
+            created_at: "2026-01-10T09:00:00Z",
+          },
+        ],
+        1,
+      );
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("tab", { name: "Settlements" }),
+        ).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("tab", { name: "Settlements" }));
+
+      const settlementsPanel = screen.getByRole("tabpanel");
+
+      await waitFor(() => {
+        expect(
+          within(settlementsPanel).getByText(/John Doe paid Jane Smith/i),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("renders empty state when no settlements", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [{ user_id: 1, name: "John Doe", email: "john@example.com" }],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+
+      renderWithProviders(<GroupDetailPage />);
+
+      const user = userEvent.setup();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("tab", { name: "Settlements" }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("tab", { name: "Settlements" }));
+
+      const settlementsPanel = screen.getByRole("tabpanel");
+
+      await waitFor(() => {
+        expect(
+          within(settlementsPanel).getByText(/No settlements yet/i),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("renders settlements from the API", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [
+          { user_id: 1, name: "John Doe", email: "john@example.com" },
+          { user_id: 2, name: "Jane Smith", email: "jane@example.com" },
+          { user_id: 3, name: "Eli Kay", email: "eli@example.com" },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      const settlementMine = {
+        id: 1,
+        group_id: 1,
+        debtor_id: 1,
+        creditor_id: 2,
+        amount: 12.5,
+        created_at: "2026-01-10T09:00:00Z",
+      };
+      const settlementOther = {
+        id: 2,
+        group_id: 1,
+        debtor_id: 3,
+        creditor_id: 2,
+        amount: 7.25,
+        created_at: "2026-01-12T11:00:00Z",
+      };
+
+      mockSettlements([settlementMine, settlementOther], 2);
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("tab", { name: "Settlements" }),
+        ).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("tab", { name: "Settlements" }));
+
+      const settlementsPanel = screen.getByRole("tabpanel");
+
+      await waitFor(() => {
+        expect(
+          within(settlementsPanel).getByText(/John Doe paid Jane Smith/i),
+        ).toBeInTheDocument();
+        expect(
+          within(settlementsPanel).getByText(/Eli Kay paid Jane Smith/i),
+        ).toBeInTheDocument();
       });
     });
   });

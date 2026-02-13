@@ -3,6 +3,8 @@ import React, { useState, useCallback, useId } from "react";
 export interface TabsProps {
   children: React.ReactNode;
   defaultTab?: string;
+  activeTab?: string;
+  onTabChange?: (value: string) => void;
   className?: string;
 }
 
@@ -15,9 +17,11 @@ export interface TabItemProps {
 export const Tabs: React.FC<TabsProps> = ({
   children,
   defaultTab,
+  activeTab,
+  onTabChange,
   className = "",
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab || "");
+  const [internalActiveTab, setInternalActiveTab] = useState(defaultTab || "");
   const baseId = useId();
 
   const tabs = React.Children.toArray(children).filter(
@@ -25,7 +29,18 @@ export const Tabs: React.FC<TabsProps> = ({
       React.isValidElement(child) && child.type === TabItem,
   );
 
-  const activeTabValue = activeTab || tabs[0]?.props.value || "";
+  const activeTabValue =
+    (activeTab ?? internalActiveTab) || tabs[0]?.props.value || "";
+
+  const setActiveTabValue = useCallback(
+    (value: string) => {
+      if (activeTab === undefined) {
+        setInternalActiveTab(value);
+      }
+      onTabChange?.(value);
+    },
+    [activeTab, onTabChange],
+  );
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent, index: number) => {
@@ -56,7 +71,7 @@ export const Tabs: React.FC<TabsProps> = ({
 
       const newTab = tabs[newIndex];
       if (newTab) {
-        setActiveTab(newTab.props.value);
+        setActiveTabValue(newTab.props.value);
         // Focus the new tab button
         const tabButton = document.getElementById(
           `${baseId}-tab-${newTab.props.value}`,
@@ -64,7 +79,7 @@ export const Tabs: React.FC<TabsProps> = ({
         tabButton?.focus();
       }
     },
-    [tabs, baseId],
+    [tabs, baseId, setActiveTabValue],
   );
 
   return (
@@ -75,7 +90,7 @@ export const Tabs: React.FC<TabsProps> = ({
             <button
               key={tab.props.value}
               id={`${baseId}-tab-${tab.props.value}`}
-              onClick={() => setActiveTab(tab.props.value)}
+              onClick={() => setActiveTabValue(tab.props.value)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               role="tab"
               aria-selected={activeTabValue === tab.props.value}

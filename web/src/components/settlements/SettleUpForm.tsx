@@ -84,6 +84,10 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
       toast.success("Settlement recorded");
       queryClient.invalidateQueries({ queryKey: ["group", groupId] });
       queryClient.invalidateQueries({
+        queryKey: ["group", groupId, "settlements"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({
         queryKey: ["groups", "list"],
         exact: false,
       });

@@ -96,19 +96,7 @@ async def list_group_settlements(
     """List settlements in a group with pagination."""
     total = get_group_settlements_count(session=session, group_id=group.id)
     settlements = get_group_settlements_paginated(session=session, group_id=group.id, offset=offset, limit=limit)
-    items: list[ExpenseGroupSettlementPublic] = []
-    for settlement in settlements:
-        items.append(
-            ExpenseGroupSettlementPublic(
-                id=settlement.id,
-                group_id=settlement.group_id,
-                created_by=settlement.created_by,
-                debtor_id=settlement.debtor_id,
-                creditor_id=settlement.creditor_id,
-                amount=settlement.amount,
-                created_at=settlement.created_at,
-            )
-        )
+    items = [ExpenseGroupSettlementPublic.model_validate(settlement) for settlement in settlements]
     return PaginatedResponse[ExpenseGroupSettlementPublic](items=items, total=total, offset=offset, limit=limit)
 
 

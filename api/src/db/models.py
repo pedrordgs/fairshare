@@ -2,4 +2,4 @@
 # Alembic uses this to detect tables for migrations
 from auth.models import User  # noqa: F401
 from expenses.models import Expense, ExpenseSplit  # noqa: F401
-from groups.models import ExpenseGroup, ExpenseGroupMember  # noqa: F401
+from groups.models import ExpenseGroup, ExpenseGroupMember, ExpenseGroupSettlement  # noqa: F401

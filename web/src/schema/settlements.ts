@@ -21,8 +21,31 @@ export const GroupSettlementCreateSchema = z.object({
   }, z.number().positive()),
 });
 
+export const GroupSettlementListItemSchema = z.object({
+  id: z.number().int().positive(),
+  group_id: z.number().int().positive(),
+  created_by: z.number().int().positive(),
+  debtor_id: z.number().int().positive(),
+  creditor_id: z.number().int().positive(),
+  amount: z.number().positive().finite(),
+  created_at: z.iso.datetime({ local: true }),
+});
+
+export const PaginatedGroupSettlementsSchema = z.object({
+  items: z.array(GroupSettlementListItemSchema),
+  total: z.number().int().nonnegative(),
+  offset: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+});
+
 export type GroupSettlementCreateInput = z.infer<
   typeof GroupSettlementCreateInputSchema
 >;
 
 export type GroupSettlementCreate = z.infer<typeof GroupSettlementCreateSchema>;
+export type GroupSettlementListItem = z.infer<
+  typeof GroupSettlementListItemSchema
+>;
+export type PaginatedGroupSettlements = z.infer<
+  typeof PaginatedGroupSettlementsSchema
+>;

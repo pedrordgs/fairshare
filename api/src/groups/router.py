@@ -11,6 +11,7 @@ from .models import (
     ExpenseGroupDetail,
     ExpenseGroupListItem,
     ExpenseGroupUpdate,
+    ExpenseGroupSettlementPublic,
     GroupSettlementCreate,
     JoinGroupRequest,
 )
@@ -26,6 +27,8 @@ from .service import (
     get_group_expense_counts,
     get_group_last_activity_by_group,
     get_group_list_item,
+    get_group_settlements_count,
+    get_group_settlements_paginated,
     get_member,
     get_user_groups_count,
     get_user_groups_paginated,
@@ -53,7 +56,8 @@ async def list_expense_groups(
     limit: int = Query(default=12, ge=1, le=100),
 ) -> PaginatedResponse[ExpenseGroupListItem]:
     """List expense groups where the authenticated user is a member with pagination."""
-    assert authenticated_user.id is not None
+    if authenticated_user.id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     total = get_user_groups_count(session=session, user_id=authenticated_user.id)
     groups = get_user_groups_paginated(session=session, user_id=authenticated_user.id, offset=offset, limit=limit)
     group_ids = [group.id for group in groups if group.id is not None]
@@ -80,6 +84,22 @@ async def get_expense_group(
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
+@router.get("/{group_id}/settlements/", response_model=PaginatedResponse[ExpenseGroupSettlementPublic])
+async def list_group_settlements(
+    *,
+    session: DbSession,
+    group: GroupAsMember,
+    authenticated_user: AuthenticatedUser,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=100),
+) -> PaginatedResponse[ExpenseGroupSettlementPublic]:
+    """List settlements in a group with pagination."""
+    total = get_group_settlements_count(session=session, group_id=group.id)
+    settlements = get_group_settlements_paginated(session=session, group_id=group.id, offset=offset, limit=limit)
+    items = [ExpenseGroupSettlementPublic.model_validate(settlement) for settlement in settlements]
+    return PaginatedResponse[ExpenseGroupSettlementPublic](items=items, total=total, offset=offset, limit=limit)
+
+
 @router.patch("/{group_id}/", response_model=ExpenseGroupDetail)
 async def update_expense_group(
     *, session: DbSession, group: GroupAsOwner, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
@@ -100,11 +120,9 @@ async def join_group_by_code(
     *, session: DbSession, authenticated_user: AuthenticatedUser, join_in: JoinGroupRequest
 ) -> ExpenseGroupDetail:
     """Join an expense group using an invite code."""
-    assert authenticated_user.id is not None
     group = get_group_by_invite_code(session=session, code=join_in.code)
     if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
-    assert group.id is not None
 
     if get_member(session=session, group_id=group.id, user_id=authenticated_user.id):
         return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
@@ -122,7 +140,6 @@ async def create_group_settlement_payment(
     settlement_in: GroupSettlementCreate,
 ) -> ExpenseGroupDetail:
     """Record a settlement payment. User must be a group member."""
-    assert authenticated_user.id is not None
     if settlement_in.creditor_id == authenticated_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Creditor must be a different group member")
 
@@ -147,5 +164,6 @@ async def create_group_settlement_payment(
         debtor_id=authenticated_user.id,
         creditor_id=settlement_in.creditor_id,
         amount=settlement_in.amount,
+        created_by=authenticated_user.id,
     )
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)

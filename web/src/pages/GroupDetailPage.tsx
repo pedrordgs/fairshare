@@ -1,7 +1,9 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { Badge } from "@components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
+import { Tabs, TabItem } from "@components/ui/Tabs";
 import { Button } from "@components/ui/Button";
 import { groupsApi } from "@services/groups";
 import { expensesApi } from "@services/expenses";
@@ -12,6 +14,7 @@ import { formatCurrency, formatDate } from "@utils/formatUtils";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
+import { SettlementHistory } from "@components/settlements/SettlementHistory";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -86,6 +89,9 @@ export const GroupDetailPage: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
   const [isSettleUpOpen, setIsSettleUpOpen] = React.useState(false);
+  const [activeCenterTab, setActiveCenterTab] = React.useState<
+    "expenses" | "settlements"
+  >("expenses");
 
   // Validate and parse the groupId parameter
   const groupId = parseGroupId(groupIdParam);
@@ -334,102 +340,134 @@ export const GroupDetailPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Center Column - Expenses (6 cols) */}
+        {/* Center Column - Expenses & Settlements (6 cols) */}
         <div className="lg:col-span-6">
           <Card className="h-full bg-white/80 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl flex items-center gap-2">
                 <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
-                Expenses
+                Activity
               </CardTitle>
-              <Button size="sm" onClick={() => setIsAddExpenseOpen(true)}>
-                + Add Expense
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => setIsAddExpenseOpen(true)}>
+                  + Add Expense
+                </Button>
+                {group.owed_by_user.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setIsSettleUpOpen(true)}
+                  >
+                    Record Settlement
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              {isExpensesLoading ? (
-                <div className="text-center py-16">
-                  <div className="w-8 h-8 border-4 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-slate-600">Loading expenses...</p>
-                </div>
-              ) : expensesError ? (
-                <div className="text-center py-12">
-                  <p className="text-slate-600 font-medium mb-2">
-                    Couldn't load expenses
-                  </p>
-                  <p className="text-slate-400 text-sm">
-                    Please try again in a moment.
-                  </p>
-                </div>
-              ) : expensesData && expensesData.items.length > 0 ? (
-                <div className="space-y-4">
-                  {expensesData.items.map((expense) => {
-                    const creatorName = membersById.get(expense.created_by);
-                    const isCurrentUserExpense =
-                      currentUserId !== null &&
-                      expense.created_by === currentUserId;
-                    const expenseMeta = `${
-                      creatorName
-                        ? `Created by ${creatorName}`
-                        : "Created by member"
-                    } · ${formatDate(expense.created_at)}`;
-                    return (
-                      <div
-                        key={expense.id}
-                        className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${
-                          isCurrentUserExpense
-                            ? "border-sky-200 bg-sky-50/60"
-                            : "border-primary-100 bg-white/70"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-slate-900 truncate">
-                                {expense.name}
-                              </p>
-                              {isCurrentUserExpense && (
-                                <span className="inline-flex items-center rounded-full border border-sky-300/70 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
-                                  You
-                                </span>
-                              )}
+              <Tabs
+                defaultTab="expenses"
+                activeTab={activeCenterTab}
+                onTabChange={(value) =>
+                  setActiveCenterTab(
+                    value === "settlements" ? "settlements" : "expenses",
+                  )
+                }
+              >
+                <TabItem label="Expenses" value="expenses">
+                  {isExpensesLoading ? (
+                    <div className="text-center py-16">
+                      <div className="w-8 h-8 border-4 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-slate-600">Loading expenses...</p>
+                    </div>
+                  ) : expensesError ? (
+                    <div className="text-center py-12">
+                      <p className="text-slate-600 font-medium mb-2">
+                        Couldn't load expenses
+                      </p>
+                      <p className="text-slate-400 text-sm">
+                        Please try again in a moment.
+                      </p>
+                    </div>
+                  ) : expensesData && expensesData.items.length > 0 ? (
+                    <div className="space-y-4">
+                      {expensesData.items.map((expense) => {
+                        const creatorName = membersById.get(expense.created_by);
+                        const isCurrentUserExpense =
+                          currentUserId !== null &&
+                          expense.created_by === currentUserId;
+                        const expenseMeta = `${
+                          creatorName
+                            ? `Created by ${creatorName}`
+                            : "Created by member"
+                        } · ${formatDate(expense.created_at)}`;
+                        return (
+                          <div
+                            key={expense.id}
+                            className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${
+                              isCurrentUserExpense
+                                ? "border-sky-200 bg-sky-50/60"
+                                : "border-primary-100 bg-white"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-semibold text-slate-900 truncate">
+                                    {expense.name}
+                                  </p>
+                                  {isCurrentUserExpense && (
+                                    <Badge size="sm" variant="info">
+                                      You
+                                    </Badge>
+                                  )}
+                                </div>
+                                {expense.description && (
+                                  <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                                    {expense.description}
+                                  </p>
+                                )}
+                                <p className="text-xs text-slate-400 mt-2">
+                                  {expenseMeta}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-slate-900">
+                                  {formatCurrency(expense.value)}
+                                </p>
+                              </div>
                             </div>
-                            {expense.description && (
-                              <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                                {expense.description}
-                              </p>
-                            )}
-                            <p className="text-xs text-slate-400 mt-2">
-                              {expenseMeta}
-                            </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-slate-900">
-                              {formatCurrency(expense.value)}
-                            </p>
-                          </div>
-                        </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-16">
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <img
+                          src={receiptIcon}
+                          alt="Receipt"
+                          className="w-8 h-8 text-primary-600"
+                        />
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <img
-                      src={receiptIcon}
-                      alt="Receipt"
-                      className="w-8 h-8 text-primary-600"
-                    />
-                  </div>
-                  <p className="text-slate-600 font-medium mb-2">
-                    No expenses yet
-                  </p>
-                  <p className="text-slate-400 text-sm">
-                    Start tracking shared costs by adding your first expense
-                  </p>
-                </div>
-              )}
+                      <p className="text-slate-600 font-medium mb-2">
+                        No expenses yet
+                      </p>
+                      <p className="text-slate-400 text-sm">
+                        Start tracking shared costs by adding your first expense
+                      </p>
+                    </div>
+                  )}
+                </TabItem>
+                <TabItem label="Settlements" value="settlements">
+                  <SettlementHistory
+                    groupId={groupId}
+                    membersById={membersById}
+                    currentUserId={currentUserId}
+                    embedded
+                    enabled={activeCenterTab === "settlements"}
+                  />
+                </TabItem>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
@@ -523,13 +561,14 @@ export const GroupDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <Button
-                className="w-full"
-                disabled={owedByUserEntries.length === 0}
-                onClick={() => setIsSettleUpOpen(true)}
-              >
-                Settle Up
-              </Button>
+              {owedByUserEntries.length > 0 && (
+                <Button
+                  className="w-full"
+                  onClick={() => setIsSettleUpOpen(true)}
+                >
+                  Settle Up
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

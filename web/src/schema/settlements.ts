@@ -24,6 +24,7 @@ export const GroupSettlementCreateSchema = z.object({
 export const GroupSettlementListItemSchema = z.object({
   id: z.number().positive(),
   group_id: z.number().positive(),
+  created_by: z.number().positive(),
   debtor_id: z.number().positive(),
   creditor_id: z.number().positive(),
   amount: z.number().positive().finite(),

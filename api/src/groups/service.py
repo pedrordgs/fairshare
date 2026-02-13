@@ -343,11 +343,15 @@ def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list
 
 
 def create_group_settlement(
-    *, session: Session, group_id: int, debtor_id: int, creditor_id: int, amount: Decimal
+    *, session: Session, group_id: int, debtor_id: int, creditor_id: int, amount: Decimal, created_by: int
 ) -> ExpenseGroupSettlement:
     """Record a settlement payment within a group."""
     settlement = ExpenseGroupSettlement(
-        group_id=group_id, debtor_id=debtor_id, creditor_id=creditor_id, amount=quantize_currency(amount)
+        group_id=group_id,
+        debtor_id=debtor_id,
+        creditor_id=creditor_id,
+        amount=quantize_currency(amount),
+        created_by=created_by,
     )
     session.add(settlement)
     session.commit()

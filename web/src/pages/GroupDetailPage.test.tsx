@@ -102,6 +102,7 @@ describe("GroupDetailPage", () => {
     items: Array<{
       id: number;
       group_id: number;
+      created_by: number;
       debtor_id: number;
       creditor_id: number;
       amount: number;
@@ -197,6 +198,7 @@ describe("GroupDetailPage", () => {
           {
             id: 10,
             group_id: 1,
+            created_by: 1,
             debtor_id: 1,
             creditor_id: 2,
             amount: 25,
@@ -640,6 +642,7 @@ describe("GroupDetailPage", () => {
           {
             id: 1,
             group_id: 1,
+            created_by: 1,
             debtor_id: 1,
             creditor_id: 2,
             amount: 12.5,
@@ -729,6 +732,7 @@ describe("GroupDetailPage", () => {
       const settlementMine = {
         id: 1,
         group_id: 1,
+        created_by: 1,
         debtor_id: 1,
         creditor_id: 2,
         amount: 12.5,
@@ -737,6 +741,7 @@ describe("GroupDetailPage", () => {
       const settlementOther = {
         id: 2,
         group_id: 1,
+        created_by: 3,
         debtor_id: 3,
         creditor_id: 2,
         amount: 7.25,

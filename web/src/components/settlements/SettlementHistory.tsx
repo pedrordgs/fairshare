@@ -129,12 +129,18 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
               settlement.creditor_id,
               currentUserId,
             );
+            const recordedBy = getDisplayName(
+              membersById,
+              settlement.created_by,
+              currentUserId,
+            );
             return (
               <SettlementRow
                 key={settlement.id}
                 settlement={settlement}
                 debtor={debtor}
                 creditor={creditor}
+                recordedBy={recordedBy}
                 currentUserId={currentUserId}
               />
             );
@@ -188,6 +194,7 @@ interface SettlementRowProps {
   settlement: GroupSettlementListItem;
   debtor: { name: string; isCurrentUser: boolean };
   creditor: { name: string; isCurrentUser: boolean };
+  recordedBy: { name: string; isCurrentUser: boolean };
   currentUserId: number | null;
 }
 
@@ -195,15 +202,14 @@ const SettlementRow: React.FC<SettlementRowProps> = ({
   settlement,
   debtor,
   creditor,
+  recordedBy,
   currentUserId,
 }) => {
   const isCurrentUserInvolved =
     currentUserId !== null &&
     (settlement.debtor_id === currentUserId ||
       settlement.creditor_id === currentUserId);
-  const createdByLabel = debtor.name
-    ? `Created by ${debtor.name}`
-    : "Created by member";
+  const createdByLabel = `Created by ${recordedBy.name}`;
 
   const rowClasses = isCurrentUserInvolved
     ? "border-sky-200 bg-sky-50/60"

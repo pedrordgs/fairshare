@@ -360,6 +360,7 @@ class TestListGroupSettlements:
         assert len(data["items"]) == 1
         item = data["items"][0]
         assert item["group_id"] == group_id
+        assert item["created_by"] == jane.id
         assert item["debtor_id"] == jane.id
         assert item["creditor_id"] == owner.id
         assert item["amount"] == 4.0

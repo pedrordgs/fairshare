@@ -102,6 +102,7 @@ async def list_group_settlements(
             ExpenseGroupSettlementPublic(
                 id=settlement.id,
                 group_id=settlement.group_id,
+                created_by=settlement.created_by,
                 debtor_id=settlement.debtor_id,
                 creditor_id=settlement.creditor_id,
                 amount=settlement.amount,
@@ -175,5 +176,6 @@ async def create_group_settlement_payment(
         debtor_id=authenticated_user.id,
         creditor_id=settlement_in.creditor_id,
         amount=settlement_in.amount,
+        created_by=authenticated_user.id,
     )
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)

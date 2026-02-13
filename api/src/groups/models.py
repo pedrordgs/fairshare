@@ -35,6 +35,7 @@ class ExpenseGroupMember(SQLModel, table=True):
 class ExpenseGroupSettlement(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     group_id: int = Field(foreign_key="expensegroup.id", ondelete="CASCADE")
+    created_by: int = Field(foreign_key="user.id")
     debtor_id: int = Field(foreign_key="user.id")
     creditor_id: int = Field(foreign_key="user.id")
     amount: Decimal = Field(decimal_places=2)
@@ -69,6 +70,7 @@ class ExpenseGroupMemberPublic(SQLModel):
 class ExpenseGroupSettlementPublic(SQLModel):
     id: int
     group_id: int
+    created_by: int
     debtor_id: int
     creditor_id: int
     amount: Decimal

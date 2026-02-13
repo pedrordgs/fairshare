@@ -2,7 +2,6 @@
 
 ## Next features
 
-- [ ] Add Settlement History in group detail UI
 - [ ] Enter invite code should trigger a request to the group owner that should accept/decline the request to add or not the user to the group as a member.
 - [ ] Improve select input design
 - [ ] Add Google authentication

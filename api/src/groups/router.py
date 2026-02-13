@@ -6,11 +6,20 @@ from db.dependencies import DbSession
 from .dependencies import GroupAsMember, GroupAsOwner
 from core.models import PaginatedResponse
 
-from .models import ExpenseGroupCreate, ExpenseGroupDetail, ExpenseGroupListItem, ExpenseGroupUpdate, JoinGroupRequest
+from .models import (
+    ExpenseGroupCreate,
+    ExpenseGroupDetail,
+    ExpenseGroupListItem,
+    ExpenseGroupUpdate,
+    GroupSettlementCreate,
+    JoinGroupRequest,
+)
 from .service import (
     add_member,
+    calculate_user_debts,
     calculate_user_debt_totals,
     create_group,
+    create_group_settlement,
     delete_group,
     get_group_detail,
     get_group_by_invite_code,
@@ -89,4 +98,42 @@ async def join_group_by_code(
         return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
     add_member(session=session, group=group, user_id=authenticated_user.id)
+    return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
+
+
+@router.post("/{group_id}/settlements/", response_model=ExpenseGroupDetail)
+async def create_group_settlement_payment(
+    *,
+    session: DbSession,
+    group: GroupAsMember,
+    authenticated_user: AuthenticatedUser,
+    settlement_in: GroupSettlementCreate,
+) -> ExpenseGroupDetail:
+    """Record a settlement payment. User must be a group member."""
+    assert authenticated_user.id is not None
+    if settlement_in.creditor_id == authenticated_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Creditor must be a different group member")
+
+    if not get_member(session=session, group_id=group.id, user_id=settlement_in.creditor_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+
+    owed_by_total, _, owed_by_user, _ = calculate_user_debts(
+        session=session, group_id=group.id, user_id=authenticated_user.id
+    )
+    if owed_by_total <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No outstanding debt to settle")
+
+    owed_entry = next((entry for entry in owed_by_user if entry.user_id == settlement_in.creditor_id), None)
+    if not owed_entry:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No outstanding debt for selected member")
+    if settlement_in.amount > owed_entry.amount:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount exceeds outstanding debt")
+
+    create_group_settlement(
+        session=session,
+        group_id=group.id,
+        debtor_id=authenticated_user.id,
+        creditor_id=settlement_in.creditor_id,
+        amount=settlement_in.amount,
+    )
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)

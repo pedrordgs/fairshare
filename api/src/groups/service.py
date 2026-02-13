@@ -18,6 +18,7 @@ from .models import (
     ExpenseGroupMember,
     ExpenseGroupMemberPublic,
     ExpenseGroupUpdate,
+    ExpenseGroupSettlement,
 )
 from .utils import generate_invite_code, normalize_invite_code
 
@@ -234,11 +235,11 @@ def calculate_user_debts(
 def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list[tuple[int, int, Decimal]]:
     """Calculate a minimized settlement plan for a group."""
     statement = (
-        select(ExpenseSplit.user_id, Expense.created_by, func.coalesce(func.sum(ExpenseSplit.share), 0))
-        .join(Expense, ExpenseSplit.expense_id == Expense.id)
-        .where(Expense.group_id == group_id)
-        .where(ExpenseSplit.user_id != Expense.created_by)
-        .group_by(ExpenseSplit.user_id, Expense.created_by)
+        select(col(ExpenseSplit.user_id), col(Expense.created_by), func.coalesce(func.sum(ExpenseSplit.share), 0))
+        .join(Expense, col(ExpenseSplit.expense_id) == col(Expense.id))
+        .where(col(Expense.group_id) == group_id)
+        .where(col(ExpenseSplit.user_id) != col(Expense.created_by))
+        .group_by(col(ExpenseSplit.user_id), col(Expense.created_by))
     )
 
     balances: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
@@ -246,6 +247,17 @@ def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list
         amount_decimal = Decimal(str(amount))
         balances[debtor_id] -= amount_decimal
         balances[creditor_id] += amount_decimal
+
+    settlement_statement = select(
+        col(ExpenseGroupSettlement.debtor_id),
+        col(ExpenseGroupSettlement.creditor_id),
+        col(ExpenseGroupSettlement.amount),
+    ).where(col(ExpenseGroupSettlement.group_id) == group_id)
+
+    for debtor_id, creditor_id, amount in session.exec(settlement_statement).all():
+        amount_decimal = Decimal(str(amount))
+        balances[debtor_id] += amount_decimal
+        balances[creditor_id] -= amount_decimal
 
     debtors: list[tuple[int, Decimal]] = []
     creditors: list[tuple[int, Decimal]] = []
@@ -284,6 +296,19 @@ def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list
     return transfers
 
 
+def create_group_settlement(
+    *, session: Session, group_id: int, debtor_id: int, creditor_id: int, amount: Decimal
+) -> ExpenseGroupSettlement:
+    """Record a settlement payment within a group."""
+    settlement = ExpenseGroupSettlement(
+        group_id=group_id, debtor_id=debtor_id, creditor_id=creditor_id, amount=quantize_currency(amount)
+    )
+    session.add(settlement)
+    session.commit()
+    session.refresh(settlement)
+    return settlement
+
+
 def calculate_user_debt_totals(
     *, session: Session, group_ids: list[int], user_id: int
 ) -> dict[int, tuple[Decimal, Decimal]]:
@@ -291,23 +316,14 @@ def calculate_user_debt_totals(
     if not group_ids:
         return {}
 
-    statement = (
-        select(
-            Expense.group_id, ExpenseSplit.user_id, Expense.created_by, func.coalesce(func.sum(ExpenseSplit.share), 0)
-        )
-        .join(Expense, ExpenseSplit.expense_id == Expense.id)
-        .where(Expense.group_id.in_(group_ids))
-        .where(ExpenseSplit.user_id != Expense.created_by)
-        .group_by(Expense.group_id, ExpenseSplit.user_id, Expense.created_by)
-    )
-
     balance_by_group: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
-    for group_id, debtor_id, creditor_id, amount in session.exec(statement).all():
-        amount_decimal = Decimal(str(amount))
-        if debtor_id == user_id:
-            balance_by_group[group_id] -= amount_decimal
-        elif creditor_id == user_id:
-            balance_by_group[group_id] += amount_decimal
+    for group_id in group_ids:
+        transfers = _calculate_group_settlement_plan(session=session, group_id=group_id)
+        for debtor_id, creditor_id, amount in transfers:
+            if debtor_id == user_id:
+                balance_by_group[group_id] -= amount
+            elif creditor_id == user_id:
+                balance_by_group[group_id] += amount
 
     totals: dict[int, tuple[Decimal, Decimal]] = {}
     for group_id in group_ids:

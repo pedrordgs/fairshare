@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import EmailStr, field_serializer, field_validator
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
+from core.money import quantize_currency
 from .utils import _validate_group_name, normalize_invite_code
 
 
@@ -29,6 +30,15 @@ class ExpenseGroupMember(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     group_id: int = Field(foreign_key="expensegroup.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id")
+
+
+class ExpenseGroupSettlement(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    group_id: int = Field(foreign_key="expensegroup.id", ondelete="CASCADE")
+    debtor_id: int = Field(foreign_key="user.id")
+    creditor_id: int = Field(foreign_key="user.id")
+    amount: Decimal = Field(decimal_places=2)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ExpenseGroupCreate(ExpenseGroupBase):
@@ -110,3 +120,15 @@ class JoinGroupRequest(SQLModel):
         if not normalized:
             raise ValueError("Invite code must not be empty")
         return normalized
+
+
+class GroupSettlementCreate(SQLModel):
+    creditor_id: int
+    amount: Decimal
+
+    @field_validator("amount")
+    @classmethod
+    def _normalize_amount(cls, value: Decimal) -> Decimal:
+        if value <= Decimal("0.00"):
+            raise ValueError("Amount must be greater than zero")
+        return quantize_currency(value)

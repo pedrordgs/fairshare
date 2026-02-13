@@ -101,7 +101,7 @@ async def join_group_by_code(
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
 
-@router.post("/{group_id}/settlements/", response_model=ExpenseGroupDetail)
+`@router.post`("/{group_id}/settlements/", response_model=ExpenseGroupDetail, status_code=status.HTTP_201_CREATED)
 async def create_group_settlement_payment(
     *,
     session: DbSession,

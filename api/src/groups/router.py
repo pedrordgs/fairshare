@@ -23,6 +23,8 @@ from .service import (
     delete_group,
     get_group_detail,
     get_group_by_invite_code,
+    get_group_expense_counts,
+    get_group_last_activity_by_group,
     get_group_list_item,
     get_member,
     get_user_groups_count,
@@ -56,7 +58,17 @@ async def list_expense_groups(
     groups = get_user_groups_paginated(session=session, user_id=authenticated_user.id, offset=offset, limit=limit)
     group_ids = [group.id for group in groups if group.id is not None]
     totals_by_group = calculate_user_debt_totals(session=session, group_ids=group_ids, user_id=authenticated_user.id)
-    items = [get_group_list_item(session=session, group=group, totals_by_group=totals_by_group) for group in groups]
+    expense_counts = get_group_expense_counts(session=session, group_ids=group_ids)
+    last_activity_by_group = get_group_last_activity_by_group(session=session, group_ids=group_ids)
+    items = [
+        get_group_list_item(
+            group=group,
+            totals_by_group=totals_by_group,
+            expense_counts=expense_counts,
+            last_activity_by_group=last_activity_by_group,
+        )
+        for group in groups
+    ]
     return PaginatedResponse[ExpenseGroupListItem](items=items, total=total, offset=offset, limit=limit)
 
 

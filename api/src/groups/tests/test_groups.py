@@ -263,7 +263,7 @@ class TestGroupSettlementPayment:
         settlement_response = client.post(
             f"/groups/{group_id}/settlements/", json={"creditor_id": john.id, "amount": 4.0}
         )
-        assert settlement_response.status_code == 200
+        assert settlement_response.status_code == 201
         data = settlement_response.json()
         assert data["owed_by_user_total"] == 2.0
         assert data["owed_to_user_total"] == 0.0

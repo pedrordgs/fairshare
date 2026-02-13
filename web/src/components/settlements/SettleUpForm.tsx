@@ -58,6 +58,8 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
     register,
     handleSubmit,
     watch,
+    setError,
+    clearErrors,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<GroupSettlementCreateInput>({
@@ -94,13 +96,15 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
 
   const onSubmit = (data: GroupSettlementCreateInput) => {
     clearApiErrors();
+    clearErrors("amount");
     const payload: GroupSettlementCreate = {
       creditor_id: data.creditor_id,
       amount: Number(data.amount),
     };
     if (payload.amount > maxAmount) {
-      setApiError({
-        response: { data: { detail: "Amount exceeds outstanding debt" } },
+      setError("amount", {
+        type: "manual",
+        message: "Amount exceeds outstanding debt",
       });
       return;
     }

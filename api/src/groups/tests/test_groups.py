@@ -10,7 +10,7 @@ from conftest import AuthenticatedClient
 from expenses.models import ExpenseCreate
 from expenses.service import create_expense
 from groups.models import ExpenseGroupCreate
-from groups.service import create_group, get_group_by_id
+from groups.service import create_group, get_group_by_id, add_member
 
 
 def create_test_user(session: Session, email: str, name: str = "Test User") -> tuple:
@@ -116,7 +116,6 @@ class TestGetGroup:
         group = get_group_by_id(session=session, group_id=group_id)
         assert group is not None
         assert other_user.id is not None
-        from groups.service import add_member
 
         assert group.id is not None
         add_member(session=session, group=group, user_id=other_user.id)
@@ -146,7 +145,6 @@ class TestGetGroup:
         assert group is not None
         assert jane.id is not None
         assert david.id is not None
-        from groups.service import add_member
 
         add_member(session=session, group=group, user_id=jane.id)
         add_member(session=session, group=group, user_id=david.id)
@@ -207,7 +205,6 @@ class TestGroupSettlementPlan:
         assert group is not None
         assert jane.id is not None
         assert david.id is not None
-        from groups.service import add_member
 
         add_member(session=session, group=group, user_id=jane.id)
         add_member(session=session, group=group, user_id=david.id)
@@ -238,6 +235,94 @@ class TestGroupSettlementPlan:
         assert data["owed_to_user"] == []
 
 
+class TestGroupSettlementPayment:
+    def test_creates_settlement_and_reduces_debt(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        client, john = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement Payments"})
+        group_id = create_response.json()["id"]
+
+        jane, jane_token = create_test_user(session, "jane3@example.com", "Jane")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert john.id is not None
+        assert jane.id is not None
+
+        add_member(session=session, group=group, user_id=jane.id)
+
+        assert group.id is not None
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=john.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
+        )
+
+        client.headers["Authorization"] = f"Bearer {jane_token}"
+        settlement_response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": john.id, "amount": 4.0}
+        )
+        assert settlement_response.status_code == 201
+        data = settlement_response.json()
+        assert data["owed_by_user_total"] == 2.0
+        assert data["owed_to_user_total"] == 0.0
+        assert data["owed_by_user"] == [{"user_id": john.id, "amount": 2.0}]
+
+    def test_rejects_overpayment(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, john = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement Overpay"})
+        group_id = create_response.json()["id"]
+
+        jane, jane_token = create_test_user(session, "jane4@example.com", "Jane")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert john.id is not None
+        assert jane.id is not None
+
+        add_member(session=session, group=group, user_id=jane.id)
+
+        assert group.id is not None
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=john.id,
+            expense_in=ExpenseCreate(name="Groceries", value=Decimal("10.00")),
+        )
+
+        client.headers["Authorization"] = f"Bearer {jane_token}"
+        settlement_response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": john.id, "amount": 6.0}
+        )
+        assert settlement_response.status_code == 400
+        assert settlement_response.json()["detail"] == "Amount exceeds outstanding debt"
+
+    def test_rejects_self_settlement(self, authenticated_client: AuthenticatedClient) -> None:
+        client, john = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Self Settlement"})
+        group_id = create_response.json()["id"]
+
+        settlement_response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": john.id, "amount": 1.0}
+        )
+        assert settlement_response.status_code == 400
+        assert settlement_response.json()["detail"] == "Creditor must be a different group member"
+
+    def test_rejects_non_member_creditor(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, john = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Unknown Creditor"})
+        group_id = create_response.json()["id"]
+
+        other_user, _ = create_test_user(session, "other2@example.com")
+        assert other_user.id is not None
+
+        settlement_response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": other_user.id, "amount": 1.0}
+        )
+        assert settlement_response.status_code == 404
+        assert settlement_response.json()["detail"] == "Member not found"
+
+
 class TestUpdateGroup:
     def test_success(self, authenticated_client: AuthenticatedClient) -> None:
         client, user = authenticated_client
@@ -257,8 +342,6 @@ class TestUpdateGroup:
         other_group = create_group(session=session, user=other_user, group_in=ExpenseGroupCreate(name="Other Group"))
 
         # Add current user as member (not owner)
-        from groups.service import add_member
-
         assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 
@@ -296,8 +379,6 @@ class TestDeleteGroup:
         other_group = create_group(session=session, user=other_user, group_in=ExpenseGroupCreate(name="Other Group"))
 
         # Add current user as member
-        from groups.service import add_member
-
         assert user.id is not None
         add_member(session=session, group=other_group, user_id=user.id)
 

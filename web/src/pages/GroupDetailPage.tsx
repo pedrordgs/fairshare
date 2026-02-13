@@ -11,6 +11,7 @@ import { copyToClipboard } from "@utils/clipboard";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
+import { SettleUpModal } from "@components/settlements/SettleUpModal";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -84,6 +85,7 @@ export const GroupDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isLoading: isAuthLoading } = useAuth();
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
+  const [isSettleUpOpen, setIsSettleUpOpen] = React.useState(false);
 
   // Validate and parse the groupId parameter
   const groupId = parseGroupId(groupIdParam);
@@ -521,7 +523,11 @@ export const GroupDetailPage: React.FC = () => {
                 </div>
               </div>
 
-              <Button className="w-full" disabled>
+              <Button
+                className="w-full"
+                disabled={owedByUserEntries.length === 0}
+                onClick={() => setIsSettleUpOpen(true)}
+              >
                 Settle Up
               </Button>
             </CardContent>
@@ -533,6 +539,15 @@ export const GroupDetailPage: React.FC = () => {
           groupId={groupId}
           isOpen={isAddExpenseOpen}
           onClose={() => setIsAddExpenseOpen(false)}
+        />
+      )}
+      {groupId && group && (
+        <SettleUpModal
+          groupId={groupId}
+          isOpen={isSettleUpOpen}
+          onClose={() => setIsSettleUpOpen(false)}
+          owedByUser={group.owed_by_user}
+          membersById={membersById}
         />
       )}
     </div>

@@ -2,6 +2,7 @@ from datetime import datetime
 from collections import defaultdict
 from decimal import Decimal
 
+from sqlalchemy import case, or_
 from sqlmodel import Session, col, func, select
 
 from auth.models import User
@@ -18,6 +19,7 @@ from .models import (
     ExpenseGroupMember,
     ExpenseGroupMemberPublic,
     ExpenseGroupUpdate,
+    ExpenseGroupSettlement,
 )
 from .utils import generate_invite_code, normalize_invite_code
 
@@ -194,13 +196,43 @@ def get_group_last_activity(*, session: Session, group_id: int) -> datetime | No
     return session.exec(statement).one()
 
 
+def get_group_expense_counts(*, session: Session, group_ids: list[int]) -> dict[int, int]:
+    """Get total expenses per group."""
+    if not group_ids:
+        return {}
+
+    statement = (
+        select(col(Expense.group_id), func.count())
+        .where(col(Expense.group_id).in_(group_ids))
+        .group_by(col(Expense.group_id))
+    )
+    return {group_id: count for group_id, count in session.exec(statement).all()}
+
+
+def get_group_last_activity_by_group(*, session: Session, group_ids: list[int]) -> dict[int, datetime | None]:
+    """Get last activity timestamp per group."""
+    if not group_ids:
+        return {}
+
+    statement = (
+        select(col(Expense.group_id), func.max(Expense.created_at))
+        .where(col(Expense.group_id).in_(group_ids))
+        .group_by(col(Expense.group_id))
+    )
+    return {group_id: last_activity for group_id, last_activity in session.exec(statement).all()}
+
+
 def get_group_list_item(
-    *, session: Session, group: ExpenseGroup, totals_by_group: dict[int, tuple[Decimal, Decimal]]
+    *,
+    group: ExpenseGroup,
+    totals_by_group: dict[int, tuple[Decimal, Decimal]],
+    expense_counts: dict[int, int],
+    last_activity_by_group: dict[int, datetime | None],
 ) -> ExpenseGroupListItem:
     """Get expense group list item for a user with totals."""
     assert group.id is not None
-    expense_count = get_group_expense_count(session=session, group_id=group.id)
-    last_activity_at = get_group_last_activity(session=session, group_id=group.id)
+    expense_count = expense_counts.get(group.id, 0)
+    last_activity_at = last_activity_by_group.get(group.id)
     owed_by_user_total, owed_to_user_total = totals_by_group.get(group.id, (Decimal("0.00"), Decimal("0.00")))
     return ExpenseGroupListItem(
         id=group.id,
@@ -234,11 +266,11 @@ def calculate_user_debts(
 def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list[tuple[int, int, Decimal]]:
     """Calculate a minimized settlement plan for a group."""
     statement = (
-        select(ExpenseSplit.user_id, Expense.created_by, func.coalesce(func.sum(ExpenseSplit.share), 0))
-        .join(Expense, ExpenseSplit.expense_id == Expense.id)
-        .where(Expense.group_id == group_id)
-        .where(ExpenseSplit.user_id != Expense.created_by)
-        .group_by(ExpenseSplit.user_id, Expense.created_by)
+        select(col(ExpenseSplit.user_id), col(Expense.created_by), func.coalesce(func.sum(ExpenseSplit.share), 0))
+        .join(Expense, col(ExpenseSplit.expense_id) == col(Expense.id))
+        .where(col(Expense.group_id) == group_id)
+        .where(col(ExpenseSplit.user_id) != col(Expense.created_by))
+        .group_by(col(ExpenseSplit.user_id), col(Expense.created_by))
     )
 
     balances: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
@@ -246,6 +278,17 @@ def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list
         amount_decimal = Decimal(str(amount))
         balances[debtor_id] -= amount_decimal
         balances[creditor_id] += amount_decimal
+
+    settlement_statement = select(
+        col(ExpenseGroupSettlement.debtor_id),
+        col(ExpenseGroupSettlement.creditor_id),
+        col(ExpenseGroupSettlement.amount),
+    ).where(col(ExpenseGroupSettlement.group_id) == group_id)
+
+    for debtor_id, creditor_id, amount in session.exec(settlement_statement).all():
+        amount_decimal = Decimal(str(amount))
+        balances[debtor_id] += amount_decimal
+        balances[creditor_id] -= amount_decimal
 
     debtors: list[tuple[int, Decimal]] = []
     creditors: list[tuple[int, Decimal]] = []
@@ -284,6 +327,19 @@ def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list
     return transfers
 
 
+def create_group_settlement(
+    *, session: Session, group_id: int, debtor_id: int, creditor_id: int, amount: Decimal
+) -> ExpenseGroupSettlement:
+    """Record a settlement payment within a group."""
+    settlement = ExpenseGroupSettlement(
+        group_id=group_id, debtor_id=debtor_id, creditor_id=creditor_id, amount=quantize_currency(amount)
+    )
+    session.add(settlement)
+    session.commit()
+    session.refresh(settlement)
+    return settlement
+
+
 def calculate_user_debt_totals(
     *, session: Session, group_ids: list[int], user_id: int
 ) -> dict[int, tuple[Decimal, Decimal]]:
@@ -291,24 +347,84 @@ def calculate_user_debt_totals(
     if not group_ids:
         return {}
 
-    statement = (
-        select(
-            Expense.group_id, ExpenseSplit.user_id, Expense.created_by, func.coalesce(func.sum(ExpenseSplit.share), 0)
-        )
-        .join(Expense, ExpenseSplit.expense_id == Expense.id)
-        .where(Expense.group_id.in_(group_ids))
-        .where(ExpenseSplit.user_id != Expense.created_by)
-        .group_by(Expense.group_id, ExpenseSplit.user_id, Expense.created_by)
-    )
+    expense_balances = _get_user_expense_balance_by_group(session=session, group_ids=group_ids, user_id=user_id)
+    settlement_balances = _get_user_settlement_balance_by_group(session=session, group_ids=group_ids, user_id=user_id)
 
     balance_by_group: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))
-    for group_id, debtor_id, creditor_id, amount in session.exec(statement).all():
-        amount_decimal = Decimal(str(amount))
-        if debtor_id == user_id:
-            balance_by_group[group_id] -= amount_decimal
-        elif creditor_id == user_id:
-            balance_by_group[group_id] += amount_decimal
+    for group_id, balance in expense_balances.items():
+        balance_by_group[group_id] += balance
+    for group_id, balance in settlement_balances.items():
+        balance_by_group[group_id] += balance
 
+    return _balances_to_debt_totals(group_ids=group_ids, balance_by_group=balance_by_group)
+
+
+def _get_user_expense_balance_by_group(*, session: Session, group_ids: list[int], user_id: int) -> dict[int, Decimal]:
+    expense_statement = (
+        select(
+            col(Expense.group_id),
+            func.coalesce(func.sum(case((col(Expense.created_by) == user_id, col(ExpenseSplit.share)), else_=0)), 0),
+            func.coalesce(func.sum(case((col(ExpenseSplit.user_id) == user_id, col(ExpenseSplit.share)), else_=0)), 0),
+        )
+        .join(Expense, col(ExpenseSplit.expense_id) == col(Expense.id))
+        .where(col(Expense.group_id).in_(group_ids))
+        .where(col(ExpenseSplit.user_id) != col(Expense.created_by))
+        .where(or_(col(ExpenseSplit.user_id) == user_id, col(Expense.created_by) == user_id))
+        .group_by(col(Expense.group_id))
+    )
+
+    balances: dict[int, Decimal] = {}
+    for group_id, credited_amount, debited_amount in session.exec(expense_statement).all():
+        credited_decimal = Decimal(str(credited_amount))
+        debited_decimal = Decimal(str(debited_amount))
+        balances[group_id] = credited_decimal - debited_decimal
+
+    return balances
+
+
+def _get_user_settlement_balance_by_group(
+    *, session: Session, group_ids: list[int], user_id: int
+) -> dict[int, Decimal]:
+    settlement_statement = (
+        select(
+            col(ExpenseGroupSettlement.group_id),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (col(ExpenseGroupSettlement.debtor_id) == user_id, col(ExpenseGroupSettlement.amount)), else_=0
+                    )
+                ),
+                0,
+            ),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (col(ExpenseGroupSettlement.creditor_id) == user_id, col(ExpenseGroupSettlement.amount)),
+                        else_=0,
+                    )
+                ),
+                0,
+            ),
+        )
+        .where(col(ExpenseGroupSettlement.group_id).in_(group_ids))
+        .where(
+            or_(col(ExpenseGroupSettlement.debtor_id) == user_id, col(ExpenseGroupSettlement.creditor_id) == user_id)
+        )
+        .group_by(col(ExpenseGroupSettlement.group_id))
+    )
+
+    balances: dict[int, Decimal] = {}
+    for group_id, debtor_amount, creditor_amount in session.exec(settlement_statement).all():
+        debtor_decimal = Decimal(str(debtor_amount))
+        creditor_decimal = Decimal(str(creditor_amount))
+        balances[group_id] = debtor_decimal - creditor_decimal
+
+    return balances
+
+
+def _balances_to_debt_totals(
+    *, group_ids: list[int], balance_by_group: dict[int, Decimal]
+) -> dict[int, tuple[Decimal, Decimal]]:
     totals: dict[int, tuple[Decimal, Decimal]] = {}
     for group_id in group_ids:
         balance = quantize_currency(balance_by_group.get(group_id, Decimal("0.00")))

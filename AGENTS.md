@@ -69,6 +69,8 @@ uv run alembic current
 - Prefer async functions for I/O operations
 - Incude type hints
 - Commands should be run inside `api` docker container
+- Avoid creating useless variables. For example: `group_id = group.id`. In this case, we should always use `group.id` when we need
+- Only use `assert` on tests, avoid using it in business logic
 
 
 ## WebApp

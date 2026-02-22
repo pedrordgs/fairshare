@@ -8,6 +8,7 @@ import * as ExpensesService from "@services/expenses";
 import * as SettlementsService from "@services/settlements";
 import * as AuthContext from "@context/AuthContext";
 import * as ErrorUtils from "@utils/errorUtils";
+import type { JoinGroupRequestPublic } from "@schema/groups";
 
 const mockNavigate = vi.fn();
 let mockGroupId = "1";
@@ -138,7 +139,7 @@ describe("GroupDetailPage", () => {
     last_activity_at: null,
   };
 
-  const baseJoinRequests = [
+  const baseJoinRequests: JoinGroupRequestPublic[] = [
     {
       id: 10,
       group_id: 1,

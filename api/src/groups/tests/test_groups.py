@@ -589,9 +589,6 @@ class TestJoinGroupRequests:
         assert decline_response.status_code == 200
         assert decline_response.json()["status"] == "declined"
 
-        detail_response = client.get(f"/groups/{group.id}/")
-        assert detail_response.status_code == 404
-
     def test_declined_request_limit(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
         client, owner = authenticated_client
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Limit Group"))

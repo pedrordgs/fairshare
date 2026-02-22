@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { JoinGroupForm } from "./JoinGroupForm";
 import { groupsApi } from "@services/groups";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { JoinGroupRequestPublic } from "@schema/groups";
 
 vi.mock("@services/groups", () => ({
   groupsApi: {
@@ -51,7 +52,7 @@ describe("JoinGroupForm", () => {
         name: "Requester",
         email: "requester@example.com",
       },
-    });
+    } as JoinGroupRequestPublic);
 
     renderWithProviders(<JoinGroupForm />);
 
@@ -66,7 +67,7 @@ describe("JoinGroupForm", () => {
   it("calls onSuccess with joined group", async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
-    const joinRequest = {
+    const joinRequest: JoinGroupRequestPublic = {
       id: 2,
       group_id: 3,
       status: "pending",

@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     access_token_hashing_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     debug: bool = False
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    google_redirect_uri: str | None = None
 
 
 @lru_cache

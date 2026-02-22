@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from enum import Enum
 
 from pydantic import EmailStr, field_serializer, field_validator
 from sqlmodel import Field, SQLModel, UniqueConstraint
@@ -30,6 +31,22 @@ class ExpenseGroupMember(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     group_id: int = Field(foreign_key="expensegroup.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id")
+
+
+class JoinRequestStatus(str, Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+
+
+class ExpenseGroupJoinRequest(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    group_id: int = Field(foreign_key="expensegroup.id", index=True, ondelete="CASCADE")
+    user_id: int = Field(foreign_key="user.id", index=True)
+    status: JoinRequestStatus = Field(default="pending", index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    resolved_at: datetime | None = Field(default=None)
+    resolved_by: int | None = Field(default=None, foreign_key="user.id")
 
 
 class ExpenseGroupSettlement(SQLModel, table=True):
@@ -135,6 +152,20 @@ class JoinGroupRequest(SQLModel):
         if not normalized:
             raise ValueError("Invite code must not be empty")
         return normalized
+
+
+class JoinGroupRequesterPublic(SQLModel):
+    user_id: int
+    name: str
+    email: EmailStr
+
+
+class JoinGroupRequestPublic(SQLModel):
+    id: int
+    group_id: int
+    status: JoinRequestStatus
+    created_at: datetime
+    requester: JoinGroupRequesterPublic
 
 
 class GroupSettlementCreate(SQLModel):

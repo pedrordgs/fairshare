@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from collections import defaultdict
 from decimal import Decimal
 
@@ -15,13 +15,20 @@ from .models import (
     ExpenseGroupCreate,
     ExpenseGroupDebtItem,
     ExpenseGroupDetail,
+    ExpenseGroupJoinRequest,
     ExpenseGroupListItem,
     ExpenseGroupMember,
     ExpenseGroupMemberPublic,
     ExpenseGroupUpdate,
     ExpenseGroupSettlement,
+    JoinGroupRequestPublic,
+    JoinGroupRequesterPublic,
+    JoinRequestStatus,
 )
 from .utils import generate_invite_code, normalize_invite_code
+
+
+MAX_JOIN_REQUEST_ATTEMPTS = 3
 
 
 def get_group_by_id(*, session: Session, group_id: int) -> ExpenseGroup | None:
@@ -41,6 +48,8 @@ def get_user_groups(*, session: Session, user_id: int) -> list[ExpenseGroup]:
 
 def create_group(*, session: Session, user: User, group_in: ExpenseGroupCreate) -> ExpenseGroup:
     """Create a new expense group and add the creator as a member."""
+    if user.id is None:
+        raise ValueError("User not found")
     invite_code = ensure_invite_code_unique(session=session)
     db_group = ExpenseGroup.model_validate(group_in, update={"created_by": user.id, "invite_code": invite_code})
     session.add(db_group)
@@ -80,6 +89,134 @@ def get_group_by_invite_code(*, session: Session, code: str) -> ExpenseGroup | N
     return session.exec(statement).one_or_none()
 
 
+def get_join_request_by_id(*, session: Session, request_id: int) -> ExpenseGroupJoinRequest | None:
+    return session.get(ExpenseGroupJoinRequest, request_id)
+
+
+def get_join_request_public(*, session: Session, request_id: int) -> JoinGroupRequestPublic | None:
+    statement = (
+        select(ExpenseGroupJoinRequest, User.id, User.name, User.email)
+        .join(User, col(ExpenseGroupJoinRequest.user_id) == col(User.id))
+        .where(ExpenseGroupJoinRequest.id == request_id)
+    )
+    result = session.exec(statement).one_or_none()
+    if not result:
+        return None
+    request, user_id, name, email = result
+    if request.id is None or request.group_id is None:
+        return None
+    if user_id is None:
+        return None
+    if name is None or email is None:
+        return None
+    return JoinGroupRequestPublic(
+        id=request.id,
+        group_id=request.group_id,
+        status=request.status,
+        created_at=request.created_at,
+        requester=JoinGroupRequesterPublic(user_id=user_id, name=name, email=email),
+    )
+
+
+def get_pending_join_request(*, session: Session, group_id: int, user_id: int) -> ExpenseGroupJoinRequest | None:
+    statement = select(ExpenseGroupJoinRequest).where(
+        ExpenseGroupJoinRequest.group_id == group_id,
+        ExpenseGroupJoinRequest.user_id == user_id,
+        ExpenseGroupJoinRequest.status == JoinRequestStatus.PENDING,
+    )
+    return session.exec(statement).one_or_none()
+
+
+def count_declined_join_requests(*, session: Session, group_id: int, user_id: int) -> int:
+    statement = (
+        select(func.count())
+        .select_from(ExpenseGroupJoinRequest)
+        .where(
+            ExpenseGroupJoinRequest.group_id == group_id,
+            ExpenseGroupJoinRequest.user_id == user_id,
+            ExpenseGroupJoinRequest.status == JoinRequestStatus.DECLINED,
+        )
+    )
+    return session.exec(statement).one()
+
+
+def create_join_request_by_invite_code(
+    *, session: Session, user: User, code: str
+) -> tuple[ExpenseGroupJoinRequest, bool]:
+    group = get_group_by_invite_code(session=session, code=code)
+    if not group:
+        raise ValueError("Group not found")
+
+    if group.id is None:
+        raise ValueError("Group not found")
+
+    if user.id is None:
+        raise ValueError("User not found")
+
+    if is_member(session=session, group_id=group.id, user_id=user.id):
+        raise ValueError("User already a member")
+
+    pending_request = get_pending_join_request(session=session, group_id=group.id, user_id=user.id)
+    if pending_request:
+        return pending_request, False
+
+    declined_count = count_declined_join_requests(session=session, group_id=group.id, user_id=user.id)
+    if declined_count >= MAX_JOIN_REQUEST_ATTEMPTS:
+        raise ValueError("Join request limit reached")
+
+    db_request = ExpenseGroupJoinRequest(group_id=group.id, user_id=user.id)
+    session.add(db_request)
+    session.commit()
+    session.refresh(db_request)
+    return db_request, True
+
+
+def list_join_requests(
+    *, session: Session, group_id: int, status: JoinRequestStatus | None = None
+) -> list[JoinGroupRequestPublic]:
+    statement = (
+        select(ExpenseGroupJoinRequest, User.id, User.name, User.email)
+        .join(User, col(ExpenseGroupJoinRequest.user_id) == col(User.id))
+        .where(ExpenseGroupJoinRequest.group_id == group_id)
+    )
+    if status:
+        statement = statement.where(ExpenseGroupJoinRequest.status == status)
+    else:
+        statement = statement.where(ExpenseGroupJoinRequest.status == JoinRequestStatus.PENDING)
+    statement = statement.order_by(col(ExpenseGroupJoinRequest.created_at).desc())
+    results = session.exec(statement).all()
+    items: list[JoinGroupRequestPublic] = []
+    for request, user_id, name, email in results:
+        if request.id is None or request.group_id is None:
+            continue
+        if user_id is None:
+            continue
+        if name is None or email is None:
+            continue
+        items.append(
+            JoinGroupRequestPublic(
+                id=request.id,
+                group_id=request.group_id,
+                status=request.status,
+                created_at=request.created_at,
+                requester=JoinGroupRequesterPublic(user_id=user_id, name=name, email=email),
+            )
+        )
+    return items
+
+
+def resolve_join_request(
+    *, session: Session, request: ExpenseGroupJoinRequest, status: JoinRequestStatus, resolved_by: int
+) -> ExpenseGroupJoinRequest:
+    request.status = status
+    request.resolved_at = datetime.now(UTC)
+    request.resolved_by = resolved_by
+    session.add(request)
+    session.commit()
+    session.refresh(request)
+    return request
+
+
 def ensure_invite_code_unique(*, session: Session) -> str:
     """Generate a unique invite code."""
     for _ in range(10):
@@ -96,6 +233,8 @@ def is_member(*, session: Session, group_id: int, user_id: int) -> bool:
 
 def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
     """Add a user to a group."""
+    if group.id is None:
+        raise ValueError("Group not found")
     db_member = ExpenseGroupMember(group_id=group.id, user_id=user_id)
     session.add(db_member)
     session.commit()
@@ -105,6 +244,8 @@ def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> Expens
 
 def remove_member(*, session: Session, group: ExpenseGroup, user_id: int) -> None:
     """Remove a user from a group."""
+    if group.id is None:
+        raise ValueError("Group not found")
     member = get_member(session=session, group_id=group.id, user_id=user_id)
     if member:
         session.delete(member)
@@ -149,6 +290,8 @@ def get_user_groups_paginated(
 
 def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | None) -> ExpenseGroupDetail:
     """Get expense group with members details."""
+    if group.id is None:
+        raise ValueError("Group not found")
     members = get_group_members(session=session, group_id=group.id)
     expense_count = get_group_expense_count(session=session, group_id=group.id)
     last_activity_at = get_group_last_activity(session=session, group_id=group.id)
@@ -246,6 +389,8 @@ def get_group_list_item(
     last_activity_by_group: dict[int, datetime | None],
 ) -> ExpenseGroupListItem:
     """Get expense group list item for a user with totals."""
+    if group.id is None:
+        raise ValueError("Group not found")
     expense_count = expense_counts.get(group.id, 0)
     last_activity_at = last_activity_by_group.get(group.id)
     owed_by_user_total, owed_to_user_total = totals_by_group.get(group.id, (Decimal("0.00"), Decimal("0.00")))

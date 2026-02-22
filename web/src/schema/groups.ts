@@ -56,6 +56,20 @@ export const JoinGroupRequestSchema = z.object({
   code: z.string().trim().min(1),
 });
 
+export const JoinGroupRequesterSchema = z.object({
+  user_id: z.number().positive(),
+  name: z.string().min(1).max(100),
+  email: z.string().email(),
+});
+
+export const JoinGroupRequestPublicSchema = z.object({
+  id: z.number().positive(),
+  group_id: z.number().positive(),
+  status: z.enum(["pending", "accepted", "declined"]),
+  created_at: z.iso.datetime({ local: true }),
+  requester: JoinGroupRequesterSchema,
+});
+
 export type ExpenseGroup = z.infer<typeof ExpenseGroupSchema>;
 export type ExpenseGroupCreate = z.infer<typeof ExpenseGroupCreateSchema>;
 export type ExpenseGroupUpdate = z.infer<typeof ExpenseGroupUpdateSchema>;
@@ -67,3 +81,7 @@ export type PaginatedGroupsResponse = z.infer<
   typeof PaginatedGroupsResponseSchema
 >;
 export type JoinGroupRequest = z.infer<typeof JoinGroupRequestSchema>;
+export type JoinGroupRequester = z.infer<typeof JoinGroupRequesterSchema>;
+export type JoinGroupRequestPublic = z.infer<
+  typeof JoinGroupRequestPublicSchema
+>;

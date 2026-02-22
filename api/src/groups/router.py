@@ -62,8 +62,6 @@ async def list_expense_groups(
     limit: int = Query(default=12, ge=1, le=100),
 ) -> PaginatedResponse[ExpenseGroupListItem]:
     """List expense groups where the authenticated user is a member with pagination."""
-    if authenticated_user.id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     total = get_user_groups_count(session=session, user_id=authenticated_user.id)
     groups = get_user_groups_paginated(session=session, user_id=authenticated_user.id, offset=offset, limit=limit)
     group_ids = [group.id for group in groups if group.id is not None]
@@ -100,8 +98,6 @@ async def list_group_settlements(
     limit: int = Query(default=10, ge=1, le=100),
 ) -> PaginatedResponse[ExpenseGroupSettlementPublic]:
     """List settlements in a group with pagination."""
-    if group.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
     total = get_group_settlements_count(session=session, group_id=group.id)
     settlements = get_group_settlements_paginated(session=session, group_id=group.id, offset=offset, limit=limit)
     items = [ExpenseGroupSettlementPublic.model_validate(settlement) for settlement in settlements]
@@ -128,8 +124,6 @@ async def join_group_by_code(
     *, session: DbSession, authenticated_user: AuthenticatedUser, join_in: JoinGroupRequest, response: Response
 ) -> JoinGroupRequestPublic:
     """Request to join an expense group using an invite code."""
-    if authenticated_user.id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     try:
         join_request, created = create_join_request_by_invite_code(
             session=session, user=authenticated_user, code=join_in.code
@@ -166,8 +160,6 @@ async def list_group_join_requests(
     status_filter: JoinRequestStatus | None = Query(default=JoinRequestStatus.PENDING, alias="status"),
 ) -> list[JoinGroupRequestPublic]:
     """List join requests for a group (owner only)."""
-    if group.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
     return list_join_requests(session=session, group_id=group.id, status=status_filter)
 
 
@@ -176,8 +168,6 @@ async def accept_group_join_request(
     *, session: DbSession, group: GroupAsOwner, authenticated_user: AuthenticatedUser, request_id: int
 ) -> JoinGroupRequestPublic:
     """Accept a join request and add the user to the group."""
-    if authenticated_user.id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     if group.id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
     join_request = get_join_request_by_id(session=session, request_id=request_id)
@@ -206,8 +196,6 @@ async def decline_group_join_request(
     *, session: DbSession, group: GroupAsOwner, authenticated_user: AuthenticatedUser, request_id: int
 ) -> JoinGroupRequestPublic:
     """Decline a join request for a group."""
-    if authenticated_user.id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     join_request = get_join_request_by_id(session=session, request_id=request_id)
     if not join_request or join_request.group_id != group.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Join request not found")
@@ -234,8 +222,6 @@ async def create_group_settlement_payment(
     settlement_in: GroupSettlementCreate,
 ) -> ExpenseGroupDetail:
     """Record a settlement payment. User must be a group member."""
-    if group.id is None or authenticated_user.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
     if settlement_in.creditor_id == authenticated_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Creditor must be a different group member")
 

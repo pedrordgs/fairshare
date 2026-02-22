@@ -1,12 +1,17 @@
 from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi import APIRouter, Depends, status, HTTPException
 
 from auth.dependencies import AuthenticatedUser
+from core.conf import get_settings
 from db.dependencies import DbSession
-from .security import create_access_token, verify_password
+
+from .google import exchange_code_for_tokens, get_google_oauth_url, get_google_user_info
 from .models import Token, User, UserCreate, UserPublic, UserUpdate
-from .service import create_user, get_user_by_email, update_user
+from .security import create_access_token, verify_password
+from .service import create_user, get_or_create_user_by_google, get_user_by_email, update_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,3 +52,30 @@ def update_authenticated_user(
     ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
     return update_user(session=session, user=authenticated_user, user_in=user_in)
+
+
+@router.get("/google/")
+async def google_login() -> RedirectResponse:
+    settings = get_settings()
+    if not settings.google_client_id:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Google OAuth is not configured")
+    oauth_url = get_google_oauth_url(state="placeholder")
+    return RedirectResponse(url=oauth_url)
+
+
+@router.get("/google/callback")
+async def google_callback(*, session: DbSession, code: str) -> RedirectResponse:
+    settings = get_settings()
+    try:
+        token_data = await exchange_code_for_tokens(code)
+        user_info = await get_google_user_info(token_data["access_token"])
+        user = get_or_create_user_by_google(
+            session=session,
+            google_id=user_info["id"],
+            email=user_info["email"],
+            name=user_info.get("name", user_info["email"]),
+        )
+        access_token = create_access_token(user=user)
+        return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?token={access_token}")
+    except Exception:
+        return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?error=authentication_failed")

@@ -3,10 +3,12 @@ import {
   type ExpenseGroupCreate,
   type ExpenseGroupDetail,
   type JoinGroupRequest,
+  type JoinGroupRequestPublic,
   type PaginatedGroupsResponse,
   ExpenseGroupListItemSchema,
   ExpenseGroupDetailSchema,
   JoinGroupRequestSchema,
+  JoinGroupRequestPublicSchema,
   PaginatedGroupsResponseSchema,
 } from "@schema/groups";
 
@@ -79,14 +81,57 @@ export const groupsApi = {
   },
 
   /**
-   * Joins an expense group using an invite code.
+   * Requests to join an expense group using an invite code.
    *
    * @param code - The invite code provided by the group owner
-   * @returns Promise resolving to the joined group detail
+   * @returns Promise resolving to the join request details
    */
-  joinGroup: async (code: string): Promise<ExpenseGroupDetail> => {
+  joinGroup: async (code: string): Promise<JoinGroupRequestPublic> => {
     const payload: JoinGroupRequest = JoinGroupRequestSchema.parse({ code });
     const response = await api.post("/groups/join/", payload);
-    return ExpenseGroupDetailSchema.parse(response.data);
+    return JoinGroupRequestPublicSchema.parse(response.data);
+  },
+
+  /**
+   * Lists pending join requests for a group (owner only).
+   */
+  listJoinRequests: async (
+    groupId: number,
+  ): Promise<JoinGroupRequestPublic[]> => {
+    validateGroupId(groupId);
+    const response = await api.get(`/groups/${groupId}/join-requests/`, {
+      params: { status: "pending" },
+    });
+    return response.data.map((item: unknown) =>
+      JoinGroupRequestPublicSchema.parse(item),
+    ) as JoinGroupRequestPublic[];
+  },
+
+  /**
+   * Accepts a join request (owner only).
+   */
+  acceptJoinRequest: async (
+    groupId: number,
+    requestId: number,
+  ): Promise<JoinGroupRequestPublic> => {
+    validateGroupId(groupId);
+    const response = await api.post(
+      `/groups/${groupId}/join-requests/${requestId}/accept/`,
+    );
+    return JoinGroupRequestPublicSchema.parse(response.data);
+  },
+
+  /**
+   * Declines a join request (owner only).
+   */
+  declineJoinRequest: async (
+    groupId: number,
+    requestId: number,
+  ): Promise<JoinGroupRequestPublic> => {
+    validateGroupId(groupId);
+    const response = await api.post(
+      `/groups/${groupId}/join-requests/${requestId}/decline/`,
+    );
+    return JoinGroupRequestPublicSchema.parse(response.data);
   },
 };

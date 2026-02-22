@@ -1,10 +1,11 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Tabs, TabItem } from "@components/ui/Tabs";
 import { Button } from "@components/ui/Button";
+import { ButtonWithBadge } from "@components/ui/ButtonWithBadge";
 import { groupsApi } from "@services/groups";
 import { expensesApi } from "@services/expenses";
 import { useAuth } from "@context/AuthContext";
@@ -15,6 +16,8 @@ import receiptIcon from "@assets/icons/receipt-icon.svg";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
 import { SettlementHistory } from "@components/settlements/SettlementHistory";
+import { JoinRequestsModal } from "@components/groups/JoinRequestsModal";
+import { toast } from "sonner";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -87,8 +90,10 @@ export const GroupDetailPage: React.FC = () => {
   const { groupId: groupIdParam } = routeApi.useParams();
   const navigate = useNavigate();
   const { user, isLoading: isAuthLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
   const [isSettleUpOpen, setIsSettleUpOpen] = React.useState(false);
+  const [isJoinRequestsOpen, setIsJoinRequestsOpen] = React.useState(false);
   const [activeCenterTab, setActiveCenterTab] = React.useState<
     "expenses" | "settlements"
   >("expenses");
@@ -112,6 +117,60 @@ export const GroupDetailPage: React.FC = () => {
     enabled: !isAuthLoading && !!user && !!groupId,
   });
 
+  const isOwner = !!group && !!user && group.created_by === user.id;
+
+  const {
+    data: joinRequests,
+    isLoading: isJoinRequestsLoading,
+    error: joinRequestsError,
+  } = useQuery({
+    queryKey: ["group", groupId, "join-requests"],
+    queryFn: () => {
+      if (!groupId) {
+        throw new Error("Invalid group ID");
+      }
+      return groupsApi.listJoinRequests(groupId);
+    },
+    enabled: !isAuthLoading && !!user && !!groupId && isOwner,
+  });
+
+  const acceptJoinRequestMutation = useMutation({
+    mutationFn: (requestId: number) => {
+      if (!groupId) {
+        throw new Error("Invalid group ID");
+      }
+      return groupsApi.acceptJoinRequest(groupId, requestId);
+    },
+    onSuccess: () => {
+      toast.success("Join request accepted.");
+      queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+      queryClient.invalidateQueries({
+        queryKey: ["group", groupId, "join-requests"],
+      });
+    },
+    onError: () => {
+      toast.error("Couldn't accept the join request.");
+    },
+  });
+
+  const declineJoinRequestMutation = useMutation({
+    mutationFn: (requestId: number) => {
+      if (!groupId) {
+        throw new Error("Invalid group ID");
+      }
+      return groupsApi.declineJoinRequest(groupId, requestId);
+    },
+    onSuccess: () => {
+      toast.success("Join request declined.");
+      queryClient.invalidateQueries({
+        queryKey: ["group", groupId, "join-requests"],
+      });
+    },
+    onError: () => {
+      toast.error("Couldn't decline the join request.");
+    },
+  });
+
   const {
     data: expensesData,
     isLoading: isExpensesLoading,
@@ -128,6 +187,7 @@ export const GroupDetailPage: React.FC = () => {
   });
 
   const inviteCode = group?.invite_code;
+  const joinRequestsCount = joinRequests?.length ?? 0;
 
   const handleCopyInviteCode = React.useCallback(() => {
     if (!inviteCode) {
@@ -270,11 +330,28 @@ export const GroupDetailPage: React.FC = () => {
             ← Back to Dashboard
           </Button>
         </div>
-        <h1 className="text-5xl font-bold text-slate-900 mb-4">{group.name}</h1>
-        <div className="flex items-center gap-4 text-slate-500">
-          <span className="text-lg">{group.members.length} members</span>
-          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-          <span className="text-lg">Group #{group.id}</span>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-5xl font-bold text-slate-900 mb-4">
+              {group.name}
+            </h1>
+            <div className="flex items-center gap-4 text-slate-500">
+              <span className="text-lg">{group.members.length} members</span>
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              <span className="text-lg">Group #{group.id}</span>
+            </div>
+          </div>
+          {isOwner && (
+            <ButtonWithBadge
+              variant="secondary"
+              size="sm"
+              badgeCount={joinRequestsCount}
+              badgeVariant="warning"
+              onClick={() => setIsJoinRequestsOpen(true)}
+            >
+              Join requests
+            </ButtonWithBadge>
+          )}
         </div>
       </div>
 
@@ -587,6 +664,23 @@ export const GroupDetailPage: React.FC = () => {
           onClose={() => setIsSettleUpOpen(false)}
           owedByUser={group.owed_by_user}
           membersById={membersById}
+        />
+      )}
+      {isOwner && (
+        <JoinRequestsModal
+          isOpen={isJoinRequestsOpen}
+          onClose={() => setIsJoinRequestsOpen(false)}
+          requests={joinRequests ?? []}
+          isLoading={isJoinRequestsLoading}
+          isError={!!joinRequestsError}
+          isMutating={
+            acceptJoinRequestMutation.isPending ||
+            declineJoinRequestMutation.isPending
+          }
+          onAccept={(requestId) => acceptJoinRequestMutation.mutate(requestId)}
+          onDecline={(requestId) =>
+            declineJoinRequestMutation.mutate(requestId)
+          }
         />
       )}
     </div>

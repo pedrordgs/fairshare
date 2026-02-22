@@ -4,8 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  type ExpenseGroupDetail,
   type JoinGroupRequest,
+  type JoinGroupRequestPublic,
   JoinGroupRequestSchema,
 } from "@schema/groups";
 import { groupsApi } from "@services/groups";
@@ -16,7 +16,7 @@ import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 
 interface JoinGroupFormProps {
-  onSuccess?: (group: ExpenseGroupDetail) => void;
+  onSuccess?: (request: JoinGroupRequestPublic) => void;
 }
 
 const formatInviteCode = (value: string) =>
@@ -44,15 +44,14 @@ export const JoinGroupForm: React.FC<JoinGroupFormProps> = ({ onSuccess }) => {
 
   const joinGroupMutation = useMutation({
     mutationFn: (code: string) => groupsApi.joinGroup(code),
-    onSuccess: (group: ExpenseGroupDetail) => {
+    onSuccess: (request: JoinGroupRequestPublic) => {
       clearApiErrors();
-      toast.success("Joined the group!");
+      toast.success("Join request sent for approval.");
       queryClient.invalidateQueries({
         queryKey: ["groups", "list"],
         exact: false,
       });
-      queryClient.invalidateQueries({ queryKey: ["group", group.id] });
-      onSuccess?.(group);
+      onSuccess?.(request);
     },
     onError: (error: unknown) => {
       setApiError(error);

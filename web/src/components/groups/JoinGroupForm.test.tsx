@@ -43,17 +43,14 @@ describe("JoinGroupForm", () => {
     const user = userEvent.setup();
     vi.mocked(groupsApi.joinGroup).mockResolvedValue({
       id: 1,
-      name: "Joined Group",
-      created_by: 2,
-      invite_code: "JOIN1234AB",
-      members: [],
+      group_id: 2,
+      status: "pending",
       created_at: "2026-01-05T10:30:00Z",
-      expense_count: 0,
-      owed_by_user_total: 0,
-      owed_to_user_total: 0,
-      owed_by_user: [],
-      owed_to_user: [],
-      last_activity_at: null,
+      requester: {
+        user_id: 5,
+        name: "Requester",
+        email: "requester@example.com",
+      },
     });
 
     renderWithProviders(<JoinGroupForm />);
@@ -69,21 +66,18 @@ describe("JoinGroupForm", () => {
   it("calls onSuccess with joined group", async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
-    const group = {
+    const joinRequest = {
       id: 2,
-      name: "Joined Group",
-      created_by: 3,
-      invite_code: "CODE123456",
-      members: [],
+      group_id: 3,
+      status: "pending",
       created_at: "2026-01-05T10:30:00Z",
-      expense_count: 0,
-      owed_by_user_total: 0,
-      owed_to_user_total: 0,
-      owed_by_user: [],
-      owed_to_user: [],
-      last_activity_at: null,
+      requester: {
+        user_id: 6,
+        name: "Requester",
+        email: "requester@example.com",
+      },
     };
-    vi.mocked(groupsApi.joinGroup).mockResolvedValue(group);
+    vi.mocked(groupsApi.joinGroup).mockResolvedValue(joinRequest);
 
     renderWithProviders(<JoinGroupForm onSuccess={onSuccess} />);
 
@@ -91,7 +85,7 @@ describe("JoinGroupForm", () => {
     await user.click(screen.getByRole("button", { name: /join group/i }));
 
     await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledWith(group);
+      expect(onSuccess).toHaveBeenCalledWith(joinRequest);
     });
   });
 });

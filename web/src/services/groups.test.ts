@@ -347,59 +347,116 @@ describe("Groups Service", () => {
   });
 
   describe("groupsApi.joinGroup", () => {
-    const validGroupDetail = {
+    const validJoinRequest = {
       id: 1,
-      name: "Joined Group",
-      created_by: 2,
-      invite_code: "JOIN1234AB",
-      members: [
-        {
-          user_id: 2,
-          name: "Owner",
-          email: "owner@example.com",
-        },
-        {
-          user_id: 1,
-          name: "Member",
-          email: "member@example.com",
-        },
-      ],
+      group_id: 2,
+      status: "pending",
       created_at: "2026-01-05T10:30:00Z",
-      expense_count: 0,
-      owed_by_user_total: 0,
-      owed_to_user_total: 0,
-      owed_by_user: [],
-      owed_to_user: [],
-      last_activity_at: null,
+      requester: {
+        user_id: 5,
+        name: "Requester",
+        email: "requester@example.com",
+      },
     };
 
     it("sends POST request to /groups/join with code", async () => {
-      vi.mocked(api.post).mockResolvedValue({ data: validGroupDetail });
+      vi.mocked(api.post).mockResolvedValue({ data: validJoinRequest });
       const result = await groupsApi.joinGroup("JOIN1234AB");
 
       expect(api.post).toHaveBeenCalledWith("/groups/join/", {
         code: "JOIN1234AB",
       });
-      expect(result).toEqual(validGroupDetail);
+      expect(result).toEqual(validJoinRequest);
     });
 
     it("validates response data against schema", async () => {
-      vi.mocked(api.post).mockResolvedValue({ data: validGroupDetail });
+      vi.mocked(api.post).mockResolvedValue({ data: validJoinRequest });
       const result = await groupsApi.joinGroup("JOIN1234AB");
-      expect(result).toEqual(validGroupDetail);
+      expect(result).toEqual(validJoinRequest);
     });
 
     it("throws error for invalid response", async () => {
       vi.mocked(api.post).mockResolvedValue({
         data: {
           id: 1,
-          name: "Joined Group",
-          created_by: 2,
-          members: [],
+          group_id: 2,
+          status: "pending",
         },
       });
 
       await expect(groupsApi.joinGroup("JOIN1234AB")).rejects.toThrow();
+    });
+  });
+
+  describe("groupsApi.listJoinRequests", () => {
+    const validJoinRequest = {
+      id: 1,
+      group_id: 2,
+      status: "pending",
+      created_at: "2026-01-05T10:30:00Z",
+      requester: {
+        user_id: 5,
+        name: "Requester",
+        email: "requester@example.com",
+      },
+    };
+
+    it("sends GET request to /groups/:id/join-requests", async () => {
+      vi.mocked(api.get).mockResolvedValue({ data: [validJoinRequest] });
+      const result = await groupsApi.listJoinRequests(2);
+
+      expect(api.get).toHaveBeenCalledWith("/groups/2/join-requests/", {
+        params: { status: "pending" },
+      });
+      expect(result).toEqual([validJoinRequest]);
+    });
+  });
+
+  describe("groupsApi.acceptJoinRequest", () => {
+    const validJoinRequest = {
+      id: 4,
+      group_id: 2,
+      status: "accepted",
+      created_at: "2026-01-05T10:30:00Z",
+      requester: {
+        user_id: 5,
+        name: "Requester",
+        email: "requester@example.com",
+      },
+    };
+
+    it("sends POST request to accept a join request", async () => {
+      vi.mocked(api.post).mockResolvedValue({ data: validJoinRequest });
+      const result = await groupsApi.acceptJoinRequest(2, 4);
+
+      expect(api.post).toHaveBeenCalledWith(
+        "/groups/2/join-requests/4/accept/",
+      );
+      expect(result).toEqual(validJoinRequest);
+    });
+  });
+
+  describe("groupsApi.declineJoinRequest", () => {
+    const validJoinRequest = {
+      id: 5,
+      group_id: 2,
+      status: "declined",
+      created_at: "2026-01-05T10:30:00Z",
+      requester: {
+        user_id: 5,
+        name: "Requester",
+        email: "requester@example.com",
+      },
+    };
+
+    it("sends POST request to decline a join request", async () => {
+      vi.mocked(api.post).mockResolvedValue({ data: validJoinRequest });
+      const result = await groupsApi.declineJoinRequest(2, 5);
+
+      expect(api.post).toHaveBeenCalledWith(
+        "/groups/2/join-requests/5/decline/",
+      );
+      expect(result).toEqual(validJoinRequest);
     });
   });
 });

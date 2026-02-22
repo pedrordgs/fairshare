@@ -17,6 +17,9 @@ vi.mock("@services/groups", () => ({
   groupsApi: {
     createGroup: vi.fn(),
     getGroup: vi.fn(),
+    listJoinRequests: vi.fn(),
+    acceptJoinRequest: vi.fn(),
+    declineJoinRequest: vi.fn(),
   },
 }));
 
@@ -134,6 +137,20 @@ describe("GroupDetailPage", () => {
     owed_to_user: [],
     last_activity_at: null,
   };
+
+  const baseJoinRequests = [
+    {
+      id: 10,
+      group_id: 1,
+      status: "pending",
+      created_at: "2026-01-05T10:30:00Z",
+      requester: {
+        user_id: 2,
+        name: "Jane Smith",
+        email: "jane@example.com",
+      },
+    },
+  ];
 
   describe("Loading States", () => {
     it("shows loading spinner when auth is loading", () => {
@@ -280,6 +297,9 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -304,6 +324,9 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -327,11 +350,165 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
       await waitFor(() => {
         expect(screen.getByText(/Back to Dashboard/i)).toBeInTheDocument();
+      });
+    });
+
+    it("shows join requests button for owner", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [{ user_id: 1, name: "Owner", email: "owner@example.com" }],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /Join requests/i }),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("opens join requests modal for owner", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [{ user_id: 1, name: "Owner", email: "owner@example.com" }],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
+
+      renderWithProviders(<GroupDetailPage />);
+
+      const user = userEvent.setup();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /Join requests/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: /Join requests/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Jane Smith")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /Accept/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /Decline/i }),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("shows empty state in join requests modal", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [{ user_id: 1, name: "Owner", email: "owner@example.com" }],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
+
+      renderWithProviders(<GroupDetailPage />);
+
+      const user = userEvent.setup();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /Join requests/i }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("button", { name: /Join requests/i }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/No pending join requests/i),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("hides join requests for non-owner", async () => {
+      vi.mocked(AuthContext.useAuth).mockReturnValue({
+        user: { id: 2, email: "member@example.com", name: "Member" },
+        isLoading: false,
+        isAuthenticated: true,
+        error: null,
+        login: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const mockGroup = {
+        ...baseGroup,
+        created_by: 1,
+        members: [
+          { user_id: 1, name: "Owner", email: "owner@example.com" },
+          { user_id: 2, name: "Member", email: "member@example.com" },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.queryByRole("button", { name: /Join requests/i }),
+        ).not.toBeInTheDocument();
       });
     });
   });
@@ -357,6 +534,9 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -385,6 +565,9 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -413,6 +596,9 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 
@@ -437,6 +623,9 @@ describe("GroupDetailPage", () => {
         limit: 20,
       });
       mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
 
       renderWithProviders(<GroupDetailPage />);
 

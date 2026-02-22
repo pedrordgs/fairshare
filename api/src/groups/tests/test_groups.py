@@ -507,11 +507,14 @@ class TestJoinGroup:
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Join Group"))
 
         response = client.post("/groups/join/", json={"code": group.invite_code})
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.json()
-        assert data["id"] == group.id
-        member_ids = [m["user_id"] for m in data["members"]]
-        assert len(member_ids) == 2
+        assert data["group_id"] == group.id
+        assert data["status"] == "pending"
+        assert data["requester"]["email"] is not None
+
+        detail_response = client.get(f"/groups/{group.id}/")
+        assert detail_response.status_code == 404
 
     def test_not_found(self, authenticated_client: AuthenticatedClient) -> None:
         client, _ = authenticated_client
@@ -521,13 +524,100 @@ class TestJoinGroup:
 
     def test_idempotent(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
         client, user = authenticated_client
-        group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="My Group"))
+        owner, _ = create_test_user(session, "owner2@example.com", "Owner Two")
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="My Group"))
         response = client.post("/groups/join/", json={"code": group.invite_code})
-        assert response.status_code == 200
-        data = response.json()
-        member_ids = [m["user_id"] for m in data["members"]]
-        assert member_ids.count(user.id) == 1
+        assert response.status_code == 201
+        second_response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert second_response.status_code == 200
+        assert second_response.json()["id"] == response.json()["id"]
 
     def test_no_token(self, client: TestClient) -> None:
         response = client.post("/groups/join/", json={"code": "TESTCODE"})
         assert response.status_code == 401
+
+
+class TestJoinGroupRequests:
+    def test_owner_can_list_requests(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Request Group"))
+        requester, requester_token = create_test_user(session, "requester@example.com", "Requester")
+
+        client.headers["Authorization"] = f"Bearer {requester_token}"
+        response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert response.status_code == 201
+
+        client.headers["Authorization"] = f"Bearer {create_access_token(user=owner)}"
+        list_response = client.get(f"/groups/{group.id}/join-requests/")
+        assert list_response.status_code == 200
+        data = list_response.json()
+        assert len(data) == 1
+        assert data[0]["requester"]["email"] == requester.email
+
+    def test_owner_can_accept_request(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Accept Group"))
+        requester, requester_token = create_test_user(session, "accept@example.com", "Accept User")
+
+        client.headers["Authorization"] = f"Bearer {requester_token}"
+        request_response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert request_response.status_code == 201
+        request_id = request_response.json()["id"]
+
+        client.headers["Authorization"] = f"Bearer {create_access_token(user=owner)}"
+        accept_response = client.post(f"/groups/{group.id}/join-requests/{request_id}/accept/")
+        assert accept_response.status_code == 200
+        assert accept_response.json()["status"] == "accepted"
+
+        detail_response = client.get(f"/groups/{group.id}/")
+        assert detail_response.status_code == 200
+        member_ids = [m["user_id"] for m in detail_response.json()["members"]]
+        assert requester.id in member_ids
+
+    def test_owner_can_decline_request(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Decline Group"))
+        requester, requester_token = create_test_user(session, "decline@example.com", "Decline User")
+
+        client.headers["Authorization"] = f"Bearer {requester_token}"
+        request_response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert request_response.status_code == 201
+        request_id = request_response.json()["id"]
+
+        client.headers["Authorization"] = f"Bearer {create_access_token(user=owner)}"
+        decline_response = client.post(f"/groups/{group.id}/join-requests/{request_id}/decline/")
+        assert decline_response.status_code == 200
+        assert decline_response.json()["status"] == "declined"
+
+        detail_response = client.get(f"/groups/{group.id}/")
+        assert detail_response.status_code == 404
+
+    def test_declined_request_limit(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Limit Group"))
+        requester, requester_token = create_test_user(session, "limit@example.com", "Limit User")
+
+        for _ in range(3):
+            client.headers["Authorization"] = f"Bearer {requester_token}"
+            request_response = client.post("/groups/join/", json={"code": group.invite_code})
+            assert request_response.status_code in (200, 201)
+            request_id = request_response.json()["id"]
+
+            client.headers["Authorization"] = f"Bearer {create_access_token(user=owner)}"
+            decline_response = client.post(f"/groups/{group.id}/join-requests/{request_id}/decline/")
+            assert decline_response.status_code == 200
+
+        client.headers["Authorization"] = f"Bearer {requester_token}"
+        fourth_response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert fourth_response.status_code == 400
+        assert fourth_response.json()["detail"] == "Join request limit reached for this group"
+
+    def test_rejects_join_request_when_member(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Member Group"))
+
+        response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert response.status_code == 400
+        assert response.json()["detail"] == "You are already a member of this group"

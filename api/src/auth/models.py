@@ -11,6 +11,7 @@ class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     hashed_password: str | None = Field(default=None)
     google_id: str | None = Field(default=None, unique=True)
+    profile_picture_url: str | None = Field(default=None)
 
 
 class UserCreate(UserBase):
@@ -19,6 +20,7 @@ class UserCreate(UserBase):
 
 class UserPublic(UserBase):
     id: int
+    profile_picture_url: str | None = None
 
 
 class UserUpdate(SQLModel):

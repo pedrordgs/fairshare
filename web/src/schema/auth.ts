@@ -4,6 +4,7 @@ export const UserSchema = z.object({
   id: z.number(),
   name: z.string().min(1),
   email: z.email(),
+  profile_picture_url: z.string().url().nullable().optional(),
 });
 
 export const UserCreateSchema = z.object({

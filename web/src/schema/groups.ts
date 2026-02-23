@@ -19,6 +19,7 @@ export const ExpenseGroupMemberSchema = z.object({
   user_id: z.number().positive(),
   name: z.string().min(1).max(100),
   email: z.string().email(),
+  profile_picture_url: z.string().url().nullable().optional(),
 });
 
 export const ExpenseGroupDebtItemSchema = z.object({

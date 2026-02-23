@@ -394,8 +394,18 @@ export const GroupDetailPage: React.FC = () => {
                       key={member.user_id}
                       className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
                     >
-                      <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                        {member.name.charAt(0).toUpperCase()}
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-accent-400 to-accent-600">
+                        {member.profile_picture_url ? (
+                          <img
+                            src={member.profile_picture_url}
+                            alt={`${member.name} avatar`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white text-sm font-bold">
+                            {member.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-slate-900 truncate">

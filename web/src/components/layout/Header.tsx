@@ -49,10 +49,22 @@ export const HeaderWithAuth: React.FC = () => {
               {authUser ? (
                 <div className="flex items-center space-x-4">
                   <div className="hidden sm:flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">
-                        {authUser.name?.charAt(0).toUpperCase() || "U"}
-                      </span>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary-500 to-accent-600">
+                      {authUser.profile_picture_url ? (
+                        <img
+                          src={authUser.profile_picture_url}
+                          alt={
+                            authUser.name
+                              ? `${authUser.name} avatar`
+                              : "User avatar"
+                          }
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-white text-sm font-bold">
+                          {authUser.name?.charAt(0).toUpperCase() || "U"}
+                        </span>
+                      )}
                     </div>
                     <span className="text-slate-700 font-medium">
                       Welcome, {authUser.name}!

@@ -25,16 +25,20 @@ def create_user(*, session: Session, user_in: UserCreate) -> User:
     return db_user
 
 
-def get_or_create_user_by_google(*, session: Session, google_id: str, email: EmailStr, name: str) -> User:
+def get_or_create_user_by_google(
+    *, session: Session, google_id: str, email: EmailStr, name: str, profile_picture_url: str | None = None
+) -> User:
     if user := get_user_by_google_id(session=session, google_id=google_id):
         return user
     if user := get_user_by_email(session=session, email=email):
         user.google_id = google_id
+        if profile_picture_url and not user.profile_picture_url:
+            user.profile_picture_url = profile_picture_url
         session.add(user)
         session.commit()
         session.refresh(user)
         return user
-    db_user = User(email=email, name=name, google_id=google_id)
+    db_user = User(email=email, name=name, google_id=google_id, profile_picture_url=profile_picture_url)
     session.add(db_user)
     session.commit()
     session.refresh(db_user)

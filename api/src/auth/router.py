@@ -74,6 +74,7 @@ async def google_callback(*, session: DbSession, code: str) -> RedirectResponse:
             google_id=user_info["id"],
             email=user_info["email"],
             name=user_info.get("name", user_info["email"]),
+            profile_picture_url=user_info.get("picture"),
         )
         access_token = create_access_token(user=user)
         return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?token={access_token}")

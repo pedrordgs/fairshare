@@ -23,7 +23,7 @@ fairshare/
 ## Important Notes
 
 - Always check existing patterns in the codebase before implementing
-- Never change `todo.md` file unless explicitly told to do so
+- Never commit or push directly to `master` branch. Always make sure to create a pr.
 
 ## API
 

@@ -2,6 +2,7 @@ import React from "react";
 
 export interface GoogleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "login" | "signup";
+  redirect?: string;
 }
 
 const GoogleIcon = () => (
@@ -27,6 +28,7 @@ const GoogleIcon = () => (
 
 export const GoogleButton: React.FC<GoogleButtonProps> = ({
   variant = "login",
+  redirect,
   disabled,
   className = "",
   ...props
@@ -34,10 +36,18 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
   const text =
     variant === "signup" ? "Sign up with Google" : "Sign in with Google";
 
+  const handleClick = () => {
+    const googleAuthUrl = redirect
+      ? `/auth/google/?redirect=${encodeURIComponent(redirect)}`
+      : "/auth/google/";
+    window.location.href = googleAuthUrl;
+  };
+
   return (
     <button
       type="button"
       disabled={disabled}
+      onClick={handleClick}
       className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
       {...props}
     >

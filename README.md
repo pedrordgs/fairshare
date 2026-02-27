@@ -21,7 +21,6 @@ docker compose up --build
 | Web (React) | http://localhost:5173 |
 | API (FastAPI) | http://localhost:8001 |
 | API Docs | http://localhost:8001/docs |
-| Database (PostgreSQL) | localhost:5433 |
 | pgAdmin | http://localhost:8081 |
 
 For package-specific details, see [web/README.md](web/README.md) and [api/README.md](api/README.md).

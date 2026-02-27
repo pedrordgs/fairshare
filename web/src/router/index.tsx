@@ -9,7 +9,6 @@ import { HomePage } from "@pages/HomePage";
 import { DashboardPage } from "@pages/DashboardPage";
 import { StyleguidePage } from "@pages/StyleguidePage";
 import { GroupDetailPage } from "@pages/GroupDetailPage";
-import { AuthCallbackPage } from "@pages/AuthCallbackPage";
 import { HeaderWithAuth } from "@components/layout/Header";
 import { FooterWithAuth } from "@components/layout/Footer";
 import { getAuthToken } from "@services/auth";
@@ -75,13 +74,6 @@ const styleguideRoute = createRoute({
   component: StyleguidePage,
 });
 
-// Create auth callback route for OAuth
-const authCallbackRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/auth/callback",
-  component: AuthCallbackPage,
-});
-
 // Create group detail route with auth guard
 const groupDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -96,7 +88,6 @@ export const router = createRouter({
     indexRoute,
     dashboardRoute,
     styleguideRoute,
-    authCallbackRoute,
     groupDetailRoute,
   ]),
 });

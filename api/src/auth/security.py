@@ -9,9 +9,7 @@ from core.conf import get_settings
 password_hash = PasswordHash.recommended()
 
 
-def verify_password(plain_password: str, hashed_password: str | None) -> bool:
-    if hashed_password is None:
-        return False
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return password_hash.verify(plain_password, hashed_password)
 
 

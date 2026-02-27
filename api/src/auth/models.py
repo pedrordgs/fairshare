@@ -9,8 +9,7 @@ class UserBase(SQLModel):
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    hashed_password: str | None = Field(default=None)
-    google_id: str | None = Field(default=None, unique=True)
+    hashed_password: str
 
 
 class UserCreate(UserBase):

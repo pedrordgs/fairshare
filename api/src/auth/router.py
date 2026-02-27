@@ -1,24 +1,16 @@
-import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, status
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from auth.dependencies import AuthenticatedUser
-from core.conf import get_settings
-from core.utils import sign_value, verify_signed_value
 from db.dependencies import DbSession
 
-from .google import exchange_code_for_tokens, get_google_oauth_url, get_google_user_info
 from .models import Token, User, UserCreate, UserPublic, UserUpdate
 from .security import create_access_token, verify_password
-from .service import create_user, get_or_create_user_by_google, get_user_by_email, update_user
+from .service import create_user, get_user_by_email, update_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-OAUTH_STATE_COOKIE = "oauth_state"
-OAUTH_REDIRECT_COOKIE = "oauth_redirect"
 
 
 @router.post("/register/", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
@@ -57,69 +49,3 @@ def update_authenticated_user(
     ):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
     return update_user(session=session, user=authenticated_user, user_in=user_in)
-
-
-@router.get("/google/")
-async def google_login(redirect: str | None = None) -> RedirectResponse:
-    settings = get_settings()
-    if not settings.google_client_id:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Google OAuth is not configured")
-
-    state = secrets.token_urlsafe(32)
-    signed_state = sign_value(state, settings.secret_key)
-
-    response = RedirectResponse(url=get_google_oauth_url(state=state))
-    response.set_cookie(
-        key=OAUTH_STATE_COOKIE, value=signed_state, httponly=True, secure=True, samesite="lax", max_age=600
-    )
-
-    if redirect:
-        signed_redirect = sign_value(redirect, settings.secret_key)
-        response.set_cookie(
-            key=OAUTH_REDIRECT_COOKIE, value=signed_redirect, httponly=True, secure=True, samesite="lax", max_age=600
-        )
-
-    return response
-
-
-@router.get("/google/callback")
-async def google_callback(
-    *,
-    session: DbSession,
-    code: str,
-    state: str | None = None,
-    oauth_state: str | None = Cookie(None, alias=OAUTH_STATE_COOKIE),
-    oauth_redirect: str | None = Cookie(None, alias=OAUTH_REDIRECT_COOKIE),
-) -> RedirectResponse:
-    settings = get_settings()
-
-    if not oauth_state or not state:
-        return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?error=state_missing")
-
-    verified_state = verify_signed_value(oauth_state, settings.secret_key)
-    if not verified_state or verified_state != state:
-        return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?error=state_invalid")
-
-    redirect_url = None
-    if oauth_redirect:
-        redirect_url = verify_signed_value(oauth_redirect, settings.secret_key)
-
-    try:
-        token_data = await exchange_code_for_tokens(code)
-        user_info = await get_google_user_info(token_data["access_token"])
-        user = get_or_create_user_by_google(
-            session=session,
-            google_id=user_info["id"],
-            email=user_info["email"],
-            name=user_info.get("name", user_info["email"]),
-        )
-        access_token = create_access_token(user=user)
-        callback_url = f"{settings.frontend_url}/auth/callback?token={access_token}"
-        if redirect_url:
-            callback_url += f"&redirect={redirect_url}"
-        response = RedirectResponse(url=callback_url)
-        response.delete_cookie(OAUTH_STATE_COOKIE)
-        response.delete_cookie(OAUTH_REDIRECT_COOKIE)
-        return response
-    except Exception:
-        return RedirectResponse(url=f"{settings.frontend_url}/auth/callback?error=authentication_failed")

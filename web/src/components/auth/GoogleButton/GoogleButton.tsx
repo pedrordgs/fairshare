@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 export interface GoogleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "login" | "signup";
@@ -36,11 +37,13 @@ export const GoogleButton: React.FC<GoogleButtonProps> = ({
   const text =
     variant === "signup" ? "Sign up with Google" : "Sign in with Google";
 
+  const navigate = useNavigate();
+
   const handleClick = () => {
     const googleAuthUrl = redirect
       ? `/auth/google/?redirect=${encodeURIComponent(redirect)}`
       : "/auth/google/";
-    window.location.href = googleAuthUrl;
+    navigate({ to: googleAuthUrl });
   };
 
   return (

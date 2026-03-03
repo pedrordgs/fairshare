@@ -364,3 +364,84 @@ class TestExpenseIsolation:
 
         assert group2_expenses["total"] == 1
         assert group2_expenses["items"][0]["name"] == "Expense 2"
+
+
+def test_update_expense(authenticated_client: AuthenticatedClient) -> None:
+    """Authenticated creator sends PATCH with changed name, description, and value; asserts 200 and updated fields."""
+    client, _ = authenticated_client
+    group_response = client.post("/groups/", json={"name": "Test Group"})
+    group_id = group_response.json()["id"]
+
+    create_response = client.post(
+        f"/groups/{group_id}/expenses/", json={"name": "Original", "description": "Original desc", "value": "10.00"}
+    )
+    expense_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/expenses/{expense_id}/", json={"name": "Updated", "description": "Updated desc", "value": "25.00"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Updated"
+    assert data["description"] == "Updated desc"
+    assert Decimal(data["value"]) == Decimal("25.00")
+
+
+def test_delete_expense(authenticated_client: AuthenticatedClient) -> None:
+    """Authenticated creator sends DELETE; asserts 204 and that a subsequent GET returns 404."""
+    client, _ = authenticated_client
+    group_response = client.post("/groups/", json={"name": "Test Group"})
+    group_id = group_response.json()["id"]
+
+    create_response = client.post(f"/groups/{group_id}/expenses/", json={"name": "To Delete", "value": "10.00"})
+    expense_id = create_response.json()["id"]
+
+    response = client.delete(f"/expenses/{expense_id}/")
+    assert response.status_code == 204
+
+    get_response = client.get(f"/expenses/{expense_id}/")
+    assert get_response.status_code == 404
+
+
+def test_expense_update_forbidden(authenticated_client: AuthenticatedClient, session: Session) -> None:
+    """Authenticated non-creator group member sends PATCH; asserts 403."""
+    client, user = authenticated_client
+    other_user, _ = create_test_user(session, "other@example.com")
+    other_group = create_test_group(session, other_user, "Other Group")
+
+    assert user.id is not None
+    add_member(session=session, group=other_group, user_id=user.id)
+
+    assert other_group.id is not None
+    assert other_user.id is not None
+    expense = create_expense(
+        session=session,
+        group_id=other_group.id,
+        user_id=other_user.id,
+        expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+    )
+
+    response = client.patch(f"/expenses/{expense.id}/", json={"name": "Hijacked"})
+    assert response.status_code == 403
+
+
+def test_expense_delete_forbidden(authenticated_client: AuthenticatedClient, session: Session) -> None:
+    """Authenticated non-creator group member sends DELETE; asserts 403."""
+    client, user = authenticated_client
+    other_user, _ = create_test_user(session, "other@example.com")
+    other_group = create_test_group(session, other_user, "Other Group")
+
+    assert user.id is not None
+    add_member(session=session, group=other_group, user_id=user.id)
+
+    assert other_group.id is not None
+    assert other_user.id is not None
+    expense = create_expense(
+        session=session,
+        group_id=other_group.id,
+        user_id=other_user.id,
+        expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+    )
+
+    response = client.delete(f"/expenses/{expense.id}/")
+    assert response.status_code == 403

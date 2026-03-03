@@ -3,9 +3,11 @@ import {
   ExpenseCreateSchema,
   ExpenseListSchema,
   ExpenseSchema,
+  ExpenseUpdateSchema,
   type Expense,
   type ExpenseCreate,
   type ExpenseList,
+  type ExpenseUpdate,
 } from "@schema/expenses";
 
 const validateGroupId = (groupId: number): void => {
@@ -80,5 +82,21 @@ export const expensesApi = {
       offset: 0,
       limit: items.length,
     };
+  },
+
+  updateExpense: async (
+    groupId: number,
+    expenseId: number,
+    data: ExpenseUpdate,
+  ): Promise<Expense> => {
+    validateGroupId(groupId);
+    const payload = ExpenseUpdateSchema.parse(data);
+    const response = await api.patch(`/expenses/${expenseId}/`, payload);
+    return ExpenseSchema.parse(response.data);
+  },
+
+  deleteExpense: async (groupId: number, expenseId: number): Promise<void> => {
+    validateGroupId(groupId);
+    await api.delete(`/expenses/${expenseId}/`);
   },
 };

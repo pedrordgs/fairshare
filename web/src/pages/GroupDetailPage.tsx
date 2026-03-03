@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Tabs, TabItem } from "@components/ui/Tabs";
 import { Button } from "@components/ui/Button";
 import { ButtonWithBadge } from "@components/ui/ButtonWithBadge";
+import { ConfirmDeleteModal } from "@components/ui/ConfirmDeleteModal";
 import { groupsApi } from "@services/groups";
 import { expensesApi } from "@services/expenses";
 import { useAuth } from "@context/AuthContext";
@@ -17,6 +18,7 @@ import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
 import { SettlementHistory } from "@components/settlements/SettlementHistory";
 import { JoinRequestsModal } from "@components/groups/JoinRequestsModal";
+import { EditGroupModal } from "@components/groups/EditGroupModal";
 import { toast } from "sonner";
 
 const routeApi = getRouteApi("/groups/$groupId");
@@ -94,6 +96,8 @@ export const GroupDetailPage: React.FC = () => {
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
   const [isSettleUpOpen, setIsSettleUpOpen] = React.useState(false);
   const [isJoinRequestsOpen, setIsJoinRequestsOpen] = React.useState(false);
+  const [isEditGroupOpen, setIsEditGroupOpen] = React.useState(false);
+  const [isDeleteGroupOpen, setIsDeleteGroupOpen] = React.useState(false);
   const [activeCenterTab, setActiveCenterTab] = React.useState<
     "expenses" | "settlements"
   >("expenses");
@@ -168,6 +172,26 @@ export const GroupDetailPage: React.FC = () => {
     },
     onError: () => {
       toast.error("Couldn't decline the join request.");
+    },
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: () => {
+      if (!groupId) {
+        throw new Error("Invalid group ID");
+      }
+      return groupsApi.deleteGroup(groupId);
+    },
+    onSuccess: () => {
+      toast.success("Group deleted.");
+      queryClient.invalidateQueries({
+        queryKey: ["groups", "list"],
+        exact: false,
+      });
+      navigate({ to: "/" });
+    },
+    onError: () => {
+      toast.error("Couldn't delete the group.");
     },
   });
 
@@ -341,17 +365,36 @@ export const GroupDetailPage: React.FC = () => {
               <span className="text-lg">Group #{group.id}</span>
             </div>
           </div>
-          {isOwner && (
-            <ButtonWithBadge
-              variant="secondary"
-              size="sm"
-              badgeCount={joinRequestsCount}
-              badgeVariant="warning"
-              onClick={() => setIsJoinRequestsOpen(true)}
-            >
-              Join requests
-            </ButtonWithBadge>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {isOwner && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsEditGroupOpen(true)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => setIsDeleteGroupOpen(true)}
+                >
+                  Delete
+                </Button>
+                <ButtonWithBadge
+                  variant="secondary"
+                  size="sm"
+                  badgeCount={joinRequestsCount}
+                  badgeVariant="warning"
+                  onClick={() => setIsJoinRequestsOpen(true)}
+                >
+                  Join requests
+                </ButtonWithBadge>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -681,6 +724,22 @@ export const GroupDetailPage: React.FC = () => {
           onDecline={(requestId) =>
             declineJoinRequestMutation.mutate(requestId)
           }
+        />
+      )}
+      {isOwner && group && (
+        <EditGroupModal
+          group={group}
+          isOpen={isEditGroupOpen}
+          onClose={() => setIsEditGroupOpen(false)}
+        />
+      )}
+      {isOwner && group && (
+        <ConfirmDeleteModal
+          isOpen={isDeleteGroupOpen}
+          onClose={() => setIsDeleteGroupOpen(false)}
+          onConfirm={() => deleteGroupMutation.mutate()}
+          message={`Are you sure you want to delete "${group.name}"? This will permanently remove all expenses, settlements, and members.`}
+          isPending={deleteGroupMutation.isPending}
         />
       )}
     </div>

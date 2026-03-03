@@ -2,6 +2,7 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -27,6 +28,14 @@ def settings_fixture(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, N
 @pytest.fixture(name="session")
 def session_fixture() -> Generator[Session, None, None]:
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+
+    # Enable foreign key enforcement in SQLite so CASCADE deletes work in tests
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection: object, connection_record: object) -> None:  # noqa: ARG001
+        cursor = dbapi_connection.cursor()  # type: ignore[union-attr]
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session

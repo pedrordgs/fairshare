@@ -178,3 +178,17 @@ class GroupSettlementCreate(SQLModel):
         if value <= Decimal("0.00"):
             raise ValueError("Amount must be greater than zero")
         return quantize_currency(value)
+
+
+class GroupSettlementUpdate(SQLModel):
+    amount: Decimal | None = None
+    paid_to_id: int | None = None
+
+    @field_validator("amount")
+    @classmethod
+    def _normalize_amount(cls, value: Decimal | None) -> Decimal | None:
+        if value is None:
+            return value
+        if value <= Decimal("0.00"):
+            raise ValueError("Amount must be greater than zero")
+        return quantize_currency(value)

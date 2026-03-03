@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 
-from .dependencies import GroupAsMember, GroupAsOwner
+from .dependencies import GroupAsMember, GroupAsOwner, SettlementAsCreator
 from core.models import PaginatedResponse
 
 from .models import (
@@ -13,6 +13,7 @@ from .models import (
     ExpenseGroupUpdate,
     ExpenseGroupSettlementPublic,
     GroupSettlementCreate,
+    GroupSettlementUpdate,
     JoinGroupRequest,
     JoinGroupRequestPublic,
     JoinRequestStatus,
@@ -25,6 +26,7 @@ from .service import (
     create_group_settlement,
     create_join_request_by_invite_code,
     delete_group,
+    delete_settlement,
     get_group_detail,
     get_group_expense_counts,
     get_group_last_activity_by_group,
@@ -39,6 +41,7 @@ from .service import (
     list_join_requests,
     resolve_join_request,
     update_group,
+    update_settlement,
 )
 
 router = APIRouter(prefix="/groups", tags=["groups"])
@@ -249,3 +252,18 @@ async def create_group_settlement_payment(
         created_by=authenticated_user.id,
     )
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
+
+
+@router.patch("/{group_id}/settlements/{settlement_id}/", response_model=ExpenseGroupSettlementPublic)
+async def update_group_settlement(
+    *, session: DbSession, settlement: SettlementAsCreator, update_in: GroupSettlementUpdate
+) -> ExpenseGroupSettlementPublic:
+    """Update a settlement's amount and/or payee. Only the creator can update."""
+    updated = update_settlement(session=session, settlement=settlement, update_data=update_in)
+    return ExpenseGroupSettlementPublic.model_validate(updated)
+
+
+@router.delete("/{group_id}/settlements/{settlement_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_group_settlement(*, session: DbSession, settlement: SettlementAsCreator) -> None:
+    """Delete a settlement. Only the creator can delete."""
+    delete_settlement(session=session, settlement=settlement)

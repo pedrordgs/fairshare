@@ -21,6 +21,7 @@ from .models import (
     ExpenseGroupMemberPublic,
     ExpenseGroupUpdate,
     ExpenseGroupSettlement,
+    GroupSettlementUpdate,
     JoinGroupRequestPublic,
     JoinGroupRequesterPublic,
     JoinRequestStatus,
@@ -502,6 +503,30 @@ def create_group_settlement(
     session.commit()
     session.refresh(settlement)
     return settlement
+
+
+def get_settlement_by_id(*, session: Session, settlement_id: int) -> ExpenseGroupSettlement | None:
+    """Get a settlement by ID."""
+    return session.get(ExpenseGroupSettlement, settlement_id)
+
+
+def update_settlement(
+    *, session: Session, settlement: ExpenseGroupSettlement, update_data: GroupSettlementUpdate
+) -> ExpenseGroupSettlement:
+    """Update a settlement's amount and/or payee."""
+    settlement.sqlmodel_update(update_data.model_dump(exclude_unset=True, exclude={"paid_to_id"}))
+    if update_data.paid_to_id is not None:
+        settlement.creditor_id = update_data.paid_to_id
+    session.add(settlement)
+    session.commit()
+    session.refresh(settlement)
+    return settlement
+
+
+def delete_settlement(*, session: Session, settlement: ExpenseGroupSettlement) -> None:
+    """Delete a settlement."""
+    session.delete(settlement)
+    session.commit()
 
 
 def calculate_user_debt_totals(

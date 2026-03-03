@@ -38,6 +38,14 @@ export const PaginatedGroupSettlementsSchema = z.object({
   limit: z.number().int().positive(),
 });
 
+const SettlementAmountUpdateInputSchema =
+  SettlementAmountInputSchema.optional();
+
+export const GroupSettlementUpdateSchema = z.object({
+  amount: SettlementAmountUpdateInputSchema,
+  paid_to_id: z.number().int().positive().optional(),
+});
+
 export type GroupSettlementCreateInput = z.infer<
   typeof GroupSettlementCreateInputSchema
 >;
@@ -49,3 +57,4 @@ export type GroupSettlementListItem = z.infer<
 export type PaginatedGroupSettlements = z.infer<
   typeof PaginatedGroupSettlementsSchema
 >;
+export type GroupSettlementUpdate = z.infer<typeof GroupSettlementUpdateSchema>;

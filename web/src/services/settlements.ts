@@ -1,9 +1,12 @@
 import api from "./api";
 import {
   GroupSettlementCreateSchema,
+  GroupSettlementListItemSchema,
   type GroupSettlementCreate,
+  type GroupSettlementUpdate,
   PaginatedGroupSettlementsSchema,
   type PaginatedGroupSettlements,
+  type GroupSettlementListItem,
 } from "@schema/settlements";
 import { ExpenseGroupDetailSchema } from "@schema/groups";
 import type { ExpenseGroupDetail } from "@schema/groups";
@@ -36,5 +39,26 @@ export const settlementsApi = {
       params: { offset, limit },
     });
     return PaginatedGroupSettlementsSchema.parse(response.data);
+  },
+
+  updateSettlement: async (
+    groupId: number,
+    settlementId: number,
+    data: GroupSettlementUpdate,
+  ): Promise<GroupSettlementListItem> => {
+    validateGroupId(groupId);
+    const response = await api.patch(
+      `/groups/${groupId}/settlements/${settlementId}/`,
+      data,
+    );
+    return GroupSettlementListItemSchema.parse(response.data);
+  },
+
+  deleteSettlement: async (
+    groupId: number,
+    settlementId: number,
+  ): Promise<void> => {
+    validateGroupId(groupId);
+    await api.delete(`/groups/${groupId}/settlements/${settlementId}/`);
   },
 };

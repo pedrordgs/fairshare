@@ -1,11 +1,19 @@
 import React from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { toast } from "sonner";
 import { settlementsApi } from "@services/settlements";
 import { useInfiniteScroll } from "@hooks/useInfiniteScroll";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 import { Button } from "@components/ui/Button";
+import { ConfirmDeleteModal } from "@components/ui/ConfirmDeleteModal";
+import { EditSettlementModal } from "./EditSettlementModal";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
+import { EditIcon, TrashIcon } from "@assets/icons/form-icons";
 import type { GroupSettlementListItem } from "@schema/settlements";
 
 interface SettlementHistoryProps {
@@ -37,6 +45,29 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
   embedded = false,
   enabled = true,
 }) => {
+  const queryClient = useQueryClient();
+  const [editingSettlement, setEditingSettlement] =
+    React.useState<GroupSettlementListItem | null>(null);
+  const [deletingSettlement, setDeletingSettlement] =
+    React.useState<GroupSettlementListItem | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (settlementId: number) =>
+      settlementsApi.deleteSettlement(groupId, settlementId),
+    onSuccess: () => {
+      toast.success("Settlement deleted.");
+      queryClient.invalidateQueries({
+        queryKey: ["group", groupId, "settlements"],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+      setDeletingSettlement(null);
+    },
+    onError: () => {
+      toast.error("Couldn't delete the settlement.");
+    },
+  });
+
   const {
     data,
     error,
@@ -142,6 +173,8 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
                 creditor={creditor}
                 recordedBy={recordedBy}
                 currentUserId={currentUserId}
+                onEdit={() => setEditingSettlement(settlement)}
+                onDelete={() => setDeletingSettlement(settlement)}
               />
             );
           })}
@@ -164,29 +197,75 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
   );
 
   if (embedded) {
-    return content;
+    return (
+      <>
+        {content}
+        {editingSettlement && (
+          <EditSettlementModal
+            groupId={groupId}
+            settlement={editingSettlement}
+            membersById={membersById}
+            isOpen={!!editingSettlement}
+            onClose={() => setEditingSettlement(null)}
+          />
+        )}
+        <ConfirmDeleteModal
+          isOpen={!!deletingSettlement}
+          onClose={() => setDeletingSettlement(null)}
+          onConfirm={() => {
+            if (deletingSettlement) {
+              deleteMutation.mutate(deletingSettlement.id);
+            }
+          }}
+          message="Are you sure you want to delete this settlement? This action cannot be undone."
+          isPending={deleteMutation.isPending}
+        />
+      </>
+    );
   }
 
   return (
-    <Card className="bg-white/80 backdrop-blur-sm">
-      <CardHeader className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent-500 rounded-full"></span>
-            Settlement History
-          </CardTitle>
-          <p className="text-sm text-slate-500">
-            Track payments made across the group.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="rounded-full border border-primary-200/70 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-            Total {totalCount}
+    <>
+      <Card className="bg-white/80 backdrop-blur-sm">
+        <CardHeader className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent-500 rounded-full"></span>
+              Settlement History
+            </CardTitle>
+            <p className="text-sm text-slate-500">
+              Track payments made across the group.
+            </p>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">{content}</CardContent>
-    </Card>
+          <div className="flex items-center gap-3">
+            <div className="rounded-full border border-primary-200/70 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+              Total {totalCount}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">{content}</CardContent>
+      </Card>
+      {editingSettlement && (
+        <EditSettlementModal
+          groupId={groupId}
+          settlement={editingSettlement}
+          membersById={membersById}
+          isOpen={!!editingSettlement}
+          onClose={() => setEditingSettlement(null)}
+        />
+      )}
+      <ConfirmDeleteModal
+        isOpen={!!deletingSettlement}
+        onClose={() => setDeletingSettlement(null)}
+        onConfirm={() => {
+          if (deletingSettlement) {
+            deleteMutation.mutate(deletingSettlement.id);
+          }
+        }}
+        message="Are you sure you want to delete this settlement? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+      />
+    </>
   );
 };
 
@@ -196,6 +275,8 @@ interface SettlementRowProps {
   creditor: { name: string; isCurrentUser: boolean };
   recordedBy: { name: string; isCurrentUser: boolean };
   currentUserId: number | null;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
 const SettlementRow: React.FC<SettlementRowProps> = ({
@@ -204,11 +285,15 @@ const SettlementRow: React.FC<SettlementRowProps> = ({
   creditor,
   recordedBy,
   currentUserId,
+  onEdit,
+  onDelete,
 }) => {
   const isCurrentUserInvolved =
     currentUserId !== null &&
     (settlement.debtor_id === currentUserId ||
       settlement.creditor_id === currentUserId);
+  const isCreator =
+    currentUserId !== null && settlement.created_by === currentUserId;
   const createdByLabel = `Created by ${recordedBy.name}`;
 
   const rowClasses = isCurrentUserInvolved
@@ -235,10 +320,30 @@ const SettlementRow: React.FC<SettlementRowProps> = ({
             {createdByLabel} · {formatDate(settlement.created_at)}
           </p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-2">
           <p className="text-lg font-bold text-slate-900">
             {formatCurrency(settlement.amount)}
           </p>
+          {isCreator && (
+            <div className="flex items-center gap-1 ml-2">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edit settlement"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-accent-600 hover:bg-accent-50 transition-colors"
+              >
+                <EditIcon className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label="Delete settlement"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

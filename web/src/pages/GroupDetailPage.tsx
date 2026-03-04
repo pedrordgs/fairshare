@@ -16,7 +16,7 @@ import receiptIcon from "@assets/icons/receipt-icon.svg";
 import { EditIcon, TrashIcon } from "@assets/icons/form-icons";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { EditExpenseModal } from "@components/expenses/EditExpenseModal";
-import { ConfirmDeleteModal } from "@components/ui/ConfirmDeleteModal";
+import { ConfirmationModal } from "@components/ui/ConfirmationModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
 import { SettlementHistory } from "@components/settlements/SettlementHistory";
 import { JoinRequestsModal } from "@components/groups/JoinRequestsModal";
@@ -716,10 +716,11 @@ export const GroupDetailPage: React.FC = () => {
         />
       )}
       {deletingExpense && (
-        <ConfirmDeleteModal
+        <ConfirmationModal
           isOpen={!!deletingExpense}
           onClose={() => setDeletingExpense(null)}
           onConfirm={() => deleteExpenseMutation.mutate(deletingExpense.id)}
+          title="Confirm Delete"
           message={`Are you sure you want to delete the expense "${deletingExpense.name}"? This action cannot be undone.`}
           isPending={deleteExpenseMutation.isPending}
         />

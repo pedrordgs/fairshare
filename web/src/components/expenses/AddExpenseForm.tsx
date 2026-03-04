@@ -10,14 +10,12 @@ import { Input } from "@components/ui/Input";
 import { Alert } from "@components/ui/Alert";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
+import { formatAmountInput } from "@utils/formatUtils";
 
 interface AddExpenseFormProps {
   groupId: number;
   onSuccess?: () => void;
 }
-
-const formatAmountInput = (value: string) =>
-  value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
 
 export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
   groupId,

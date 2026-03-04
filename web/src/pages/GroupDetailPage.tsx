@@ -198,7 +198,7 @@ export const GroupDetailPage: React.FC = () => {
         queryKey: ["groups", "list"],
         exact: false,
       });
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     },
     onError: () => {
       toast.error("Couldn't delete the group.");

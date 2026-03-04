@@ -732,16 +732,33 @@ class TestGroupUpdateDelete:
         response = client.patch(f"/groups/{other_group.id}/", json={"name": "Hijacked"})
         assert response.status_code == 403
 
-    def test_group_delete_forbidden(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        """Authenticated non-owner member sends DELETE; asserts 403."""
-        client, user = authenticated_client
-        # Create another user who owns the group
-        other_user, _ = create_test_user(session, "owner-for-delete@example.com")
-        other_group = create_group(session=session, user=other_user, group_in=ExpenseGroupCreate(name="Owner Group"))
-
-        # Add current user as member (not owner)
-        assert user.id is not None
-        add_member(session=session, group=other_group, user_id=user.id)
-
         response = client.delete(f"/groups/{other_group.id}/")
         assert response.status_code == 403
+
+    def test_delete_group(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Authenticated owner deletes group; asserts 204 and cascade delete of related rows."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "To Delete"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        member, _ = create_test_user(session, "member-for-cascade@example.com")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert group.id is not None
+        assert owner.id is not None
+        assert member.id is not None
+        add_member(session=session, group=group, user_id=member.id)
+
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=owner.id,
+            expense_in=ExpenseCreate(name="Cascade Expense", value=Decimal("10.00")),
+        )
+
+        response = client.delete(f"/groups/{group_id}/")
+        assert response.status_code == 204
+
+        assert session.exec(select(Expense).where(Expense.group_id == group_id)).first() is None
+        assert session.exec(select(ExpenseGroupMember).where(ExpenseGroupMember.group_id == group_id)).first() is None

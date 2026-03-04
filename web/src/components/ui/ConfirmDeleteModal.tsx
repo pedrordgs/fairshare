@@ -18,17 +18,23 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   message,
   isPending,
 }) => {
+  const handleClose = () => {
+    if (!isPending) {
+      onClose();
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       className="max-w-md w-full"
       titleId="confirm-delete-modal-title"
       descriptionId="confirm-delete-modal-description"
     >
       <ModalHeader
         title="Confirm Delete"
-        onClose={onClose}
+        onClose={handleClose}
         titleId="confirm-delete-modal-title"
         descriptionId="confirm-delete-modal-description"
       />
@@ -40,7 +46,11 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           {message}
         </p>
         <div className="flex gap-3 justify-end">
-          <ButtonSecondary type="button" onClick={onClose}>
+          <ButtonSecondary
+            type="button"
+            onClick={handleClose}
+            disabled={isPending}
+          >
             Cancel
           </ButtonSecondary>
           <ButtonPrimary

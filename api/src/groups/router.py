@@ -3,7 +3,8 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 
-from .dependencies import GroupAsMember, GroupAsOwner
+from .dependencies import GroupAsMember, GroupAsOwner, SettlementAsCreator
+from .utils import validate_settlement_creditor_and_amount
 from core.models import PaginatedResponse
 
 from .models import (
@@ -13,18 +14,22 @@ from .models import (
     ExpenseGroupUpdate,
     ExpenseGroupSettlementPublic,
     GroupSettlementCreate,
+    GroupSettlementUpdate,
     JoinGroupRequest,
     JoinGroupRequestPublic,
     JoinRequestStatus,
 )
 from .service import (
+    MAX_JOIN_REQUEST_ATTEMPTS,
     add_member,
-    calculate_user_debts,
     calculate_user_debt_totals,
+    count_declined_join_requests,
     create_group,
     create_group_settlement,
-    create_join_request_by_invite_code,
+    create_join_request,
     delete_group,
+    delete_settlement,
+    get_group_by_invite_code,
     get_group_detail,
     get_group_expense_counts,
     get_group_last_activity_by_group,
@@ -34,11 +39,14 @@ from .service import (
     get_join_request_by_id,
     get_join_request_public,
     get_member,
+    get_pending_join_request,
     get_user_groups_count,
     get_user_groups_paginated,
+    is_member,
     list_join_requests,
     resolve_join_request,
     update_group,
+    update_settlement,
 )
 
 router = APIRouter(prefix="/groups", tags=["groups"])
@@ -124,32 +132,21 @@ async def join_group_by_code(
     *, session: DbSession, authenticated_user: AuthenticatedUser, join_in: JoinGroupRequest, response: Response
 ) -> JoinGroupRequestPublic:
     """Request to join an expense group using an invite code."""
-    try:
-        join_request, created = create_join_request_by_invite_code(
-            session=session, user=authenticated_user, code=join_in.code
-        )
-    except ValueError as exc:
-        if str(exc) == "Group not found":
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
-        if str(exc) == "User already a member":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="You are already a member of this group"
-            )
-        if str(exc) == "Join request limit reached":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Join request limit reached for this group"
-            )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unable to create join request")
-
-    if not created:
+    group = get_group_by_invite_code(session=session, code=join_in.code)
+    if not group:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    if is_member(session=session, group_id=group.id, user_id=authenticated_user.id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You are already a member of this group")
+    pending_request = get_pending_join_request(session=session, group_id=group.id, user_id=authenticated_user.id)
+    if pending_request:
         response.status_code = status.HTTP_200_OK
+        return get_join_request_public(session=session, request_id=pending_request.id)
 
-    if join_request.id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Join request not found")
-    join_request_public = get_join_request_public(session=session, request_id=join_request.id)
-    if not join_request_public:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Join request not found")
-    return join_request_public
+    declined_count = count_declined_join_requests(session=session, group_id=group.id, user_id=authenticated_user.id)
+    if declined_count >= MAX_JOIN_REQUEST_ATTEMPTS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Join request limit reached for this group")
+    join_request = create_join_request(session=session, group_id=group.id, user_id=authenticated_user.id)
+    return get_join_request_public(session=session, request_id=join_request.id)
 
 
 @router.get("/{group_id}/join-requests/", response_model=list[JoinGroupRequestPublic])
@@ -222,23 +219,13 @@ async def create_group_settlement_payment(
     settlement_in: GroupSettlementCreate,
 ) -> ExpenseGroupDetail:
     """Record a settlement payment. User must be a group member."""
-    if settlement_in.creditor_id == authenticated_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Creditor must be a different group member")
-
-    if not get_member(session=session, group_id=group.id, user_id=settlement_in.creditor_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
-
-    owed_by_total, _, owed_by_user, _ = calculate_user_debts(
-        session=session, group_id=group.id, user_id=authenticated_user.id
+    validate_settlement_creditor_and_amount(
+        session=session,
+        group_id=group.id,
+        debtor_id=authenticated_user.id,
+        creditor_id=settlement_in.creditor_id,
+        amount=settlement_in.amount,
     )
-    if owed_by_total <= 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No outstanding debt to settle")
-
-    owed_entry = next((entry for entry in owed_by_user if entry.user_id == settlement_in.creditor_id), None)
-    if not owed_entry:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No outstanding debt for selected member")
-    if settlement_in.amount > owed_entry.amount:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount exceeds outstanding debt")
 
     create_group_settlement(
         session=session,
@@ -249,3 +236,28 @@ async def create_group_settlement_payment(
         created_by=authenticated_user.id,
     )
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
+
+
+@router.patch("/{group_id}/settlements/{settlement_id}/", response_model=ExpenseGroupSettlementPublic)
+async def update_group_settlement(
+    *, session: DbSession, settlement: SettlementAsCreator, update_in: GroupSettlementUpdate
+) -> ExpenseGroupSettlementPublic:
+    """Update a settlement's amount and/or payee. Only the creator can update."""
+    target_creditor_id = update_in.creditor_id if update_in.creditor_id is not None else settlement.creditor_id
+    target_amount = update_in.amount if update_in.amount is not None else settlement.amount
+    validate_settlement_creditor_and_amount(
+        session=session,
+        group_id=settlement.group_id,
+        debtor_id=settlement.debtor_id,
+        creditor_id=target_creditor_id,
+        amount=target_amount,
+        existing_amount=settlement.amount if target_creditor_id == settlement.creditor_id else None,
+    )
+    updated = update_settlement(session=session, settlement=settlement, update_data=update_in)
+    return ExpenseGroupSettlementPublic.model_validate(updated)
+
+
+@router.delete("/{group_id}/settlements/{settlement_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_group_settlement(*, session: DbSession, settlement: SettlementAsCreator) -> None:
+    """Delete a settlement. Only the creator can delete."""
+    delete_settlement(session=session, settlement=settlement)

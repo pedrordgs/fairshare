@@ -10,7 +10,7 @@ import { useInfiniteScroll } from "@hooks/useInfiniteScroll";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Badge } from "@components/ui/Badge";
 import { Button } from "@components/ui/Button";
-import { ConfirmDeleteModal } from "@components/ui/ConfirmDeleteModal";
+import { ConfirmationModal } from "@components/ui/ConfirmationModal";
 import { EditSettlementModal } from "./EditSettlementModal";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
 import { EditIcon, TrashIcon } from "@assets/icons/form-icons";
@@ -196,30 +196,37 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
     </div>
   );
 
+  const modals = (
+    <>
+      {editingSettlement && (
+        <EditSettlementModal
+          groupId={groupId}
+          settlement={editingSettlement}
+          membersById={membersById}
+          isOpen={!!editingSettlement}
+          onClose={() => setEditingSettlement(null)}
+        />
+      )}
+      <ConfirmationModal
+        title="Confirm Delete"
+        isOpen={!!deletingSettlement}
+        onClose={() => setDeletingSettlement(null)}
+        onConfirm={() => {
+          if (deletingSettlement) {
+            deleteMutation.mutate(deletingSettlement.id);
+          }
+        }}
+        message="Are you sure you want to delete this settlement? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+      />
+    </>
+  );
+
   if (embedded) {
     return (
       <>
         {content}
-        {editingSettlement && (
-          <EditSettlementModal
-            groupId={groupId}
-            settlement={editingSettlement}
-            membersById={membersById}
-            isOpen={!!editingSettlement}
-            onClose={() => setEditingSettlement(null)}
-          />
-        )}
-        <ConfirmDeleteModal
-          isOpen={!!deletingSettlement}
-          onClose={() => setDeletingSettlement(null)}
-          onConfirm={() => {
-            if (deletingSettlement) {
-              deleteMutation.mutate(deletingSettlement.id);
-            }
-          }}
-          message="Are you sure you want to delete this settlement? This action cannot be undone."
-          isPending={deleteMutation.isPending}
-        />
+        {modals}
       </>
     );
   }
@@ -245,26 +252,7 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
         </CardHeader>
         <CardContent className="space-y-6">{content}</CardContent>
       </Card>
-      {editingSettlement && (
-        <EditSettlementModal
-          groupId={groupId}
-          settlement={editingSettlement}
-          membersById={membersById}
-          isOpen={!!editingSettlement}
-          onClose={() => setEditingSettlement(null)}
-        />
-      )}
-      <ConfirmDeleteModal
-        isOpen={!!deletingSettlement}
-        onClose={() => setDeletingSettlement(null)}
-        onConfirm={() => {
-          if (deletingSettlement) {
-            deleteMutation.mutate(deletingSettlement.id);
-          }
-        }}
-        message="Are you sure you want to delete this settlement? This action cannot be undone."
-        isPending={deleteMutation.isPending}
-      />
+      {modals}
     </>
   );
 };

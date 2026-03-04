@@ -2,6 +2,7 @@ import api from "./api";
 import {
   GroupSettlementCreateSchema,
   GroupSettlementListItemSchema,
+  GroupSettlementUpdateSchema,
   type GroupSettlementCreate,
   type GroupSettlementUpdate,
   PaginatedGroupSettlementsSchema,
@@ -15,6 +16,18 @@ const validateGroupId = (groupId: number): void => {
   if (!Number.isFinite(groupId) || !Number.isInteger(groupId) || groupId <= 0) {
     throw new Error(
       `Invalid group ID: ${groupId}. Must be a positive integer.`,
+    );
+  }
+};
+
+const validateSettlementId = (settlementId: number): void => {
+  if (
+    !Number.isFinite(settlementId) ||
+    !Number.isInteger(settlementId) ||
+    settlementId <= 0
+  ) {
+    throw new Error(
+      `Invalid settlement ID: ${settlementId}. Must be a positive integer.`,
     );
   }
 };
@@ -47,9 +60,11 @@ export const settlementsApi = {
     data: GroupSettlementUpdate,
   ): Promise<GroupSettlementListItem> => {
     validateGroupId(groupId);
+    validateSettlementId(settlementId);
+    const payload = GroupSettlementUpdateSchema.parse(data);
     const response = await api.patch(
       `/groups/${groupId}/settlements/${settlementId}/`,
-      data,
+      payload,
     );
     return GroupSettlementListItemSchema.parse(response.data);
   },
@@ -59,6 +74,7 @@ export const settlementsApi = {
     settlementId: number,
   ): Promise<void> => {
     validateGroupId(groupId);
+    validateSettlementId(settlementId);
     await api.delete(`/groups/${groupId}/settlements/${settlementId}/`);
   },
 };

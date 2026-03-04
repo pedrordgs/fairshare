@@ -8,6 +8,7 @@ import { Button } from "@components/ui/Button";
 import { Alert } from "@components/ui/Alert";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
+import { formatAmountInput } from "@utils/formatUtils";
 import {
   GroupSettlementUpdateSchema,
   type GroupSettlementListItem,
@@ -21,9 +22,6 @@ interface EditSettlementFormProps {
   membersById: Map<number, string>;
   onSuccess?: () => void;
 }
-
-const formatAmountInput = (value: string) =>
-  value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
 
 export const EditSettlementForm: React.FC<EditSettlementFormProps> = ({
   groupId,
@@ -58,7 +56,7 @@ export const EditSettlementForm: React.FC<EditSettlementFormProps> = ({
     resolver: zodResolver(GroupSettlementUpdateSchema),
     defaultValues: {
       amount: String(settlement.amount),
-      paid_to_id: settlement.creditor_id,
+      creditor_id: settlement.creditor_id,
     },
   });
 
@@ -106,7 +104,7 @@ export const EditSettlementForm: React.FC<EditSettlementFormProps> = ({
         <select
           id="edit-settlement-payee"
           className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
-          {...register("paid_to_id", { valueAsNumber: true })}
+          {...register("creditor_id", { valueAsNumber: true })}
         >
           {memberOptions.map((option) => (
             <option key={option.userId} value={option.userId}>
@@ -114,8 +112,10 @@ export const EditSettlementForm: React.FC<EditSettlementFormProps> = ({
             </option>
           ))}
         </select>
-        {fieldErrors.paid_to_id && (
-          <p className="text-sm text-red-600">{fieldErrors.paid_to_id}</p>
+        {(errors.creditor_id?.message || fieldErrors.creditor_id) && (
+          <p className="text-sm text-red-600">
+            {errors.creditor_id?.message || fieldErrors.creditor_id}
+          </p>
         )}
       </div>
 

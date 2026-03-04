@@ -43,7 +43,7 @@ const SettlementAmountUpdateInputSchema =
 
 export const GroupSettlementUpdateSchema = z.object({
   amount: SettlementAmountUpdateInputSchema,
-  paid_to_id: z.number().int().positive().optional(),
+  creditor_id: z.number().int().positive().optional(),
 });
 
 export type GroupSettlementCreateInput = z.infer<

@@ -3,7 +3,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ExpenseCreateSchema, type ExpenseCreate } from "@schema/expenses";
+import {
+  ExpenseUpdateSchema,
+  type Expense,
+  type ExpenseUpdate,
+} from "@schema/expenses";
 import { expensesApi } from "@services/expenses";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
@@ -12,13 +16,15 @@ import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import { formatAmountInput } from "@utils/formatUtils";
 
-interface AddExpenseFormProps {
+interface EditExpenseFormProps {
   groupId: number;
+  expense: Expense;
   onSuccess?: () => void;
 }
 
-export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
+export const EditExpenseForm: React.FC<EditExpenseFormProps> = ({
   groupId,
+  expense,
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
@@ -35,21 +41,23 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
-    reset,
-  } = useForm<ExpenseCreate>({
-    resolver: zodResolver(ExpenseCreateSchema),
-    defaultValues: { name: "", description: "", value: "" },
+  } = useForm<ExpenseUpdate>({
+    resolver: zodResolver(ExpenseUpdateSchema),
+    defaultValues: {
+      name: expense.name,
+      description: expense.description ?? "",
+      value: String(expense.value),
+    },
   });
 
-  const createExpenseMutation = useMutation({
-    mutationFn: (data: ExpenseCreate) =>
-      expensesApi.createGroupExpense(groupId, data),
+  const updateExpenseMutation = useMutation({
+    mutationFn: (data: ExpenseUpdate) =>
+      expensesApi.updateExpense(groupId, expense.id, data),
     onSuccess: () => {
       clearApiErrors();
-      toast.success("Expense added!");
+      toast.success("Expense updated!");
       queryClient.invalidateQueries({ queryKey: ["group", groupId] });
       queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
-      reset({ name: "", description: "", value: "" });
       onSuccess?.();
     },
     onError: (error: unknown) => {
@@ -57,9 +65,9 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
     },
   });
 
-  const onSubmit = (data: ExpenseCreate) => {
+  const onSubmit = (data: ExpenseUpdate) => {
     clearApiErrors();
-    createExpenseMutation.mutate(data);
+    updateExpenseMutation.mutate(data);
   };
 
   return (
@@ -106,15 +114,15 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
       <Button
         type="submit"
         className="w-full"
-        disabled={isSubmitting || createExpenseMutation.isPending}
+        disabled={isSubmitting || updateExpenseMutation.isPending}
       >
-        {createExpenseMutation.isPending ? (
+        {updateExpenseMutation.isPending ? (
           <span className="flex items-center justify-center gap-2">
             <LoadingSpinnerIcon className="w-4 h-4 animate-spin" />
             Saving...
           </span>
         ) : (
-          "Add Expense"
+          "Save Changes"
         )}
       </Button>
     </form>

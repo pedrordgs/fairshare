@@ -14,12 +14,16 @@ import { logError } from "@utils/errorUtils";
 import { copyToClipboard } from "@utils/clipboard";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
+import { EditIcon, TrashIcon } from "@assets/icons/form-icons";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
+import { EditExpenseModal } from "@components/expenses/EditExpenseModal";
+import { ConfirmationModal } from "@components/ui/ConfirmationModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
 import { SettlementHistory } from "@components/settlements/SettlementHistory";
 import { JoinRequestsModal } from "@components/groups/JoinRequestsModal";
 import { EditGroupModal } from "@components/groups/EditGroupModal";
 import { toast } from "sonner";
+import type { Expense } from "@schema/expenses";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -101,6 +105,12 @@ export const GroupDetailPage: React.FC = () => {
   const [activeCenterTab, setActiveCenterTab] = React.useState<
     "expenses" | "settlements"
   >("expenses");
+  const [editingExpense, setEditingExpense] = React.useState<Expense | null>(
+    null,
+  );
+  const [deletingExpense, setDeletingExpense] = React.useState<Expense | null>(
+    null,
+  );
 
   // Validate and parse the groupId parameter
   const groupId = parseGroupId(groupIdParam);
@@ -208,6 +218,24 @@ export const GroupDetailPage: React.FC = () => {
       return expensesApi.listAllGroupExpenses(groupId);
     },
     enabled: !isAuthLoading && !!user && !!groupId,
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (expenseId: number) => {
+      if (!groupId) {
+        throw new Error("Invalid group ID");
+      }
+      return expensesApi.deleteExpense(groupId, expenseId);
+    },
+    onSuccess: () => {
+      toast.success("Expense deleted.");
+      queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+      queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
+      setDeletingExpense(null);
+    },
+    onError: () => {
+      toast.error("Couldn't delete the expense.");
+    },
   });
 
   const inviteCode = group?.invite_code;
@@ -550,10 +578,32 @@ export const GroupDetailPage: React.FC = () => {
                                   {expenseMeta}
                                 </p>
                               </div>
-                              <div className="text-right">
+                              <div className="flex items-center gap-2">
                                 <p className="text-lg font-bold text-slate-900">
                                   {formatCurrency(expense.value)}
                                 </p>
+                                {isCurrentUserExpense && (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      aria-label={`Edit expense ${expense.name}`}
+                                      onClick={() => setEditingExpense(expense)}
+                                      className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                    >
+                                      <EditIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      aria-label={`Delete expense ${expense.name}`}
+                                      onClick={() =>
+                                        setDeletingExpense(expense)
+                                      }
+                                      className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -698,6 +748,24 @@ export const GroupDetailPage: React.FC = () => {
           groupId={groupId}
           isOpen={isAddExpenseOpen}
           onClose={() => setIsAddExpenseOpen(false)}
+        />
+      )}
+      {groupId && editingExpense && (
+        <EditExpenseModal
+          groupId={groupId}
+          expense={editingExpense}
+          isOpen={!!editingExpense}
+          onClose={() => setEditingExpense(null)}
+        />
+      )}
+      {deletingExpense && (
+        <ConfirmationModal
+          isOpen={!!deletingExpense}
+          onClose={() => setDeletingExpense(null)}
+          onConfirm={() => deleteExpenseMutation.mutate(deletingExpense.id)}
+          title="Confirm Delete"
+          message={`Are you sure you want to delete the expense "${deletingExpense.name}"? This action cannot be undone.`}
+          isPending={deleteExpenseMutation.isPending}
         />
       )}
       {groupId && group && (

@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 
-from .dependencies import GroupAsMember, GroupAsOwner, SettlementAsCreator
+from .dependencies import GroupAsAdmin, GroupAsMember, GroupAsOwner, SettlementAsCreator
 from .utils import validate_settlement_creditor_and_amount
 from core.models import PaginatedResponse
 
@@ -222,11 +222,28 @@ async def create_group_settlement_payment(
     authenticated_user: AuthenticatedUser,
     settlement_in: GroupSettlementCreate,
 ) -> ExpenseGroupDetail:
-    """Record a settlement payment. User must be a group member."""
+    """Record a settlement payment. User must be a group member. Admins may supply debtor_id to record on behalf of another member."""
+    from .service import get_member
+
+    if settlement_in.debtor_id is not None:
+        # Only admins may record settlements on behalf of others
+        member = get_member(session=session, group_id=group.id, user_id=authenticated_user.id)
+        if member is None or not member.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to record settlement on behalf of another member",
+            )
+        # debtor_id must be an existing group member
+        if not get_member(session=session, group_id=group.id, user_id=settlement_in.debtor_id):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Debtor is not a group member")
+        effective_debtor_id = settlement_in.debtor_id
+    else:
+        effective_debtor_id = authenticated_user.id
+
     validate_settlement_creditor_and_amount(
         session=session,
         group_id=group.id,
-        debtor_id=authenticated_user.id,
+        debtor_id=effective_debtor_id,
         creditor_id=settlement_in.creditor_id,
         amount=settlement_in.amount,
     )
@@ -234,7 +251,7 @@ async def create_group_settlement_payment(
     create_group_settlement(
         session=session,
         group_id=group.id,
-        debtor_id=authenticated_user.id,
+        debtor_id=effective_debtor_id,
         creditor_id=settlement_in.creditor_id,
         amount=settlement_in.amount,
         created_by=authenticated_user.id,

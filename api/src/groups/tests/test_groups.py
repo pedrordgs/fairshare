@@ -979,3 +979,139 @@ class TestDemoteMember:
         assert group.id is not None
         response = client.post(f"/groups/{group.id}/members/1/demote/")
         assert response.status_code == 401
+
+
+class TestDelegatedGroupManagement:
+    """Tests for delegated group management: non-owner admins can PATCH group and manage join requests."""
+
+    def _setup_group_with_admin_and_requester(
+        self, authenticated_client: AuthenticatedClient, session: Session, suffix: str
+    ) -> tuple:
+        """
+        Creates a group owned by `authenticated_client`'s user, adds a non-owner admin,
+        and submits a join request from a third user.
+        Returns (client, group_id, admin_token, regular_token, request_id).
+        """
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name=f"Delegated Group {suffix}"))
+        assert group.id is not None
+
+        admin_user, admin_token = create_test_user(session, f"admin-{suffix}@example.com", "Admin User")
+        assert admin_user.id is not None
+        add_member(session=session, group=group, user_id=admin_user.id, is_admin=True)
+
+        regular_user, regular_token = create_test_user(session, f"regular-{suffix}@example.com", "Regular User")
+        assert regular_user.id is not None
+        add_member(session=session, group=group, user_id=regular_user.id)
+
+        # Submit a join request from a fourth user (not yet a member)
+        requester, requester_token = create_test_user(session, f"requester-{suffix}@example.com", "Requester")
+        client.headers["Authorization"] = f"Bearer {requester_token}"
+        join_response = client.post("/groups/join/", json={"code": group.invite_code})
+        assert join_response.status_code == 201
+        request_id = join_response.json()["id"]
+
+        return client, group.id, admin_token, regular_token, request_id
+
+    # --- PATCH /groups/{group_id}/ ---
+
+    def test_admin_can_patch_group_name(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Non-owner admin can successfully PATCH the group name."""
+        client, group_id, admin_token, _, _req = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "patch-admin"
+        )
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.patch(f"/groups/{group_id}/", json={"name": "Renamed By Admin"})
+        assert response.status_code == 200
+        assert response.json()["name"] == "Renamed By Admin"
+
+    def test_regular_member_cannot_patch_group_name(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        """Regular (non-admin) member receives 403 when trying to PATCH the group name."""
+        client, group_id, _, regular_token, _req = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "patch-regular"
+        )
+        client.headers["Authorization"] = f"Bearer {regular_token}"
+        response = client.patch(f"/groups/{group_id}/", json={"name": "Hijacked By Regular"})
+        assert response.status_code == 403
+
+    # --- GET /groups/{group_id}/join-requests/ ---
+
+    def test_admin_can_list_join_requests(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Non-owner admin can list join requests for the group."""
+        client, group_id, admin_token, _, _req = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "list-jreq-admin"
+        )
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.get(f"/groups/{group_id}/join-requests/")
+        assert response.status_code == 200
+        assert len(response.json()) >= 1
+
+    def test_regular_member_cannot_list_join_requests(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        """Regular (non-admin) member receives 403 when listing join requests."""
+        client, group_id, _, regular_token, _req = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "list-jreq-regular"
+        )
+        client.headers["Authorization"] = f"Bearer {regular_token}"
+        response = client.get(f"/groups/{group_id}/join-requests/")
+        assert response.status_code == 403
+
+    # --- POST /groups/{group_id}/join-requests/{id}/accept/ ---
+
+    def test_admin_can_accept_join_request(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Non-owner admin can accept a pending join request."""
+        client, group_id, admin_token, _, request_id = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "accept-admin"
+        )
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.post(f"/groups/{group_id}/join-requests/{request_id}/accept/")
+        assert response.status_code == 200
+        assert response.json()["status"] == "accepted"
+
+    def test_regular_member_cannot_accept_join_request(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        """Regular (non-admin) member receives 403 when accepting a join request."""
+        client, group_id, _, regular_token, request_id = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "accept-regular"
+        )
+        client.headers["Authorization"] = f"Bearer {regular_token}"
+        response = client.post(f"/groups/{group_id}/join-requests/{request_id}/accept/")
+        assert response.status_code == 403
+
+    # --- POST /groups/{group_id}/join-requests/{id}/decline/ ---
+
+    def test_admin_can_decline_join_request(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Non-owner admin can decline a pending join request."""
+        client, group_id, admin_token, _, request_id = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "decline-admin"
+        )
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.post(f"/groups/{group_id}/join-requests/{request_id}/decline/")
+        assert response.status_code == 200
+        assert response.json()["status"] == "declined"
+
+    def test_regular_member_cannot_decline_join_request(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        """Regular (non-admin) member receives 403 when declining a join request."""
+        client, group_id, _, regular_token, request_id = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "decline-regular"
+        )
+        client.headers["Authorization"] = f"Bearer {regular_token}"
+        response = client.post(f"/groups/{group_id}/join-requests/{request_id}/decline/")
+        assert response.status_code == 403
+
+    # --- DELETE /groups/{group_id}/ remains owner-only ---
+
+    def test_admin_cannot_delete_group(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Non-owner admin receives 403 when attempting to DELETE the group."""
+        client, group_id, admin_token, _, _req = self._setup_group_with_admin_and_requester(
+            authenticated_client, session, "delete-admin"
+        )
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.delete(f"/groups/{group_id}/")
+        assert response.status_code == 403

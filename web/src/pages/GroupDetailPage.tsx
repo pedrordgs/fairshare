@@ -867,6 +867,9 @@ export const GroupDetailPage: React.FC = () => {
           onClose={() => setIsSettleUpOpen(false)}
           owedByUser={group.owed_by_user}
           membersById={membersById}
+          isAdmin={isAdmin}
+          members={group.members}
+          currentUserId={currentUserId}
         />
       )}
       {isOwner && (

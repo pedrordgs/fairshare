@@ -30,6 +30,7 @@ class ExpenseGroupMember(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     group_id: int = Field(foreign_key="expensegroup.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id")
+    is_admin: bool = Field(default=False)
 
 
 class JoinRequestStatus(str, Enum):
@@ -81,6 +82,7 @@ class ExpenseGroupMemberPublic(SQLModel):
     user_id: int
     name: str
     email: EmailStr
+    is_admin: bool
 
 
 class ExpenseGroupSettlementPublic(SQLModel):

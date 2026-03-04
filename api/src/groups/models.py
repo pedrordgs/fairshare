@@ -5,7 +5,7 @@ from enum import Enum
 from pydantic import EmailStr, field_serializer, field_validator
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from core.money import quantize_currency
+from core.money import Price
 from .utils import _validate_group_name, normalize_invite_code
 
 
@@ -168,32 +168,11 @@ class JoinGroupRequestPublic(SQLModel):
     requester: JoinGroupRequesterPublic
 
 
-class Price(SQLModel):
-    """Base model providing a validated, quantized positive Decimal `amount` field."""
-
-    amount: Decimal
-
-    @field_validator("amount")
-    @classmethod
-    def _normalize_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("Amount must be greater than zero")
-        return quantize_currency(value)
-
-
-class GroupSettlementCreate(Price):
+class GroupSettlementCreate(SQLModel):
+    amount: Price
     creditor_id: int
 
 
 class GroupSettlementUpdate(SQLModel):
-    amount: Decimal | None = None
+    amount: Price | None = None
     creditor_id: int | None = None
-
-    @field_validator("amount")
-    @classmethod
-    def _normalize_amount(cls, value: Decimal | None) -> Decimal | None:
-        if value is None:
-            return value
-        if value <= Decimal("0.00"):
-            raise ValueError("Amount must be greater than zero")
-        return quantize_currency(value)

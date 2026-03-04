@@ -1,10 +1,9 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from pydantic import field_validator
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from core.money import quantize_currency
+from core.money import Price
 
 
 class ExpenseBase(SQLModel):
@@ -12,12 +11,7 @@ class ExpenseBase(SQLModel):
 
     name: str
     description: str | None = None
-    value: Decimal = Field(decimal_places=2)
-
-    @field_validator("value")
-    @classmethod
-    def _normalize_value(cls, value: Decimal) -> Decimal:
-        return quantize_currency(value)
+    value: Price = Field(decimal_places=2)
 
 
 class Expense(ExpenseBase, table=True):
@@ -52,14 +46,7 @@ class ExpenseUpdate(SQLModel):
 
     name: str | None = None
     description: str | None = None
-    value: Decimal | None = None
-
-    @field_validator("value")
-    @classmethod
-    def _normalize_value(cls, value: Decimal | None) -> Decimal | None:
-        if value is None:
-            return None
-        return quantize_currency(value)
+    value: Price | None = None
 
 
 class ExpensePublic(ExpenseBase):

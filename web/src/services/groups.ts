@@ -2,6 +2,7 @@ import api from "./api";
 import {
   type ExpenseGroupCreate,
   type ExpenseGroupDetail,
+  type ExpenseGroupUpdate,
   type JoinGroupRequest,
   type JoinGroupRequestPublic,
   type PaginatedGroupsResponse,
@@ -133,5 +134,32 @@ export const groupsApi = {
       `/groups/${groupId}/join-requests/${requestId}/decline/`,
     );
     return JoinGroupRequestPublicSchema.parse(response.data);
+  },
+
+  /**
+   * Updates a group's name (owner only).
+   *
+   * @param groupId - The ID of the group to update
+   * @param data - The update data containing the new name
+   * @returns Promise resolving to the updated group detail
+   */
+  updateGroup: async (
+    groupId: number,
+    data: ExpenseGroupUpdate,
+  ): Promise<ExpenseGroupDetail> => {
+    validateGroupId(groupId);
+    const response = await api.patch(`/groups/${groupId}/`, data);
+    return ExpenseGroupDetailSchema.parse(response.data);
+  },
+
+  /**
+   * Deletes a group (owner only).
+   *
+   * @param groupId - The ID of the group to delete
+   * @returns Promise resolving to void
+   */
+  deleteGroup: async (groupId: number): Promise<void> => {
+    validateGroupId(groupId);
+    await api.delete(`/groups/${groupId}/`);
   },
 };

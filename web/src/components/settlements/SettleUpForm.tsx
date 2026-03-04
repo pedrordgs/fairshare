@@ -15,7 +15,7 @@ import {
   type GroupSettlementCreate,
 } from "@schema/settlements";
 import { settlementsApi } from "@services/settlements";
-import { formatCurrency } from "@utils/formatUtils";
+import { formatCurrency, formatAmountInput } from "@utils/formatUtils";
 
 interface SettleUpFormProps {
   groupId: number;
@@ -23,9 +23,6 @@ interface SettleUpFormProps {
   membersById: Map<number, string>;
   onSuccess?: () => void;
 }
-
-const formatAmountInput = (value: string) =>
-  value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
 
 export const SettleUpForm: React.FC<SettleUpFormProps> = ({
   groupId,

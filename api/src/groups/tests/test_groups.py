@@ -1,13 +1,13 @@
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from auth.models import UserCreate
 from auth.security import create_access_token
 from auth.service import create_user
 from conftest import AuthenticatedClient
-from expenses.models import Expense, ExpenseCreate
+from expenses.models import Expense, ExpenseCreate, ExpenseSplit
 from expenses.service import create_expense
 from groups.models import ExpenseGroupCreate, ExpenseGroupMember
 from groups.service import create_group, get_group_by_id, add_member
@@ -757,8 +757,18 @@ class TestGroupUpdateDelete:
             expense_in=ExpenseCreate(name="Cascade Expense", value=Decimal("10.00")),
         )
 
+        # Capture expense IDs and assert splits exist before deletion
+        expenses_before = session.exec(select(Expense).where(Expense.group_id == group_id)).all()
+        assert len(expenses_before) > 0, "Expenses must exist before delete for cascade check to be meaningful"
+        expense_ids = [expense.id for expense in expenses_before if expense.id is not None]
+        assert len(expense_ids) > 0
+        splits_before = session.exec(select(ExpenseSplit).where(col(ExpenseSplit.expense_id).in_(expense_ids))).all()
+        assert len(splits_before) > 0, "ExpenseSplits must exist before delete for cascade check to be meaningful"
+
         response = client.delete(f"/groups/{group_id}/")
         assert response.status_code == 204
 
         assert session.exec(select(Expense).where(Expense.group_id == group_id)).first() is None
         assert session.exec(select(ExpenseGroupMember).where(ExpenseGroupMember.group_id == group_id)).first() is None
+        splits_after = session.exec(select(ExpenseSplit).where(col(ExpenseSplit.expense_id).in_(expense_ids))).all()
+        assert len(splits_after) == 0, "Expense splits should be cascade-deleted with their expenses"

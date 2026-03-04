@@ -6,7 +6,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Tabs, TabItem } from "@components/ui/Tabs";
 import { Button } from "@components/ui/Button";
 import { ButtonWithBadge } from "@components/ui/ButtonWithBadge";
-import { ConfirmDeleteModal } from "@components/ui/ConfirmDeleteModal";
 import { groupsApi } from "@services/groups";
 import { expensesApi } from "@services/expenses";
 import { useAuth } from "@context/AuthContext";
@@ -802,10 +801,11 @@ export const GroupDetailPage: React.FC = () => {
         />
       )}
       {isOwner && group && (
-        <ConfirmDeleteModal
+        <ConfirmationModal
           isOpen={isDeleteGroupOpen}
           onClose={() => setIsDeleteGroupOpen(false)}
           onConfirm={() => deleteGroupMutation.mutate()}
+          title="Confirm Delete"
           message={`Are you sure you want to delete "${group.name}"? This will permanently remove all expenses, settlements, and members.`}
           isPending={deleteGroupMutation.isPending}
         />

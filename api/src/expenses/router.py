@@ -4,7 +4,7 @@ from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 from groups.dependencies import GroupAsMember
 
-from .dependencies import ExpenseAsCreator, ExpenseAsMember
+from .dependencies import ExpenseAsCreator, ExpenseAsCreatorOrAdmin, ExpenseAsMember
 from .models import ExpenseCreate, ExpenseList, ExpensePublic, ExpenseUpdate
 from .service import count_expenses_for_group, create_expense, delete_expense, get_expenses_for_group, update_expense
 
@@ -44,14 +44,14 @@ async def get_expense(*, expense: ExpenseAsMember) -> ExpensePublic:
 
 @router.patch("/expenses/{expense_id}/", response_model=ExpensePublic)
 async def update_group_expense(
-    *, session: DbSession, expense: ExpenseAsCreator, expense_in: ExpenseUpdate
+    *, session: DbSession, expense: ExpenseAsCreatorOrAdmin, expense_in: ExpenseUpdate
 ) -> ExpensePublic:
-    """Update an expense. Only the creator can update."""
+    """Update an expense. The creator or a group admin can update."""
     updated = update_expense(session=session, expense=expense, expense_in=expense_in)
     return ExpensePublic.model_validate(updated)
 
 
 @router.delete("/expenses/{expense_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_group_expense(*, session: DbSession, expense: ExpenseAsCreator) -> None:
-    """Delete an expense. Only the creator can delete."""
+async def delete_group_expense(*, session: DbSession, expense: ExpenseAsCreatorOrAdmin) -> None:
+    """Delete an expense. The creator or a group admin can delete."""
     delete_expense(session=session, expense=expense)

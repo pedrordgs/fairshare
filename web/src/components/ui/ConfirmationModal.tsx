@@ -10,6 +10,8 @@ export interface ConfirmationModalProps {
   title: string;
   message: string;
   isPending: boolean;
+  confirmLabel?: string;
+  pendingLabel?: string;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -19,6 +21,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   message,
   isPending,
+  confirmLabel = "Delete",
+  pendingLabel = "Deleting...",
 }) => {
   const handleClose = () => {
     if (!isPending) onClose();
@@ -59,10 +63,10 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             {isPending ? (
               <span className="flex items-center justify-center gap-2">
                 <LoadingSpinnerIcon className="w-4 h-4 animate-spin" />
-                Deleting...
+                {pendingLabel}
               </span>
             ) : (
-              "Delete"
+              confirmLabel
             )}
           </ButtonPrimary>
         </div>

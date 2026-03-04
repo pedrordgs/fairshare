@@ -3,18 +3,20 @@ import { Modal, ModalHeader, ModalContent } from "@components/ui/Modal";
 import { ButtonPrimary, ButtonSecondary } from "@components/ui/Button";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 
-export interface ConfirmDeleteModalProps {
+export interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  title: string;
   message: string;
   isPending: boolean;
 }
 
-export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  title,
   message,
   isPending,
 }) => {
@@ -23,20 +25,17 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       className="max-w-md w-full"
-      titleId="confirm-delete-modal-title"
-      descriptionId="confirm-delete-modal-description"
+      titleId="confirmation-modal-title"
+      descriptionId="confirmation-modal-description"
     >
       <ModalHeader
-        title="Confirm Delete"
+        title={title}
         onClose={onClose}
-        titleId="confirm-delete-modal-title"
-        descriptionId="confirm-delete-modal-description"
+        titleId="confirmation-modal-title"
+        descriptionId="confirmation-modal-description"
       />
       <ModalContent>
-        <p
-          id="confirm-delete-modal-description"
-          className="text-slate-700 mb-6"
-        >
+        <p id="confirmation-modal-description" className="text-slate-700 mb-6">
           {message}
         </p>
         <div className="flex gap-3 justify-end">

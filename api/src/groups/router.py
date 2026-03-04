@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from auth.dependencies import AuthenticatedUser
@@ -259,6 +261,24 @@ async def update_group_settlement(
     *, session: DbSession, settlement: SettlementAsCreator, update_in: GroupSettlementUpdate
 ) -> ExpenseGroupSettlementPublic:
     """Update a settlement's amount and/or payee. Only the creator can update."""
+    target_creditor_id = update_in.creditor_id if update_in.creditor_id is not None else settlement.creditor_id
+    target_amount = update_in.amount if update_in.amount is not None else settlement.amount
+
+    if target_creditor_id == settlement.debtor_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Creditor must be a different group member")
+    if not get_member(session=session, group_id=settlement.group_id, user_id=target_creditor_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+
+    _, _, owed_by_user, _ = calculate_user_debts(
+        session=session, group_id=settlement.group_id, user_id=settlement.debtor_id
+    )
+    owed_entry = next((entry for entry in owed_by_user if entry.user_id == target_creditor_id), None)
+    max_allowed = owed_entry.amount if owed_entry else Decimal("0.00")
+    if target_creditor_id == settlement.creditor_id:
+        max_allowed += settlement.amount
+    if target_amount > max_allowed:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount exceeds outstanding debt")
+
     updated = update_settlement(session=session, settlement=settlement, update_data=update_in)
     return ExpenseGroupSettlementPublic.model_validate(updated)
 

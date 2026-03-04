@@ -514,9 +514,7 @@ def update_settlement(
     *, session: Session, settlement: ExpenseGroupSettlement, update_data: GroupSettlementUpdate
 ) -> ExpenseGroupSettlement:
     """Update a settlement's amount and/or payee."""
-    settlement.sqlmodel_update(update_data.model_dump(exclude_unset=True, exclude={"paid_to_id"}))
-    if update_data.paid_to_id is not None:
-        settlement.creditor_id = update_data.paid_to_id
+    settlement.sqlmodel_update(update_data.model_dump(exclude_unset=True))
     session.add(settlement)
     session.commit()
     session.refresh(settlement)

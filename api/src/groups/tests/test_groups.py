@@ -530,7 +530,10 @@ class TestUpdateSettlement:
         assert settlement_response.status_code == 201
 
         history_response = client.get(f"/groups/{group_id}/settlements/?offset=0&limit=10")
-        settlement_id = history_response.json()["items"][0]["id"]
+        assert history_response.status_code == 200
+        history_data = history_response.json()
+        assert history_data["items"]
+        settlement_id = history_data["items"][0]["id"]
 
         return client, group_id, settlement_id, creditor, debtor_token, debtor
 

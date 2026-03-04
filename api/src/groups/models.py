@@ -168,8 +168,9 @@ class JoinGroupRequestPublic(SQLModel):
     requester: JoinGroupRequesterPublic
 
 
-class GroupSettlementCreate(SQLModel):
-    creditor_id: int
+class Price(SQLModel):
+    """Base model providing a validated, quantized positive Decimal `amount` field."""
+
     amount: Decimal
 
     @field_validator("amount")
@@ -180,9 +181,13 @@ class GroupSettlementCreate(SQLModel):
         return quantize_currency(value)
 
 
+class GroupSettlementCreate(Price):
+    creditor_id: int
+
+
 class GroupSettlementUpdate(SQLModel):
     amount: Decimal | None = None
-    paid_to_id: int | None = None
+    creditor_id: int | None = None
 
     @field_validator("amount")
     @classmethod

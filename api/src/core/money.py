@@ -1,7 +1,9 @@
 from decimal import Decimal, ROUND_UP
 from typing import Annotated
 
-from pydantic import AfterValidator
+from pydantic import Field
+
+PRICING_DECIMAL_PLACES = 2
 
 
 def quantize_currency(value: Decimal) -> Decimal:
@@ -9,10 +11,4 @@ def quantize_currency(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_UP)
 
 
-def _validate_price(value: Decimal) -> Decimal:
-    if value <= Decimal("0"):
-        raise ValueError("Price must be greater than zero")
-    return quantize_currency(value)
-
-
-Price = Annotated[Decimal, AfterValidator(_validate_price)]
+PositiveDecimal = Annotated[Decimal, Field(ge=0)]

@@ -141,35 +141,12 @@ def count_declined_join_requests(*, session: Session, group_id: int, user_id: in
     return session.exec(statement).one()
 
 
-def create_join_request_by_invite_code(
-    *, session: Session, user: User, code: str
-) -> tuple[ExpenseGroupJoinRequest, bool]:
-    group = get_group_by_invite_code(session=session, code=code)
-    if not group:
-        raise ValueError("Group not found")
-
-    if group.id is None:
-        raise ValueError("Group not found")
-
-    if user.id is None:
-        raise ValueError("User not found")
-
-    if is_member(session=session, group_id=group.id, user_id=user.id):
-        raise ValueError("User already a member")
-
-    pending_request = get_pending_join_request(session=session, group_id=group.id, user_id=user.id)
-    if pending_request:
-        return pending_request, False
-
-    declined_count = count_declined_join_requests(session=session, group_id=group.id, user_id=user.id)
-    if declined_count >= MAX_JOIN_REQUEST_ATTEMPTS:
-        raise ValueError("Join request limit reached")
-
-    db_request = ExpenseGroupJoinRequest(group_id=group.id, user_id=user.id)
+def create_join_request(*, session: Session, group_id: int, user_id: int) -> ExpenseGroupJoinRequest:
+    db_request = ExpenseGroupJoinRequest(group_id=group_id, user_id=user_id)
     session.add(db_request)
     session.commit()
     session.refresh(db_request)
-    return db_request, True
+    return db_request
 
 
 def list_join_requests(
@@ -514,7 +491,10 @@ def update_settlement(
     *, session: Session, settlement: ExpenseGroupSettlement, update_data: GroupSettlementUpdate
 ) -> ExpenseGroupSettlement:
     """Update a settlement's amount and/or payee."""
-    settlement.sqlmodel_update(update_data.model_dump(exclude_unset=True))
+    patch_data = update_data.model_dump(exclude_unset=True, exclude_none=True)
+    if not patch_data:
+        return settlement
+    settlement.sqlmodel_update(patch_data)
     session.add(settlement)
     session.commit()
     session.refresh(settlement)

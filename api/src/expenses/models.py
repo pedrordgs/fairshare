@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from core.money import Price
+from core.money import PRICING_DECIMAL_PLACES, PositiveDecimal
 
 
 class ExpenseBase(SQLModel):
@@ -11,7 +11,7 @@ class ExpenseBase(SQLModel):
 
     name: str
     description: str | None = None
-    value: Price = Field(decimal_places=2)
+    value: PositiveDecimal = Field(decimal_places=PRICING_DECIMAL_PLACES)
 
 
 class Expense(ExpenseBase, table=True):
@@ -32,7 +32,7 @@ class ExpenseSplit(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     expense_id: int = Field(foreign_key="expense.id", ondelete="CASCADE")
     user_id: int = Field(foreign_key="user.id")
-    share: Decimal = Field(decimal_places=2)
+    share: Decimal = Field(decimal_places=PRICING_DECIMAL_PLACES)
 
 
 class ExpenseCreate(ExpenseBase):
@@ -46,7 +46,7 @@ class ExpenseUpdate(SQLModel):
 
     name: str | None = None
     description: str | None = None
-    value: Price | None = None
+    value: PositiveDecimal | None = Field(default=None, decimal_places=PRICING_DECIMAL_PLACES)
 
 
 class ExpensePublic(ExpenseBase):

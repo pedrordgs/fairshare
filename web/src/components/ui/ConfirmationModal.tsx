@@ -20,17 +20,21 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   message,
   isPending,
 }) => {
+  const handleClose = () => {
+    if (!isPending) onClose();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       className="max-w-md w-full"
       titleId="confirmation-modal-title"
       descriptionId="confirmation-modal-description"
     >
       <ModalHeader
         title={title}
-        onClose={onClose}
+        onClose={handleClose}
         titleId="confirmation-modal-title"
         descriptionId="confirmation-modal-description"
       />
@@ -39,7 +43,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           {message}
         </p>
         <div className="flex gap-3 justify-end">
-          <ButtonSecondary type="button" onClick={onClose}>
+          <ButtonSecondary
+            type="button"
+            onClick={handleClose}
+            disabled={isPending}
+          >
             Cancel
           </ButtonSecondary>
           <ButtonPrimary

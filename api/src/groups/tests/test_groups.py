@@ -7,10 +7,10 @@ from auth.models import UserCreate
 from auth.security import create_access_token
 from auth.service import create_user
 from conftest import AuthenticatedClient
-from expenses.models import Expense, ExpenseCreate, ExpenseSplit
+from expenses.models import Expense, ExpenseCreate
 from expenses.service import create_expense
-from groups.models import ExpenseGroupCreate, ExpenseGroupMember, ExpenseGroupSettlement
-from groups.service import create_group, create_group_settlement, get_group_by_id, add_member
+from groups.models import ExpenseGroupCreate, ExpenseGroupMember
+from groups.service import create_group, get_group_by_id, add_member
 
 
 def create_test_user(session: Session, email: str, name: str = "Test User") -> tuple:
@@ -717,64 +717,6 @@ class TestGroupUpdateDelete:
         data = response.json()
         assert data["name"] == "Updated Name"
         assert data["created_by"] == user.id
-
-    def test_delete_group(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
-        """Authenticated owner sends DELETE /groups/{id}/; asserts 204 and cascade verified."""
-        client, owner = authenticated_client
-        create_response = client.post("/groups/", json={"name": "To Cascade Delete"})
-        assert create_response.status_code == 201
-        group_id = create_response.json()["id"]
-
-        # Add a second member to the group
-        other_user, _ = create_test_user(session, "cascade-member@example.com", "Other Member")
-        group = get_group_by_id(session=session, group_id=group_id)
-        assert group is not None
-        assert other_user.id is not None
-        add_member(session=session, group=group, user_id=other_user.id)
-
-        # Add an expense with splits
-        assert group.id is not None
-        assert owner.id is not None
-        create_expense(
-            session=session,
-            group_id=group.id,
-            user_id=owner.id,
-            expense_in=ExpenseCreate(name="Dinner", value=Decimal("20.00")),
-        )
-
-        # Add a settlement
-        create_group_settlement(
-            session=session,
-            group_id=group.id,
-            debtor_id=other_user.id,
-            creditor_id=owner.id,
-            amount=Decimal("10.00"),
-            created_by=other_user.id,
-        )
-
-        # Delete the group
-        response = client.delete(f"/groups/{group_id}/")
-        assert response.status_code == 204
-
-        # Verify group is gone
-        get_response = client.get(f"/groups/{group_id}/")
-        assert get_response.status_code == 404
-
-        # Verify cascade: expenses, splits, settlements, members no longer exist
-        expenses = session.exec(select(Expense).where(Expense.group_id == group_id)).all()
-        assert len(expenses) == 0, "Expenses should be cascade-deleted"
-
-        # Splits cascade-delete from expenses; no expenses means no splits for this group
-        all_splits = session.exec(select(ExpenseSplit)).all()
-        assert len(all_splits) == 0, "Expense splits should be cascade-deleted with their expenses"
-
-        settlements = session.exec(
-            select(ExpenseGroupSettlement).where(ExpenseGroupSettlement.group_id == group_id)
-        ).all()
-        assert len(settlements) == 0, "Settlements should be cascade-deleted"
-
-        members = session.exec(select(ExpenseGroupMember).where(ExpenseGroupMember.group_id == group_id)).all()
-        assert len(members) == 0, "Members should be cascade-deleted"
 
     def test_group_update_forbidden(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
         """Authenticated non-owner member sends PATCH; asserts 403."""

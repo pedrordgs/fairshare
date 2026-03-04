@@ -1,11 +1,10 @@
 from datetime import UTC, datetime
-from decimal import Decimal
 from enum import Enum
 
 from pydantic import EmailStr, field_serializer, field_validator
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
-from core.money import quantize_currency
+from core.money import PRICING_DECIMAL_PLACES, PositiveDecimal
 from .utils import _validate_group_name, normalize_invite_code
 
 
@@ -55,7 +54,7 @@ class ExpenseGroupSettlement(SQLModel, table=True):
     created_by: int = Field(foreign_key="user.id")
     debtor_id: int = Field(foreign_key="user.id")
     creditor_id: int = Field(foreign_key="user.id")
-    amount: Decimal = Field(decimal_places=2)
+    amount: PositiveDecimal = Field(decimal_places=PRICING_DECIMAL_PLACES)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -90,36 +89,36 @@ class ExpenseGroupSettlementPublic(SQLModel):
     created_by: int
     debtor_id: int
     creditor_id: int
-    amount: Decimal
+    amount: PositiveDecimal
     created_at: datetime
 
     @field_serializer("amount")
-    def _serialize_amount(self, amount: Decimal) -> float:
+    def _serialize_amount(self, amount: PositiveDecimal) -> float:
         return float(amount)
 
 
 class ExpenseGroupDebtItem(SQLModel):
     user_id: int
-    amount: Decimal
+    amount: PositiveDecimal
 
     @field_serializer("amount")
-    def _serialize_amount(self, amount: Decimal) -> float:
+    def _serialize_amount(self, amount: PositiveDecimal) -> float:
         return float(amount)
 
 
 class ExpenseGroupListItem(ExpenseGroupPublic):
     created_at: datetime
     expense_count: int
-    owed_by_user_total: Decimal
-    owed_to_user_total: Decimal
+    owed_by_user_total: PositiveDecimal
+    owed_to_user_total: PositiveDecimal
     last_activity_at: datetime | None
 
     @field_serializer("owed_by_user_total")
-    def _serialize_owed_by_user_total(self, owed_by_user_total: Decimal) -> float:
+    def _serialize_owed_by_user_total(self, owed_by_user_total: PositiveDecimal) -> float:
         return float(owed_by_user_total)
 
     @field_serializer("owed_to_user_total")
-    def _serialize_owed_to_user_total(self, owed_to_user_total: Decimal) -> float:
+    def _serialize_owed_to_user_total(self, owed_to_user_total: PositiveDecimal) -> float:
         return float(owed_to_user_total)
 
 
@@ -127,18 +126,18 @@ class ExpenseGroupDetail(ExpenseGroupPublic):
     members: list[ExpenseGroupMemberPublic] = []
     created_at: datetime
     expense_count: int
-    owed_by_user_total: Decimal
-    owed_to_user_total: Decimal
+    owed_by_user_total: PositiveDecimal
+    owed_to_user_total: PositiveDecimal
     owed_by_user: list[ExpenseGroupDebtItem] = []
     owed_to_user: list[ExpenseGroupDebtItem] = []
     last_activity_at: datetime | None
 
     @field_serializer("owed_by_user_total")
-    def _serialize_owed_by_user_total(self, owed_by_user_total: Decimal) -> float:
+    def _serialize_owed_by_user_total(self, owed_by_user_total: PositiveDecimal) -> float:
         return float(owed_by_user_total)
 
     @field_serializer("owed_to_user_total")
-    def _serialize_owed_to_user_total(self, owed_to_user_total: Decimal) -> float:
+    def _serialize_owed_to_user_total(self, owed_to_user_total: PositiveDecimal) -> float:
         return float(owed_to_user_total)
 
 
@@ -169,12 +168,10 @@ class JoinGroupRequestPublic(SQLModel):
 
 
 class GroupSettlementCreate(SQLModel):
+    amount: PositiveDecimal = Field(decimal_places=PRICING_DECIMAL_PLACES)
     creditor_id: int
-    amount: Decimal
 
-    @field_validator("amount")
-    @classmethod
-    def _normalize_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("Amount must be greater than zero")
-        return quantize_currency(value)
+
+class GroupSettlementUpdate(SQLModel):
+    amount: PositiveDecimal | None = Field(default=None, decimal_places=PRICING_DECIMAL_PLACES)
+    creditor_id: int | None = None

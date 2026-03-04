@@ -30,6 +30,9 @@ vi.mock("@services/expenses", () => ({
   expensesApi: {
     listGroupExpenses: vi.fn(),
     listAllGroupExpenses: vi.fn(),
+    deleteExpense: vi.fn(),
+    updateExpense: vi.fn(),
+    createGroupExpense: vi.fn(),
   },
 }));
 
@@ -1050,6 +1053,272 @@ describe("GroupDetailPage", () => {
           within(settlementsPanel).getByText(/Eli Kay paid Jane Smith/i),
         ).toBeInTheDocument();
       });
+    });
+  });
+
+  describe("Admin Expense Edit/Delete", () => {
+    const makeExpense = (overrides: Record<string, unknown> = {}) => ({
+      id: 99,
+      name: "Shared Lunch",
+      description: "Team lunch",
+      value: 30,
+      group_id: 1,
+      created_by: 2,
+      on_behalf_of_user_id: null,
+      created_at: "2026-02-01T12:00:00Z",
+      updated_at: "2026-02-01T12:00:00Z",
+      ...overrides,
+    });
+
+    it("shows edit and delete buttons for admin on another member's expense", async () => {
+      // current user (id=1) is admin, expense belongs to user 2
+      const mockGroup = {
+        ...baseGroup,
+        created_by: 3, // owner is user 3, not current user
+        members: [
+          {
+            user_id: 1,
+            name: "Admin User",
+            email: "admin@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Other User",
+            email: "other@example.com",
+            is_admin: false,
+          },
+          {
+            user_id: 3,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [makeExpense()],
+        total: 1,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /Edit expense Shared Lunch/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /Delete expense Shared Lunch/i }),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("hides edit and delete buttons for non-admin on another member's expense", async () => {
+      // current user (id=1) is NOT admin, expense belongs to user 2
+      vi.mocked(AuthContext.useAuth).mockReturnValue({
+        user: { id: 1, email: "test@example.com", name: "Test User" },
+        isLoading: false,
+        isAuthenticated: true,
+        error: null,
+        login: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const mockGroup = {
+        ...baseGroup,
+        created_by: 3,
+        members: [
+          {
+            user_id: 1,
+            name: "Regular User",
+            email: "regular@example.com",
+            is_admin: false,
+          },
+          {
+            user_id: 2,
+            name: "Other User",
+            email: "other@example.com",
+            is_admin: false,
+          },
+          {
+            user_id: 3,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [makeExpense()],
+        total: 1,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Shared Lunch")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.queryByRole("button", { name: /Edit expense Shared Lunch/i }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: /Delete expense Shared Lunch/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows 'On behalf of' label when on_behalf_of_user_id is set", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [
+          {
+            user_id: 1,
+            name: "Admin User",
+            email: "admin@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Jane Smith",
+            email: "jane@example.com",
+            is_admin: false,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [makeExpense({ created_by: 1, on_behalf_of_user_id: 2 })],
+        total: 1,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/On behalf of/i)).toBeInTheDocument();
+        expect(screen.getAllByText("Jane Smith").length).toBeGreaterThanOrEqual(
+          1,
+        );
+      });
+    });
+
+    it("shows 'Record on behalf of' selector in Add Expense modal for admins", async () => {
+      const mockGroup = {
+        ...baseGroup,
+        members: [
+          {
+            user_id: 1,
+            name: "Admin User",
+            email: "admin@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Jane Smith",
+            email: "jane@example.com",
+            is_admin: false,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 20 });
+      mockSettlements();
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Admin User")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /\+ Add Expense/i }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByLabelText(/Record on behalf of/i),
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("does not show 'Record on behalf of' selector for non-admins", async () => {
+      vi.mocked(AuthContext.useAuth).mockReturnValue({
+        user: { id: 1, email: "test@example.com", name: "Regular User" },
+        isLoading: false,
+        isAuthenticated: true,
+        error: null,
+        login: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const mockGroup = {
+        ...baseGroup,
+        created_by: 2,
+        members: [
+          {
+            user_id: 1,
+            name: "Regular User",
+            email: "regular@example.com",
+            is_admin: false,
+          },
+          {
+            user_id: 2,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 20 });
+      mockSettlements();
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Regular User")).toBeInTheDocument();
+      });
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: /\+ Add Expense/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+      });
+
+      const dialog = screen.getByRole("dialog");
+      expect(
+        within(dialog).queryByLabelText(/Record on behalf of/i),
+      ).not.toBeInTheDocument();
     });
   });
 });

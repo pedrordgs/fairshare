@@ -42,7 +42,7 @@ class TestCreateExpense:
         assert expense.created_at is not None
         assert expense.updated_at is not None
 
-    def test_rounds_value_up(self, session: Session) -> None:
+    def test_accepts_two_decimal_places(self, session: Session) -> None:
         user = create_user(
             session=session, user_in=UserCreate(name="Test", email="round@example.com", password="password")
         )

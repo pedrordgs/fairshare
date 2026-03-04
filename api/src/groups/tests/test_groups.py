@@ -500,7 +500,89 @@ class TestDeleteGroup:
         assert response.status_code == 401
 
 
-class TestJoinGroup:
+class TestUpdateSettlement:
+    def _setup_settlement(self, authenticated_client: AuthenticatedClient, session: Session) -> tuple:
+        """Helper: create group, add member, add expense, create settlement. Returns (client, group_id, settlement_id, creditor_user)."""
+        client, creditor = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Settlement Edit Group"})
+        group_id = create_response.json()["id"]
+
+        debtor, debtor_token = create_test_user(session, "debtor-edit@example.com", "Debtor Edit")
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        assert group.id is not None
+        assert debtor.id is not None
+        assert creditor.id is not None
+
+        add_member(session=session, group=group, user_id=debtor.id)
+
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=creditor.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("20.00")),
+        )
+
+        client.headers["Authorization"] = f"Bearer {debtor_token}"
+        settlement_response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": creditor.id, "amount": 8.0}
+        )
+        assert settlement_response.status_code == 201
+
+        history_response = client.get(f"/groups/{group_id}/settlements/?offset=0&limit=10")
+        assert history_response.status_code == 200
+        history_data = history_response.json()
+        assert history_data["items"]
+        settlement_id = history_data["items"][0]["id"]
+
+        return client, group_id, settlement_id, creditor, debtor_token, debtor
+
+    def test_update_settlement(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, group_id, settlement_id, creditor, debtor_token, debtor = self._setup_settlement(
+            authenticated_client, session
+        )
+        # debtor is already authenticated (token set in _setup_settlement)
+        response = client.patch(f"/groups/{group_id}/settlements/{settlement_id}/", json={"amount": 5.0})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["amount"] == 5.0
+        assert data["id"] == settlement_id
+
+    def test_delete_settlement(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, group_id, settlement_id, creditor, debtor_token, debtor = self._setup_settlement(
+            authenticated_client, session
+        )
+        response = client.delete(f"/groups/{group_id}/settlements/{settlement_id}/")
+        assert response.status_code == 204
+
+        # Verify settlement is no longer retrievable
+        history_response = client.get(f"/groups/{group_id}/settlements/?offset=0&limit=10")
+        assert history_response.status_code == 200
+        items = history_response.json()["items"]
+        assert not any(item["id"] == settlement_id for item in items)
+
+    def test_settlement_update_forbidden(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, group_id, settlement_id, creditor, debtor_token, debtor = self._setup_settlement(
+            authenticated_client, session
+        )
+        # Switch to creditor (non-creator of the settlement)
+        creditor_token = create_access_token(user=creditor)
+        client.headers["Authorization"] = f"Bearer {creditor_token}"
+
+        response = client.patch(f"/groups/{group_id}/settlements/{settlement_id}/", json={"amount": 3.0})
+        assert response.status_code == 403
+
+    def test_settlement_delete_forbidden(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        client, group_id, settlement_id, creditor, debtor_token, debtor = self._setup_settlement(
+            authenticated_client, session
+        )
+        # Switch to creditor (non-creator of the settlement)
+        creditor_token = create_access_token(user=creditor)
+        client.headers["Authorization"] = f"Bearer {creditor_token}"
+
+        response = client.delete(f"/groups/{group_id}/settlements/{settlement_id}/")
+        assert response.status_code == 403
+
     def test_success(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
         client, _ = authenticated_client
         owner, _ = create_test_user(session, "owner@example.com", "Owner")

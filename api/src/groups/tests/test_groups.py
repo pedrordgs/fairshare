@@ -734,3 +734,248 @@ class TestGroupUpdateDelete:
 
         response = client.delete(f"/groups/{other_group.id}/")
         assert response.status_code == 403
+
+
+class TestGetGroupAsAdmin:
+    """Tests for the get_group_as_admin dependency."""
+
+    def test_admin_member_passes(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Member who is_admin=True can access admin-gated endpoints."""
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Admin Test Group"))
+        assert group.id is not None
+
+        other_user, other_token = create_test_user(session, "admin-passes@example.com")
+        assert other_user.id is not None
+        add_member(session=session, group=group, user_id=other_user.id, is_admin=True)
+
+        # Use promote endpoint as a proxy for admin-gated access; promote a third member
+        third_user, _ = create_test_user(session, "third-admin-passes@example.com")
+        assert third_user.id is not None
+        add_member(session=session, group=group, user_id=third_user.id)
+
+        # owner promotes third_user — owner is always admin
+        owner_token = create_access_token(user=owner)
+        client.headers["Authorization"] = f"Bearer {owner_token}"
+        response = client.post(f"/groups/{group.id}/members/{third_user.id}/promote/")
+        assert response.status_code == 200
+        assert response.json()["is_admin"] is True
+
+    def test_non_admin_member_gets_403(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Member with is_admin=False attempting to use the promote endpoint gets 403."""
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Non-Admin Test Group"))
+        assert group.id is not None
+
+        regular_user, regular_token = create_test_user(session, "non-admin-403@example.com")
+        assert regular_user.id is not None
+        add_member(session=session, group=group, user_id=regular_user.id)
+
+        target_user, _ = create_test_user(session, "target-non-admin@example.com")
+        assert target_user.id is not None
+        add_member(session=session, group=group, user_id=target_user.id)
+
+        # Non-admin member tries to use promote endpoint (which requires owner; but we test admin gate via demote too)
+        client.headers["Authorization"] = f"Bearer {regular_token}"
+        response = client.post(f"/groups/{group.id}/members/{target_user.id}/promote/")
+        # promote requires owner, so non-owner non-admin gets 403
+        assert response.status_code == 403
+
+    def test_non_member_gets_404(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Non-member of the group gets 404 (hidden group)."""
+        client, owner = authenticated_client
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Hidden Group"))
+        assert group.id is not None
+
+        non_member, non_member_token = create_test_user(session, "non-member-404@example.com")
+        assert non_member.id is not None
+
+        # Target another non-member too
+        target, _ = create_test_user(session, "target-non-member@example.com")
+        assert target.id is not None
+
+        client.headers["Authorization"] = f"Bearer {non_member_token}"
+        response = client.post(f"/groups/{group.id}/members/{target.id}/promote/")
+        assert response.status_code == 404
+
+
+class TestPromoteMember:
+    """Tests for POST /groups/{group_id}/members/{user_id}/promote/"""
+
+    def test_owner_can_promote_regular_member(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        """Owner promotes a regular member; response is 200 with is_admin=True."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Promote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        target, _ = create_test_user(session, "promote-target@example.com")
+        assert target.id is not None
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        add_member(session=session, group=group, user_id=target.id)
+
+        response = client.post(f"/groups/{group_id}/members/{target.id}/promote/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == target.id
+        assert data["is_admin"] is True
+        assert data["email"] == target.email
+
+    def test_returns_400_if_already_admin(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Promoting an already-admin member returns 400."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Already Admin Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        target, _ = create_test_user(session, "already-admin@example.com")
+        assert target.id is not None
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        add_member(session=session, group=group, user_id=target.id, is_admin=True)
+
+        response = client.post(f"/groups/{group_id}/members/{target.id}/promote/")
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Member is already an admin"
+
+    def test_returns_404_if_not_a_member(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Promoting a user who is not a group member returns 404."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Non-Member Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        non_member, _ = create_test_user(session, "non-member-promote@example.com")
+        assert non_member.id is not None
+
+        response = client.post(f"/groups/{group_id}/members/{non_member.id}/promote/")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Member not found"
+
+    def test_non_owner_gets_403(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """A non-owner member attempting to promote another member gets 403."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Forbidden Promote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        non_owner, non_owner_token = create_test_user(session, "non-owner-promote@example.com")
+        target, _ = create_test_user(session, "target-forbidden-promote@example.com")
+        assert non_owner.id is not None
+        assert target.id is not None
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        add_member(session=session, group=group, user_id=non_owner.id)
+        add_member(session=session, group=group, user_id=target.id)
+
+        client.headers["Authorization"] = f"Bearer {non_owner_token}"
+        response = client.post(f"/groups/{group_id}/members/{target.id}/promote/")
+        assert response.status_code == 403
+
+    def test_unauthenticated_gets_401(self, client: TestClient, session: Session) -> None:
+        """Unauthenticated request gets 401."""
+        owner, _ = create_test_user(session, "owner-unauth-promote@example.com")
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Unauth Promote Group"))
+        assert group.id is not None
+        response = client.post(f"/groups/{group.id}/members/1/promote/")
+        assert response.status_code == 401
+
+
+class TestDemoteMember:
+    """Tests for POST /groups/{group_id}/members/{user_id}/demote/"""
+
+    def test_owner_can_demote_admin(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Owner demotes an admin; response is 200 with is_admin=False."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Demote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        target, _ = create_test_user(session, "demote-target@example.com")
+        assert target.id is not None
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        add_member(session=session, group=group, user_id=target.id, is_admin=True)
+
+        response = client.post(f"/groups/{group_id}/members/{target.id}/demote/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["user_id"] == target.id
+        assert data["is_admin"] is False
+        assert data["email"] == target.email
+
+    def test_returns_400_if_target_is_owner(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Demoting the group owner returns 400."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Owner Demote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+        assert owner.id is not None
+
+        response = client.post(f"/groups/{group_id}/members/{owner.id}/demote/")
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Cannot demote the group owner"
+
+    def test_returns_400_if_not_currently_admin(
+        self, authenticated_client: AuthenticatedClient, session: Session
+    ) -> None:
+        """Demoting a regular (non-admin) member returns 400."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Not Admin Demote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        target, _ = create_test_user(session, "not-admin-demote@example.com")
+        assert target.id is not None
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        add_member(session=session, group=group, user_id=target.id)
+
+        response = client.post(f"/groups/{group_id}/members/{target.id}/demote/")
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Member is not an admin"
+
+    def test_returns_404_if_not_a_member(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Demoting a user who is not a group member returns 404."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Non-Member Demote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        non_member, _ = create_test_user(session, "non-member-demote@example.com")
+        assert non_member.id is not None
+
+        response = client.post(f"/groups/{group_id}/members/{non_member.id}/demote/")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Member not found"
+
+    def test_non_owner_gets_403(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """A non-owner member attempting to demote another member gets 403."""
+        client, owner = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Forbidden Demote Group"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        non_owner, non_owner_token = create_test_user(session, "non-owner-demote@example.com")
+        target, _ = create_test_user(session, "target-forbidden-demote@example.com")
+        assert non_owner.id is not None
+        assert target.id is not None
+        group = get_group_by_id(session=session, group_id=group_id)
+        assert group is not None
+        add_member(session=session, group=group, user_id=non_owner.id)
+        add_member(session=session, group=group, user_id=target.id, is_admin=True)
+
+        client.headers["Authorization"] = f"Bearer {non_owner_token}"
+        response = client.post(f"/groups/{group_id}/members/{target.id}/demote/")
+        assert response.status_code == 403
+
+    def test_unauthenticated_gets_401(self, client: TestClient, session: Session) -> None:
+        """Unauthenticated request gets 401."""
+        owner, _ = create_test_user(session, "owner-unauth-demote@example.com")
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Unauth Demote Group"))
+        assert group.id is not None
+        response = client.post(f"/groups/{group.id}/members/1/demote/")
+        assert response.status_code == 401

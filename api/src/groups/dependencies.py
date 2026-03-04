@@ -6,7 +6,7 @@ from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 
 from .models import ExpenseGroup, ExpenseGroupSettlement
-from .service import get_group_by_id, get_settlement_by_id, is_member
+from .service import get_group_by_id, get_member, get_settlement_by_id, is_member
 
 
 async def get_group_as_member(
@@ -38,6 +38,23 @@ async def get_group_as_owner(
     return group
 
 
+async def get_group_as_admin(
+    session: DbSession, authenticated_user: AuthenticatedUser, group_id: Annotated[int, Path()]
+) -> ExpenseGroup:
+    """
+    Dependency that fetches a group and verifies the user is an admin member.
+    Returns 404 if group doesn't exist or user is not a member.
+    Returns 403 if user is a member but not an admin.
+    """
+    group = get_group_by_id(session=session, group_id=group_id)
+    member = get_member(session=session, group_id=group_id, user_id=authenticated_user.id) if group else None
+    if not group or not member:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
+    if not member.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this group")
+    return group
+
+
 async def get_settlement_as_creator(
     session: DbSession,
     authenticated_user: AuthenticatedUser,
@@ -64,4 +81,5 @@ async def get_settlement_as_creator(
 # Type aliases for cleaner route signatures
 GroupAsMember = Annotated[ExpenseGroup, Depends(get_group_as_member)]
 GroupAsOwner = Annotated[ExpenseGroup, Depends(get_group_as_owner)]
+GroupAsAdmin = Annotated[ExpenseGroup, Depends(get_group_as_admin)]
 SettlementAsCreator = Annotated[ExpenseGroupSettlement, Depends(get_settlement_as_creator)]

@@ -93,6 +93,14 @@ class TestCreateExpense:
         response = client.post(f"/groups/{group_id}/expenses/", json={"name": "Expense"})
         assert response.status_code == 422
 
+    def test_invalid_data_too_many_decimal_places(self, authenticated_client: AuthenticatedClient) -> None:
+        client, _ = authenticated_client
+        group_response = client.post("/groups/", json={"name": "Test Group"})
+        group_id = group_response.json()["id"]
+
+        response = client.post(f"/groups/{group_id}/expenses/", json={"name": "Expense", "value": "10.001"})
+        assert response.status_code == 422
+
 
 class TestListExpenses:
     def test_empty_list(self, authenticated_client: AuthenticatedClient) -> None:

@@ -56,7 +56,7 @@ def create_group(*, session: Session, user: User, group_in: ExpenseGroupCreate) 
     session.add(db_group)
     session.commit()
     session.refresh(db_group)
-    add_member(session=session, group=db_group, user_id=user.id)
+    add_member(session=session, group=db_group, user_id=user.id, is_admin=True)
     return db_group
 
 
@@ -209,11 +209,11 @@ def is_member(*, session: Session, group_id: int, user_id: int) -> bool:
     return get_member(session=session, group_id=group_id, user_id=user_id) is not None
 
 
-def add_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
+def add_member(*, session: Session, group: ExpenseGroup, user_id: int, is_admin: bool = False) -> ExpenseGroupMember:
     """Add a user to a group."""
     if group.id is None:
         raise ValueError("Group not found")
-    db_member = ExpenseGroupMember(group_id=group.id, user_id=user_id)
+    db_member = ExpenseGroupMember(group_id=group.id, user_id=user_id, is_admin=is_admin)
     session.add(db_member)
     session.commit()
     session.refresh(db_member)
@@ -233,12 +233,15 @@ def remove_member(*, session: Session, group: ExpenseGroup, user_id: int) -> Non
 def get_group_members(*, session: Session, group_id: int) -> list[ExpenseGroupMemberPublic]:
     """Get all members of a group with user details."""
     statement = (
-        select(ExpenseGroupMember.user_id, User.name, User.email)
+        select(ExpenseGroupMember.user_id, User.name, User.email, ExpenseGroupMember.is_admin)
         .join(User, col(ExpenseGroupMember.user_id) == col(User.id))
         .where(ExpenseGroupMember.group_id == group_id)
     )
     results = session.exec(statement).all()
-    return [ExpenseGroupMemberPublic(user_id=user_id, name=name, email=email) for user_id, name, email in results]
+    return [
+        ExpenseGroupMemberPublic(user_id=user_id, name=name, email=email, is_admin=is_admin)
+        for user_id, name, email, is_admin in results
+    ]
 
 
 def get_user_groups_count(*, session: Session, user_id: int) -> int:

@@ -700,3 +700,37 @@ class TestJoinGroupRequests:
         response = client.post("/groups/join/", json={"code": group.invite_code})
         assert response.status_code == 400
         assert response.json()["detail"] == "You are already a member of this group"
+
+
+class TestGroupUpdateDelete:
+    """Named tests required by the group-edit-delete acceptance criteria."""
+
+    def test_update_group(self, authenticated_client: AuthenticatedClient) -> None:
+        """Authenticated group owner sends PATCH /groups/{id}/ with a new name; asserts 200 and updated name."""
+        client, user = authenticated_client
+        create_response = client.post("/groups/", json={"name": "Original Name"})
+        assert create_response.status_code == 201
+        group_id = create_response.json()["id"]
+
+        response = client.patch(f"/groups/{group_id}/", json={"name": "Updated Name"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "Updated Name"
+        assert data["created_by"] == user.id
+
+    def test_group_update_forbidden(self, authenticated_client: AuthenticatedClient, session: Session) -> None:
+        """Authenticated non-owner member sends PATCH; asserts 403."""
+        client, user = authenticated_client
+        # Create another user who owns the group
+        other_user, _ = create_test_user(session, "owner-for-update@example.com")
+        other_group = create_group(session=session, user=other_user, group_in=ExpenseGroupCreate(name="Owner Group"))
+
+        # Add current user as member (not owner)
+        assert user.id is not None
+        add_member(session=session, group=other_group, user_id=user.id)
+
+        response = client.patch(f"/groups/{other_group.id}/", json={"name": "Hijacked"})
+        assert response.status_code == 403
+
+        response = client.delete(f"/groups/{other_group.id}/")
+        assert response.status_code == 403

@@ -1038,7 +1038,6 @@ class TestGroupSettlementOnBehalfOf:
 
         regular, regular_token = create_test_user(session, "sob-regular@example.com", "SOB Regular")
         assert regular.id is not None
-        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="SOB Regular Group"))
         # We need regular to be a member of the original group, not a new group
         from groups.service import get_group_by_id
 

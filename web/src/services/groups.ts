@@ -2,12 +2,14 @@ import api from "./api";
 import {
   type ExpenseGroupCreate,
   type ExpenseGroupDetail,
+  type ExpenseGroupMemberPublic,
   type ExpenseGroupUpdate,
   type JoinGroupRequest,
   type JoinGroupRequestPublic,
   type PaginatedGroupsResponse,
   ExpenseGroupListItemSchema,
   ExpenseGroupDetailSchema,
+  ExpenseGroupMemberPublicSchema,
   JoinGroupRequestSchema,
   JoinGroupRequestPublicSchema,
   PaginatedGroupsResponseSchema,
@@ -21,6 +23,15 @@ const validateGroupId = (groupId: number): void => {
     throw new Error(
       `Invalid group ID: ${groupId}. Must be a positive integer.`,
     );
+  }
+};
+
+/**
+ * Validates that a user ID is a positive integer.
+ */
+const validateUserId = (userId: number): void => {
+  if (!Number.isFinite(userId) || !Number.isInteger(userId) || userId <= 0) {
+    throw new Error(`Invalid user ID: ${userId}. Must be a positive integer.`);
   }
 };
 
@@ -161,5 +172,43 @@ export const groupsApi = {
   deleteGroup: async (groupId: number): Promise<void> => {
     validateGroupId(groupId);
     await api.delete(`/groups/${groupId}/`);
+  },
+
+  /**
+   * Promotes a member to admin (owner only).
+   *
+   * @param groupId - The ID of the group
+   * @param userId - The ID of the member to promote
+   * @returns Promise resolving to the updated member
+   */
+  promoteMember: async (
+    groupId: number,
+    userId: number,
+  ): Promise<ExpenseGroupMemberPublic> => {
+    validateGroupId(groupId);
+    validateUserId(userId);
+    const response = await api.post(
+      `/groups/${groupId}/members/${userId}/promote/`,
+    );
+    return ExpenseGroupMemberPublicSchema.parse(response.data);
+  },
+
+  /**
+   * Demotes an admin back to a regular member (owner only).
+   *
+   * @param groupId - The ID of the group
+   * @param userId - The ID of the admin to demote
+   * @returns Promise resolving to the updated member
+   */
+  demoteMember: async (
+    groupId: number,
+    userId: number,
+  ): Promise<ExpenseGroupMemberPublic> => {
+    validateGroupId(groupId);
+    validateUserId(userId);
+    const response = await api.post(
+      `/groups/${groupId}/members/${userId}/demote/`,
+    );
+    return ExpenseGroupMemberPublicSchema.parse(response.data);
   },
 };

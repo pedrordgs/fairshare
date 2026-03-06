@@ -110,6 +110,9 @@ export const GroupDetailPage: React.FC = () => {
   const [deletingExpense, setDeletingExpense] = React.useState<Expense | null>(
     null,
   );
+  const [demotingUserId, setDemotingUserId] = React.useState<number | null>(
+    null,
+  );
 
   // Validate and parse the groupId parameter
   const groupId = parseGroupId(groupIdParam);
@@ -132,6 +135,42 @@ export const GroupDetailPage: React.FC = () => {
 
   const isOwner = !!group && !!user && group.created_by === user.id;
 
+  const isAdmin = React.useMemo(() => {
+    if (!group || !user) return false;
+    const currentMember = group.members.find((m) => m.user_id === user.id);
+    return currentMember?.is_admin ?? false;
+  }, [group, user]);
+
+  const promoteMemberMutation = useMutation({
+    mutationFn: (userId: number) => {
+      if (!groupId) throw new Error("Invalid group ID");
+      return groupsApi.promoteMember(groupId, userId);
+    },
+    onSuccess: () => {
+      toast.success("Member promoted to admin.");
+      queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+    },
+    onError: () => {
+      toast.error("Couldn't promote the member.");
+    },
+  });
+
+  const demoteMemberMutation = useMutation({
+    mutationFn: (userId: number) => {
+      if (!groupId) throw new Error("Invalid group ID");
+      return groupsApi.demoteMember(groupId, userId);
+    },
+    onSuccess: () => {
+      toast.success("Admin demoted to member.");
+      setDemotingUserId(null);
+      queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+    },
+    onError: () => {
+      toast.error("Couldn't demote the admin.");
+      setDemotingUserId(null);
+    },
+  });
+
   const {
     data: joinRequests,
     isLoading: isJoinRequestsLoading,
@@ -144,7 +183,9 @@ export const GroupDetailPage: React.FC = () => {
       }
       return groupsApi.listJoinRequests(groupId);
     },
-    enabled: !isAuthLoading && !!user && !!groupId && isOwner,
+    // isAdmin check enables this for non-owner admins once the backend supports it;
+    // for now isOwner === true implies isAdmin === true for the current user.
+    enabled: !isAuthLoading && !!user && !!groupId && (isOwner || isAdmin),
   });
 
   const acceptJoinRequestMutation = useMutation({
@@ -393,33 +434,35 @@ export const GroupDetailPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditGroupOpen(true)}
+              >
+                Edit
+              </Button>
+            )}
             {isOwner && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsEditGroupOpen(true)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => setIsDeleteGroupOpen(true)}
-                >
-                  Delete
-                </Button>
-                <ButtonWithBadge
-                  variant="secondary"
-                  size="sm"
-                  badgeCount={joinRequestsCount}
-                  badgeVariant="warning"
-                  onClick={() => setIsJoinRequestsOpen(true)}
-                >
-                  Join requests
-                </ButtonWithBadge>
-              </>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => setIsDeleteGroupOpen(true)}
+              >
+                Delete
+              </Button>
+            )}
+            {isAdmin && (
+              <ButtonWithBadge
+                variant="secondary"
+                size="sm"
+                badgeCount={joinRequestsCount}
+                badgeVariant="warning"
+                onClick={() => setIsJoinRequestsOpen(true)}
+              >
+                Join requests
+              </ButtonWithBadge>
             )}
           </div>
         </div>
@@ -459,24 +502,76 @@ export const GroupDetailPage: React.FC = () => {
               </div>
               {group.members.length > 0 ? (
                 <div className="space-y-3">
-                  {group.members.map((member) => (
-                    <div
-                      key={member.user_id}
-                      className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                        {member.name.charAt(0).toUpperCase()}
+                  {group.members.map((member) => {
+                    const isMemberOwner = member.user_id === group.created_by;
+                    const isCurrentUser = member.user_id === currentUserId;
+                    const canToggleAdmin =
+                      isOwner && !isCurrentUser && !isMemberOwner;
+                    return (
+                      <div
+                        key={member.user_id}
+                        className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium text-slate-900 truncate">
+                              {member.name}
+                            </p>
+                            {member.is_admin && (
+                              <Badge
+                                size="sm"
+                                variant="warning"
+                                ariaLabel="Group Administrator"
+                              >
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-500 truncate">
+                            {member.email}
+                          </p>
+                        </div>
+                        {canToggleAdmin && (
+                          <div className="flex-shrink-0">
+                            {member.is_admin ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={() =>
+                                  setDemotingUserId(member.user_id)
+                                }
+                                disabled={
+                                  promoteMemberMutation.isPending ||
+                                  demoteMemberMutation.isPending
+                                }
+                              >
+                                Demote
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="text-xs"
+                                onClick={() =>
+                                  promoteMemberMutation.mutate(member.user_id)
+                                }
+                                disabled={
+                                  promoteMemberMutation.isPending ||
+                                  demoteMemberMutation.isPending
+                                }
+                              >
+                                Promote
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 truncate">
-                          {member.name}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {member.email}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -776,7 +871,7 @@ export const GroupDetailPage: React.FC = () => {
           membersById={membersById}
         />
       )}
-      {isOwner && (
+      {isAdmin && (
         <JoinRequestsModal
           isOpen={isJoinRequestsOpen}
           onClose={() => setIsJoinRequestsOpen(false)}
@@ -793,7 +888,7 @@ export const GroupDetailPage: React.FC = () => {
           }
         />
       )}
-      {isOwner && group && (
+      {isAdmin && group && (
         <EditGroupModal
           group={group}
           isOpen={isEditGroupOpen}
@@ -810,6 +905,26 @@ export const GroupDetailPage: React.FC = () => {
           isPending={deleteGroupMutation.isPending}
         />
       )}
+      {isOwner &&
+        demotingUserId !== null &&
+        group &&
+        (() => {
+          const demotingMember = group.members.find(
+            (m) => m.user_id === demotingUserId,
+          );
+          return (
+            <ConfirmationModal
+              isOpen={demotingUserId !== null}
+              onClose={() => setDemotingUserId(null)}
+              onConfirm={() => demoteMemberMutation.mutate(demotingUserId)}
+              title="Demote Admin"
+              message={`Are you sure you want to demote ${demotingMember?.name ?? "this member"} from admin?`}
+              isPending={demoteMemberMutation.isPending}
+              confirmLabel="Demote"
+              pendingLabel="Demoting..."
+            />
+          );
+        })()}
     </div>
   );
 };

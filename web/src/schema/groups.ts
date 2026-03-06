@@ -15,10 +15,11 @@ export const ExpenseGroupUpdateSchema = z.object({
   name: z.string().min(1).optional(),
 });
 
-export const ExpenseGroupMemberSchema = z.object({
+export const ExpenseGroupMemberPublicSchema = z.object({
   user_id: z.number().positive(),
   name: z.string().min(1).max(100),
   email: z.string().email(),
+  is_admin: z.boolean(),
 });
 
 export const ExpenseGroupDebtItemSchema = z.object({
@@ -32,10 +33,11 @@ export const ExpenseGroupListItemSchema = ExpenseGroupSchema.extend({
   owed_by_user_total: z.number(),
   owed_to_user_total: z.number(),
   last_activity_at: z.iso.datetime({ local: true }).nullable(),
+  members: z.array(ExpenseGroupMemberPublicSchema),
 });
 
 export const ExpenseGroupDetailSchema = ExpenseGroupSchema.extend({
-  members: z.array(ExpenseGroupMemberSchema),
+  members: z.array(ExpenseGroupMemberPublicSchema),
   created_at: z.iso.datetime({ local: true }),
   expense_count: z.number().nonnegative(),
   owed_by_user_total: z.number(),
@@ -73,7 +75,9 @@ export const JoinGroupRequestPublicSchema = z.object({
 export type ExpenseGroup = z.infer<typeof ExpenseGroupSchema>;
 export type ExpenseGroupCreate = z.infer<typeof ExpenseGroupCreateSchema>;
 export type ExpenseGroupUpdate = z.infer<typeof ExpenseGroupUpdateSchema>;
-export type ExpenseGroupMember = z.infer<typeof ExpenseGroupMemberSchema>;
+export type ExpenseGroupMemberPublic = z.infer<
+  typeof ExpenseGroupMemberPublicSchema
+>;
 export type ExpenseGroupDebtItem = z.infer<typeof ExpenseGroupDebtItemSchema>;
 export type ExpenseGroupListItem = z.infer<typeof ExpenseGroupListItemSchema>;
 export type ExpenseGroupDetail = z.infer<typeof ExpenseGroupDetailSchema>;

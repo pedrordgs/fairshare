@@ -21,6 +21,8 @@ vi.mock("@services/groups", () => ({
     listJoinRequests: vi.fn(),
     acceptJoinRequest: vi.fn(),
     declineJoinRequest: vi.fn(),
+    promoteMember: vi.fn(),
+    demoteMember: vi.fn(),
   },
 }));
 
@@ -188,7 +190,14 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         name: "Weekend Trip",
-        members: [{ user_id: 1, name: "John Doe", email: "john@example.com" }],
+        members: [
+          {
+            user_id: 1,
+            name: "John Doe",
+            email: "john@example.com",
+            is_admin: true,
+          },
+        ],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -237,8 +246,18 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         members: [
-          { user_id: 1, name: "John Doe", email: "john@example.com" },
-          { user_id: 2, name: "Jane Smith", email: "jane@example.com" },
+          {
+            user_id: 1,
+            name: "John Doe",
+            email: "john@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Jane Smith",
+            email: "jane@example.com",
+            is_admin: false,
+          },
         ],
       };
 
@@ -285,7 +304,14 @@ describe("GroupDetailPage", () => {
     it("renders member list with avatars", async () => {
       const mockGroup = {
         ...baseGroup,
-        members: [{ user_id: 1, name: "John Doe", email: "john@example.com" }],
+        members: [
+          {
+            user_id: 1,
+            name: "John Doe",
+            email: "john@example.com",
+            is_admin: true,
+          },
+        ],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -365,7 +391,14 @@ describe("GroupDetailPage", () => {
     it("shows join requests button for owner", async () => {
       const mockGroup = {
         ...baseGroup,
-        members: [{ user_id: 1, name: "Owner", email: "owner@example.com" }],
+        members: [
+          {
+            user_id: 1,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+        ],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -394,7 +427,14 @@ describe("GroupDetailPage", () => {
     it("opens join requests modal for owner", async () => {
       const mockGroup = {
         ...baseGroup,
-        members: [{ user_id: 1, name: "Owner", email: "owner@example.com" }],
+        members: [
+          {
+            user_id: 1,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+        ],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -437,7 +477,14 @@ describe("GroupDetailPage", () => {
     it("shows empty state in join requests modal", async () => {
       const mockGroup = {
         ...baseGroup,
-        members: [{ user_id: 1, name: "Owner", email: "owner@example.com" }],
+        members: [
+          {
+            user_id: 1,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+        ],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -471,7 +518,7 @@ describe("GroupDetailPage", () => {
       });
     });
 
-    it("hides join requests for non-owner", async () => {
+    it("hides join requests and edit for regular member (non-admin)", async () => {
       vi.mocked(AuthContext.useAuth).mockReturnValue({
         user: { id: 2, email: "member@example.com", name: "Member" },
         isLoading: false,
@@ -485,8 +532,18 @@ describe("GroupDetailPage", () => {
         ...baseGroup,
         created_by: 1,
         members: [
-          { user_id: 1, name: "Owner", email: "owner@example.com" },
-          { user_id: 2, name: "Member", email: "member@example.com" },
+          {
+            user_id: 1,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Member",
+            email: "member@example.com",
+            is_admin: false,
+          },
         ],
       };
 
@@ -509,6 +566,67 @@ describe("GroupDetailPage", () => {
       await waitFor(() => {
         expect(
           screen.queryByRole("button", { name: /Join requests/i }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: /Edit/i }),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it("shows join requests and edit for non-owner admin", async () => {
+      vi.mocked(AuthContext.useAuth).mockReturnValue({
+        user: { id: 2, email: "admin@example.com", name: "Admin Member" },
+        isLoading: false,
+        isAuthenticated: true,
+        error: null,
+        login: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const mockGroup = {
+        ...baseGroup,
+        created_by: 1,
+        members: [
+          {
+            user_id: 1,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Admin Member",
+            email: "admin@example.com",
+            is_admin: true,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /Join requests/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /Edit/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: /Delete/i }),
         ).not.toBeInTheDocument();
       });
     });
@@ -813,8 +931,18 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         members: [
-          { user_id: 1, name: "John Doe", email: "john@example.com" },
-          { user_id: 2, name: "Jane Smith", email: "jane@example.com" },
+          {
+            user_id: 1,
+            name: "John Doe",
+            email: "john@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Jane Smith",
+            email: "jane@example.com",
+            is_admin: false,
+          },
         ],
       };
 
@@ -865,7 +993,14 @@ describe("GroupDetailPage", () => {
     it("renders empty state when no settlements", async () => {
       const mockGroup = {
         ...baseGroup,
-        members: [{ user_id: 1, name: "John Doe", email: "john@example.com" }],
+        members: [
+          {
+            user_id: 1,
+            name: "John Doe",
+            email: "john@example.com",
+            is_admin: true,
+          },
+        ],
       };
 
       vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
@@ -904,9 +1039,24 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         members: [
-          { user_id: 1, name: "John Doe", email: "john@example.com" },
-          { user_id: 2, name: "Jane Smith", email: "jane@example.com" },
-          { user_id: 3, name: "Eli Kay", email: "eli@example.com" },
+          {
+            user_id: 1,
+            name: "John Doe",
+            email: "john@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Jane Smith",
+            email: "jane@example.com",
+            is_admin: false,
+          },
+          {
+            user_id: 3,
+            name: "Eli Kay",
+            email: "eli@example.com",
+            is_admin: false,
+          },
         ],
       };
 

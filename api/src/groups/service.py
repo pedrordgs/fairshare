@@ -229,7 +229,6 @@ def get_member_public(*, session: Session, group_id: int, user_id: int) -> Expen
 
 
 def promote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
-    """Promote a group member to admin."""
     member = get_member(session=session, group_id=group.id, user_id=user_id)
     member.is_admin = True
     session.add(member)
@@ -239,7 +238,7 @@ def promote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> Ex
 
 
 def demote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
-    """Demote a group admin to regular member."""
+    """Demote a group admin to regular member. Raises 400 if owner or not currently an admin."""
     member = get_member(session=session, group_id=group.id, user_id=user_id)
     member.is_admin = False
     session.add(member)

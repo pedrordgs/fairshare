@@ -978,6 +978,127 @@ class TestDemoteMember:
         assert response.status_code == 401
 
 
+class TestGroupSettlementOnBehalfOf:
+    """Tests for admin recording settlements on behalf of a debtor."""
+
+    def _setup_group_with_debt(self, session: Session) -> tuple:
+        """
+        Create a group with owner, admin, debtor, and creditor.
+        The creditor (owner) pays for an expense so debtor owes them.
+        Returns (owner, owner_token, admin, admin_token, debtor, debtor_token, creditor, group_id).
+        """
+        owner, owner_token = create_test_user(session, "sob-owner@example.com", "SOB Owner")
+        group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="SOB Group"))
+        assert group.id is not None
+        assert owner.id is not None
+
+        admin, admin_token = create_test_user(session, "sob-admin@example.com", "SOB Admin")
+        assert admin.id is not None
+        add_member(session=session, group=group, user_id=admin.id, is_admin=True)
+
+        debtor, debtor_token = create_test_user(session, "sob-debtor@example.com", "SOB Debtor")
+        assert debtor.id is not None
+        add_member(session=session, group=group, user_id=debtor.id)
+
+        # owner pays for dinner; debtor owes owner
+        create_expense(
+            session=session,
+            group_id=group.id,
+            user_id=owner.id,
+            expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
+        )
+
+        return owner, owner_token, admin, admin_token, debtor, debtor_token, group.id
+
+    def test_admin_records_settlement_on_behalf_of_debtor(self, client: TestClient, session: Session) -> None:
+        """Admin provides debtor_id; settlement recorded with status 201 and debtor_id set correctly."""
+        owner, owner_token, admin, admin_token, debtor, debtor_token, group_id = self._setup_group_with_debt(session)
+
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 4.0, "debtor_id": debtor.id}
+        )
+        assert response.status_code == 201
+
+        # Verify settlement was recorded with correct debtor_id and created_by (admin)
+        client.headers["Authorization"] = f"Bearer {debtor_token}"
+        history_response = client.get(f"/groups/{group_id}/settlements/?offset=0&limit=10")
+        assert history_response.status_code == 200
+        items = history_response.json()["items"]
+        assert len(items) == 1
+        item = items[0]
+        assert item["debtor_id"] == debtor.id
+        assert item["creditor_id"] == owner.id
+        assert item["created_by"] == admin.id
+        assert item["amount"] == 4.0
+
+    def test_non_admin_supplying_debtor_id_gets_403(self, client: TestClient, session: Session) -> None:
+        """Regular member provides debtor_id; returns 403."""
+        owner, owner_token, admin, admin_token, debtor, debtor_token, group_id = self._setup_group_with_debt(session)
+
+        regular, regular_token = create_test_user(session, "sob-regular@example.com", "SOB Regular")
+        assert regular.id is not None
+        # We need regular to be a member of the original group, not a new group
+        from groups.service import get_group_by_id
+
+        orig_group = get_group_by_id(session=session, group_id=group_id)
+        assert orig_group is not None
+        add_member(session=session, group=orig_group, user_id=regular.id)
+
+        client.headers["Authorization"] = f"Bearer {regular_token}"
+        response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 2.0, "debtor_id": debtor.id}
+        )
+        assert response.status_code == 403
+
+    def test_debtor_id_not_a_group_member_gets_400(self, client: TestClient, session: Session) -> None:
+        """Admin provides debtor_id that is not a group member; returns 400."""
+        owner, owner_token, admin, admin_token, debtor, debtor_token, group_id = self._setup_group_with_debt(session)
+
+        outsider, _ = create_test_user(session, "sob-outsider@example.com", "SOB Outsider")
+        assert outsider.id is not None
+
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 2.0, "debtor_id": outsider.id}
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Debtor is not a group member"
+
+    def test_debtor_id_equals_creditor_id_gets_400(self, client: TestClient, session: Session) -> None:
+        """Admin provides debtor_id equal to creditor_id; returns 400."""
+        owner, owner_token, admin, admin_token, debtor, debtor_token, group_id = self._setup_group_with_debt(session)
+
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 2.0, "debtor_id": owner.id}
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Creditor must be a different group member"
+
+    def test_debt_validation_still_enforced_with_debtor_id(self, client: TestClient, session: Session) -> None:
+        """Admin supplies debtor_id but amount exceeds outstanding balance; returns 400."""
+        owner, owner_token, admin, admin_token, debtor, debtor_token, group_id = self._setup_group_with_debt(session)
+
+        # debtor owes 4.00 (12/3 split); try to pay 10.00
+        client.headers["Authorization"] = f"Bearer {admin_token}"
+        response = client.post(
+            f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 10.0, "debtor_id": debtor.id}
+        )
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Amount exceeds outstanding debt"
+
+    def test_without_debtor_id_existing_behaviour_preserved(self, client: TestClient, session: Session) -> None:
+        """Without debtor_id, the authenticated user is treated as the debtor (existing behaviour)."""
+        owner, owner_token, admin, admin_token, debtor, debtor_token, group_id = self._setup_group_with_debt(session)
+
+        client.headers["Authorization"] = f"Bearer {debtor_token}"
+        response = client.post(f"/groups/{group_id}/settlements/", json={"creditor_id": owner.id, "amount": 4.0})
+        assert response.status_code == 201
+        data = response.json()
+        assert data["owed_by_user_total"] == 0.0
+
+
 class TestDelegatedGroupManagement:
     """Tests for delegated group management: non-owner admins can PATCH group and manage join requests."""
 

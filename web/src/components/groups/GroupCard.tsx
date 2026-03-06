@@ -19,7 +19,8 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   currentUserId,
 }) => {
   const navigate = useNavigate();
-  const isAdmin = group.created_by === currentUserId;
+  const currentMember = group.members.find((m) => m.user_id === currentUserId);
+  const isAdmin = currentMember?.is_admin ?? false;
   const owedByTotal = group.owed_by_user_total;
   const owedToTotal = group.owed_to_user_total;
   const isSettled = owedByTotal === 0 && owedToTotal === 0;

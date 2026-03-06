@@ -129,6 +129,7 @@ describe("Groups Service", () => {
           user_id: 1,
           name: "John Doe",
           email: "john@example.com",
+          is_admin: true,
         },
       ],
       created_at: "2026-01-05T10:30:00Z",
@@ -291,6 +292,14 @@ describe("Groups Service", () => {
               owed_by_user_total: 10,
               owed_to_user_total: 5,
               last_activity_at: null,
+              members: [
+                {
+                  user_id: 1,
+                  name: "John Doe",
+                  email: "john@example.com",
+                  is_admin: true,
+                },
+              ],
             },
           ],
           total: 1,
@@ -321,6 +330,7 @@ describe("Groups Service", () => {
               owed_by_user: [],
               owed_to_user: [],
               last_activity_at: null,
+              members: [],
             },
           ],
           total: 1,
@@ -342,6 +352,7 @@ describe("Groups Service", () => {
         owed_by_user_total: 10,
         owed_to_user_total: 5,
         last_activity_at: null,
+        members: [],
       });
     });
   });

@@ -1,12 +1,11 @@
-from datetime import UTC, datetime
 from collections import defaultdict
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import case, or_
 from sqlmodel import Session, col, func, select
 
 from auth.models import User
-
 from core.money import quantize_currency
 from expenses.models import Expense, ExpenseSplit
 
@@ -19,15 +18,14 @@ from .models import (
     ExpenseGroupListItem,
     ExpenseGroupMember,
     ExpenseGroupMemberPublic,
-    ExpenseGroupUpdate,
     ExpenseGroupSettlement,
+    ExpenseGroupUpdate,
     GroupSettlementUpdate,
-    JoinGroupRequestPublic,
     JoinGroupRequesterPublic,
+    JoinGroupRequestPublic,
     JoinRequestStatus,
 )
 from .utils import generate_invite_code, normalize_invite_code
-
 
 MAX_JOIN_REQUEST_ATTEMPTS = 3
 
@@ -49,8 +47,6 @@ def get_user_groups(*, session: Session, user_id: int) -> list[ExpenseGroup]:
 
 def create_group(*, session: Session, user: User, group_in: ExpenseGroupCreate) -> ExpenseGroup:
     """Create a new expense group and add the creator as a member."""
-    if user.id is None:
-        raise ValueError("User not found")
     invite_code = ensure_invite_code_unique(session=session)
     db_group = ExpenseGroup.model_validate(group_in, update={"created_by": user.id, "invite_code": invite_code})
     session.add(db_group)
@@ -211,8 +207,6 @@ def is_member(*, session: Session, group_id: int, user_id: int) -> bool:
 
 def add_member(*, session: Session, group: ExpenseGroup, user_id: int, is_admin: bool = False) -> ExpenseGroupMember:
     """Add a user to a group."""
-    if group.id is None:
-        raise ValueError("Group not found")
     db_member = ExpenseGroupMember(group_id=group.id, user_id=user_id, is_admin=is_admin)
     session.add(db_member)
     session.commit()
@@ -220,10 +214,41 @@ def add_member(*, session: Session, group: ExpenseGroup, user_id: int, is_admin:
     return db_member
 
 
+def get_member_public(*, session: Session, group_id: int, user_id: int) -> ExpenseGroupMemberPublic | None:
+    """Get a single group member's public representation with user details."""
+    statement = (
+        select(ExpenseGroupMember.user_id, User.name, User.email, ExpenseGroupMember.is_admin)
+        .join(User, col(ExpenseGroupMember.user_id) == col(User.id))
+        .where(ExpenseGroupMember.group_id == group_id, ExpenseGroupMember.user_id == user_id)
+    )
+    result = session.exec(statement).one_or_none()
+    if result is None:
+        return None
+    uid, name, email, is_admin = result
+    return ExpenseGroupMemberPublic(user_id=uid, name=name, email=email, is_admin=is_admin)
+
+
+def promote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
+    """Promote a group member to admin."""
+    member = get_member(session=session, group_id=group.id, user_id=user_id)
+    member.is_admin = True
+    session.add(member)
+    session.commit()
+    session.refresh(member)
+    return member
+
+
+def demote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
+    """Demote a group admin to regular member."""
+    member = get_member(session=session, group_id=group.id, user_id=user_id)
+    member.is_admin = False
+    session.add(member)
+    session.commit()
+    session.refresh(member)
+    return member
+
+
 def remove_member(*, session: Session, group: ExpenseGroup, user_id: int) -> None:
-    """Remove a user from a group."""
-    if group.id is None:
-        raise ValueError("Group not found")
     member = get_member(session=session, group_id=group.id, user_id=user_id)
     if member:
         session.delete(member)
@@ -271,8 +296,6 @@ def get_user_groups_paginated(
 
 def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | None) -> ExpenseGroupDetail:
     """Get expense group with members details."""
-    if group.id is None:
-        raise ValueError("Group not found")
     members = get_group_members(session=session, group_id=group.id)
     expense_count = get_group_expense_count(session=session, group_id=group.id)
     last_activity_at = get_group_last_activity(session=session, group_id=group.id)
@@ -370,8 +393,6 @@ def get_group_list_item(
     last_activity_by_group: dict[int, datetime | None],
 ) -> ExpenseGroupListItem:
     """Get expense group list item for a user with totals."""
-    if group.id is None:
-        raise ValueError("Group not found")
     expense_count = expense_counts.get(group.id, 0)
     last_activity_at = last_activity_by_group.get(group.id)
     owed_by_user_total, owed_to_user_total = totals_by_group.get(group.id, (Decimal("0.00"), Decimal("0.00")))

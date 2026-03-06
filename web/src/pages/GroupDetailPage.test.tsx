@@ -215,6 +215,7 @@ describe("GroupDetailPage", () => {
             value: 45.5,
             group_id: 1,
             created_by: 1,
+            on_behalf_of_user_id: null,
             created_at: "2026-01-05T12:00:00Z",
             updated_at: "2026-01-05T12:00:00Z",
           },

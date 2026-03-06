@@ -754,9 +754,7 @@ class TestGetGroupAsAdmin:
         assert third_user.id is not None
         add_member(session=session, group=group, user_id=third_user.id)
 
-        # owner promotes third_user — owner is always admin
-        owner_token = create_access_token(user=owner)
-        client.headers["Authorization"] = f"Bearer {owner_token}"
+        client.headers["Authorization"] = f"Bearer {other_token}"
         response = client.post(f"/groups/{group.id}/members/{third_user.id}/promote/")
         assert response.status_code == 200
         assert response.json()["is_admin"] is True
@@ -775,10 +773,9 @@ class TestGetGroupAsAdmin:
         assert target_user.id is not None
         add_member(session=session, group=group, user_id=target_user.id)
 
-        # Non-admin member tries to use promote endpoint (which requires owner; but we test admin gate via demote too)
+        # Non-admin member tries to use promote endpoint.
         client.headers["Authorization"] = f"Bearer {regular_token}"
         response = client.post(f"/groups/{group.id}/members/{target_user.id}/promote/")
-        # promote requires owner, so non-owner non-admin gets 403
         assert response.status_code == 403
 
     def test_non_member_gets_404(self, authenticated_client: AuthenticatedClient, session: Session) -> None:

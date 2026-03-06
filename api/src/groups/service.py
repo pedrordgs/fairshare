@@ -235,16 +235,13 @@ def get_member_public(*, session: Session, group_id: int, user_id: int) -> Expen
 
 
 def promote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
-    """Promote a group member to admin. Raises 400 if already admin or not a member."""
-    from fastapi import HTTPException, status
+    """Promote a group member to admin."""
 
     if group.id is None:
         raise ValueError("Group not found")
     member = get_member(session=session, group_id=group.id, user_id=user_id)
-    if not member:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
-    if member.is_admin:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member is already an admin")
+    if member is None:
+        raise ValueError("Member not found")
     member.is_admin = True
     session.add(member)
     session.commit()
@@ -253,18 +250,13 @@ def promote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> Ex
 
 
 def demote_member(*, session: Session, group: ExpenseGroup, user_id: int) -> ExpenseGroupMember:
-    """Demote a group admin to regular member. Raises 400 if owner or not currently an admin."""
-    from fastapi import HTTPException, status
+    """Demote a group admin to regular member."""
 
     if group.id is None:
         raise ValueError("Group not found")
-    if group.created_by == user_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot demote the group owner")
     member = get_member(session=session, group_id=group.id, user_id=user_id)
-    if not member:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
-    if not member.is_admin:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member is not an admin")
+    if member is None:
+        raise ValueError("Member not found")
     member.is_admin = False
     session.add(member)
     session.commit()

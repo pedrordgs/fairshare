@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 
-from .dependencies import GroupAsMember, GroupAsOwner, SettlementAsCreator
+from .dependencies import GroupAsAdmin, GroupAsMember, GroupAsOwner, SettlementAsCreator
 from .utils import validate_settlement_creditor_and_amount
 from core.models import PaginatedResponse
 
@@ -268,8 +268,13 @@ async def delete_group_settlement(*, session: DbSession, settlement: SettlementA
 
 
 @router.post("/{group_id}/members/{user_id}/promote/", response_model=ExpenseGroupMemberPublic)
-async def promote_group_member(*, session: DbSession, group: GroupAsOwner, user_id: int) -> ExpenseGroupMemberPublic:
-    """Promote a group member to admin. Only the owner can promote. Returns 400 if already admin, 404 if not a member."""
+async def promote_group_member(*, session: DbSession, group: GroupAsAdmin, user_id: int) -> ExpenseGroupMemberPublic:
+    """Promote a group member to admin. Only admins can promote. Returns 400 if already admin, 404 if not a member."""
+    member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
+    if member_public is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if member_public.is_admin:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member is already an admin")
     promote_member(session=session, group=group, user_id=user_id)
     member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
     if member_public is None:
@@ -278,8 +283,15 @@ async def promote_group_member(*, session: DbSession, group: GroupAsOwner, user_
 
 
 @router.post("/{group_id}/members/{user_id}/demote/", response_model=ExpenseGroupMemberPublic)
-async def demote_group_member(*, session: DbSession, group: GroupAsOwner, user_id: int) -> ExpenseGroupMemberPublic:
-    """Demote a group admin to regular member. Only the owner can demote. Returns 400 if owner or not currently an admin, 404 if not a member."""
+async def demote_group_member(*, session: DbSession, group: GroupAsAdmin, user_id: int) -> ExpenseGroupMemberPublic:
+    """Demote a group admin to regular member. Only admins can demote. Returns 400 if owner or not currently an admin, 404 if not a member."""
+    if group.created_by == user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot demote the group owner")
+    member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
+    if member_public is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if not member_public.is_admin:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member is not an admin")
     demote_member(session=session, group=group, user_id=user_id)
     member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
     if member_public is None:

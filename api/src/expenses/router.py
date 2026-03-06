@@ -4,7 +4,7 @@ from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 from groups.dependencies import GroupAsMember
 
-from .dependencies import ExpenseAsCreator, ExpenseAsCreatorOrAdmin, ExpenseAsMember
+from .dependencies import ExpenseAsCreatorOrAdmin, ExpenseAsMember
 from .models import ExpenseCreate, ExpenseList, ExpensePublic, ExpenseUpdate
 from .service import count_expenses_for_group, create_expense, delete_expense, get_expenses_for_group, update_expense
 

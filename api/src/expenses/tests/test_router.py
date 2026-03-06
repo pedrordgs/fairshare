@@ -550,3 +550,81 @@ def test_non_admin_non_creator_delete_forbidden(authenticated_client: Authentica
 
     response = client.delete(f"/expenses/{expense.id}/")
     assert response.status_code == 403
+
+
+def test_admin_creates_expense_on_behalf_of_member(authenticated_client: AuthenticatedClient, session: Session) -> None:
+    """Admin supplies created_for_user_id; asserts 201 and correct on_behalf_of_user_id / created_by values."""
+    client, admin_user = authenticated_client
+    other_user, _ = create_test_user(session, "member@example.com")
+    other_group = create_test_group(session, other_user, "Other Group")
+
+    assert admin_user.id is not None
+    assert other_user.id is not None
+    add_member(session=session, group=other_group, user_id=admin_user.id)
+    promote_member(session=session, group=other_group, user_id=admin_user.id)
+
+    response = client.post(
+        f"/groups/{other_group.id}/expenses/",
+        json={"name": "On Behalf Expense", "value": "30.00", "created_for_user_id": other_user.id},
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["created_by"] == admin_user.id
+    assert data["on_behalf_of_user_id"] == other_user.id
+    assert data["name"] == "On Behalf Expense"
+
+
+def test_non_admin_cannot_create_expense_on_behalf_of_member(
+    authenticated_client: AuthenticatedClient, session: Session
+) -> None:
+    """Non-admin supplies created_for_user_id; asserts 403."""
+    client, regular_user = authenticated_client
+    other_user, _ = create_test_user(session, "owner@example.com")
+    other_group = create_test_group(session, other_user, "Other Group")
+
+    assert regular_user.id is not None
+    assert other_user.id is not None
+    add_member(session=session, group=other_group, user_id=regular_user.id)
+    # regular_user is a member but NOT promoted to admin
+
+    response = client.post(
+        f"/groups/{other_group.id}/expenses/",
+        json={"name": "Sneaky Expense", "value": "10.00", "created_for_user_id": other_user.id},
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Not authorized to create expenses on behalf of others"
+
+
+def test_admin_creates_expense_with_invalid_created_for_user_id(
+    authenticated_client: AuthenticatedClient, session: Session
+) -> None:
+    """Admin supplies created_for_user_id that is not a group member; asserts 400."""
+    client, admin_user = authenticated_client
+    group_owner, _ = create_test_user(session, "owner@example.com")
+    other_group = create_test_group(session, group_owner, "Other Group")
+    non_member, _ = create_test_user(session, "nonmember@example.com")
+
+    assert admin_user.id is not None
+    assert non_member.id is not None
+    add_member(session=session, group=other_group, user_id=admin_user.id)
+    promote_member(session=session, group=other_group, user_id=admin_user.id)
+
+    response = client.post(
+        f"/groups/{other_group.id}/expenses/",
+        json={"name": "Bad Expense", "value": "20.00", "created_for_user_id": non_member.id},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == "created_for_user_id does not belong to a group member"
+
+
+def test_normal_expense_creation_without_created_for_user_id(authenticated_client: AuthenticatedClient) -> None:
+    """Normal expense creation without created_for_user_id; asserts 201 and on_behalf_of_user_id is None."""
+    client, user = authenticated_client
+    group_response = client.post("/groups/", json={"name": "Test Group"})
+    group_id = group_response.json()["id"]
+
+    response = client.post(f"/groups/{group_id}/expenses/", json={"name": "Regular Expense", "value": "15.00"})
+    assert response.status_code == 201
+    data = response.json()
+    assert data["on_behalf_of_user_id"] is None
+    assert data["created_by"] == user.id

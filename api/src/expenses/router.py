@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from auth.dependencies import AuthenticatedUser
 from db.dependencies import DbSession
 from groups.dependencies import GroupAsMember
+from groups.service import get_member
 
 from .dependencies import ExpenseAsCreatorOrAdmin, ExpenseAsMember
 from .models import ExpenseCreate, ExpenseList, ExpensePublic, ExpenseUpdate
@@ -16,7 +17,30 @@ async def create_group_expense(
     *, session: DbSession, authenticated_user: AuthenticatedUser, group: GroupAsMember, expense_in: ExpenseCreate
 ) -> ExpensePublic:
     """Create a new expense in a group. User must be a group member."""
-    expense = create_expense(session=session, group_id=group.id, user_id=authenticated_user.id, expense_in=expense_in)
+    on_behalf_of_user_id: int | None = None
+
+    if expense_in.created_for_user_id is not None:
+        # Only admins can create expenses on behalf of others
+        member = get_member(session=session, group_id=group.id, user_id=authenticated_user.id)
+        if member is None or not member.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create expenses on behalf of others"
+            )
+        # The target user must be an existing group member
+        target_member = get_member(session=session, group_id=group.id, user_id=expense_in.created_for_user_id)
+        if target_member is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="created_for_user_id does not belong to a group member"
+            )
+        on_behalf_of_user_id = expense_in.created_for_user_id
+
+    expense = create_expense(
+        session=session,
+        group_id=group.id,
+        user_id=authenticated_user.id,
+        expense_in=expense_in,
+        on_behalf_of_user_id=on_behalf_of_user_id,
+    )
     return ExpensePublic.model_validate(expense)
 
 

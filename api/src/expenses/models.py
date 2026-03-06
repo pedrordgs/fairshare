@@ -20,6 +20,7 @@ class Expense(ExpenseBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     group_id: int = Field(foreign_key="expensegroup.id", ondelete="CASCADE")
     created_by: int = Field(foreign_key="user.id")
+    on_behalf_of_user_id: int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -38,7 +39,7 @@ class ExpenseSplit(SQLModel, table=True):
 class ExpenseCreate(ExpenseBase):
     """Schema for creating an expense."""
 
-    pass
+    created_for_user_id: int | None = None
 
 
 class ExpenseUpdate(SQLModel):
@@ -55,6 +56,7 @@ class ExpensePublic(ExpenseBase):
     id: int
     group_id: int
     created_by: int
+    on_behalf_of_user_id: int | None
     created_at: datetime
     updated_at: datetime
 

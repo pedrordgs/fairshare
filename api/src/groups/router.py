@@ -1,19 +1,17 @@
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from auth.dependencies import AuthenticatedUser
+from core.models import PaginatedResponse
 from db.dependencies import DbSession
 
 from .dependencies import GroupAsAdmin, GroupAsMember, GroupAsOwner, SettlementAsCreator
-from .utils import validate_settlement_creditor_and_amount
-from core.models import PaginatedResponse
-
 from .models import (
     ExpenseGroupCreate,
     ExpenseGroupDetail,
     ExpenseGroupListItem,
     ExpenseGroupMemberPublic,
-    ExpenseGroupUpdate,
     ExpenseGroupSettlementPublic,
+    ExpenseGroupUpdate,
     GroupSettlementCreate,
     GroupSettlementUpdate,
     JoinGroupRequest,
@@ -52,6 +50,7 @@ from .service import (
     update_group,
     update_settlement,
 )
+from .utils import validate_settlement_creditor_and_amount
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -118,9 +117,9 @@ async def list_group_settlements(
 
 @router.patch("/{group_id}/", response_model=ExpenseGroupDetail)
 async def update_expense_group(
-    *, session: DbSession, group: GroupAsOwner, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
+    *, session: DbSession, group: GroupAsAdmin, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
 ) -> ExpenseGroupDetail:
-    """Update an expense group. Only the owner can update."""
+    """Update an expense group. Admins (including the owner) can update."""
     group = update_group(session=session, group=group, group_in=group_in)
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
@@ -157,16 +156,16 @@ async def join_group_by_code(
 async def list_group_join_requests(
     *,
     session: DbSession,
-    group: GroupAsOwner,
+    group: GroupAsAdmin,
     status_filter: JoinRequestStatus | None = Query(default=JoinRequestStatus.PENDING, alias="status"),
 ) -> list[JoinGroupRequestPublic]:
-    """List join requests for a group (owner only)."""
+    """List join requests for a group (admins including owner)."""
     return list_join_requests(session=session, group_id=group.id, status=status_filter)
 
 
 @router.post("/{group_id}/join-requests/{request_id}/accept/", response_model=JoinGroupRequestPublic)
 async def accept_group_join_request(
-    *, session: DbSession, group: GroupAsOwner, authenticated_user: AuthenticatedUser, request_id: int
+    *, session: DbSession, group: GroupAsAdmin, authenticated_user: AuthenticatedUser, request_id: int
 ) -> JoinGroupRequestPublic:
     """Accept a join request and add the user to the group."""
     if group.id is None:
@@ -194,7 +193,7 @@ async def accept_group_join_request(
 
 @router.post("/{group_id}/join-requests/{request_id}/decline/", response_model=JoinGroupRequestPublic)
 async def decline_group_join_request(
-    *, session: DbSession, group: GroupAsOwner, authenticated_user: AuthenticatedUser, request_id: int
+    *, session: DbSession, group: GroupAsAdmin, authenticated_user: AuthenticatedUser, request_id: int
 ) -> JoinGroupRequestPublic:
     """Decline a join request for a group."""
     join_request = get_join_request_by_id(session=session, request_id=request_id)

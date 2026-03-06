@@ -22,9 +22,6 @@ export const ExpenseGroupMemberPublicSchema = z.object({
   is_admin: z.boolean(),
 });
 
-/** @deprecated Use ExpenseGroupMemberPublicSchema instead */
-export const ExpenseGroupMemberSchema = ExpenseGroupMemberPublicSchema;
-
 export const ExpenseGroupDebtItemSchema = z.object({
   user_id: z.number().positive(),
   amount: z.number(),

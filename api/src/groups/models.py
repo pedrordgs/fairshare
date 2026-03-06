@@ -172,6 +172,7 @@ class JoinGroupRequestPublic(SQLModel):
 class GroupSettlementCreate(SQLModel):
     amount: PositiveDecimal = Field(decimal_places=PRICING_DECIMAL_PLACES)
     creditor_id: int
+    debtor_id: int | None = None
 
 
 class GroupSettlementUpdate(SQLModel):

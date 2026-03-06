@@ -1,19 +1,17 @@
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from auth.dependencies import AuthenticatedUser
+from core.models import PaginatedResponse
 from db.dependencies import DbSession
 
-from .dependencies import GroupAsMember, GroupAsOwner, SettlementAsCreator
-from .utils import validate_settlement_creditor_and_amount
-from core.models import PaginatedResponse
-
+from .dependencies import GroupAsAdmin, GroupAsMember, GroupAsOwner, SettlementAsCreator
 from .models import (
     ExpenseGroupCreate,
     ExpenseGroupDetail,
     ExpenseGroupListItem,
     ExpenseGroupMemberPublic,
-    ExpenseGroupUpdate,
     ExpenseGroupSettlementPublic,
+    ExpenseGroupUpdate,
     GroupSettlementCreate,
     GroupSettlementUpdate,
     JoinGroupRequest,
@@ -52,6 +50,7 @@ from .service import (
     update_group,
     update_settlement,
 )
+from .utils import validate_settlement_creditor_and_amount
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -118,9 +117,9 @@ async def list_group_settlements(
 
 @router.patch("/{group_id}/", response_model=ExpenseGroupDetail)
 async def update_expense_group(
-    *, session: DbSession, group: GroupAsOwner, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
+    *, session: DbSession, group: GroupAsAdmin, group_in: ExpenseGroupUpdate, authenticated_user: AuthenticatedUser
 ) -> ExpenseGroupDetail:
-    """Update an expense group. Only the owner can update."""
+    """Update an expense group. Admins (including the owner) can update."""
     group = update_group(session=session, group=group, group_in=group_in)
     return get_group_detail(session=session, group=group, user_id=authenticated_user.id)
 
@@ -157,16 +156,16 @@ async def join_group_by_code(
 async def list_group_join_requests(
     *,
     session: DbSession,
-    group: GroupAsOwner,
+    group: GroupAsAdmin,
     status_filter: JoinRequestStatus | None = Query(default=JoinRequestStatus.PENDING, alias="status"),
 ) -> list[JoinGroupRequestPublic]:
-    """List join requests for a group (owner only)."""
+    """List join requests for a group (admins including owner)."""
     return list_join_requests(session=session, group_id=group.id, status=status_filter)
 
 
 @router.post("/{group_id}/join-requests/{request_id}/accept/", response_model=JoinGroupRequestPublic)
 async def accept_group_join_request(
-    *, session: DbSession, group: GroupAsOwner, authenticated_user: AuthenticatedUser, request_id: int
+    *, session: DbSession, group: GroupAsAdmin, authenticated_user: AuthenticatedUser, request_id: int
 ) -> JoinGroupRequestPublic:
     """Accept a join request and add the user to the group."""
     if group.id is None:
@@ -194,7 +193,7 @@ async def accept_group_join_request(
 
 @router.post("/{group_id}/join-requests/{request_id}/decline/", response_model=JoinGroupRequestPublic)
 async def decline_group_join_request(
-    *, session: DbSession, group: GroupAsOwner, authenticated_user: AuthenticatedUser, request_id: int
+    *, session: DbSession, group: GroupAsAdmin, authenticated_user: AuthenticatedUser, request_id: int
 ) -> JoinGroupRequestPublic:
     """Decline a join request for a group."""
     join_request = get_join_request_by_id(session=session, request_id=request_id)
@@ -222,11 +221,28 @@ async def create_group_settlement_payment(
     authenticated_user: AuthenticatedUser,
     settlement_in: GroupSettlementCreate,
 ) -> ExpenseGroupDetail:
-    """Record a settlement payment. User must be a group member."""
+    """Record a settlement payment. User must be a group member. Admins may supply debtor_id to record on behalf of another member."""
+    from .service import get_member
+
+    if settlement_in.debtor_id is not None:
+        # Only admins may record settlements on behalf of others
+        member = get_member(session=session, group_id=group.id, user_id=authenticated_user.id)
+        if member is None or not member.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to record settlement on behalf of another member",
+            )
+        # debtor_id must be an existing group member
+        if not get_member(session=session, group_id=group.id, user_id=settlement_in.debtor_id):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Debtor is not a group member")
+        effective_debtor_id = settlement_in.debtor_id
+    else:
+        effective_debtor_id = authenticated_user.id
+
     validate_settlement_creditor_and_amount(
         session=session,
         group_id=group.id,
-        debtor_id=authenticated_user.id,
+        debtor_id=effective_debtor_id,
         creditor_id=settlement_in.creditor_id,
         amount=settlement_in.amount,
     )
@@ -234,7 +250,7 @@ async def create_group_settlement_payment(
     create_group_settlement(
         session=session,
         group_id=group.id,
-        debtor_id=authenticated_user.id,
+        debtor_id=effective_debtor_id,
         creditor_id=settlement_in.creditor_id,
         amount=settlement_in.amount,
         created_by=authenticated_user.id,
@@ -268,8 +284,13 @@ async def delete_group_settlement(*, session: DbSession, settlement: SettlementA
 
 
 @router.post("/{group_id}/members/{user_id}/promote/", response_model=ExpenseGroupMemberPublic)
-async def promote_group_member(*, session: DbSession, group: GroupAsOwner, user_id: int) -> ExpenseGroupMemberPublic:
-    """Promote a group member to admin. Only the owner can promote. Returns 400 if already admin, 404 if not a member."""
+async def promote_group_member(*, session: DbSession, group: GroupAsAdmin, user_id: int) -> ExpenseGroupMemberPublic:
+    """Promote a group member to admin. Only admins can promote. Returns 400 if already admin, 404 if not a member."""
+    member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
+    if member_public is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if member_public.is_admin:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member is already an admin")
     promote_member(session=session, group=group, user_id=user_id)
     member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
     if member_public is None:
@@ -278,8 +299,15 @@ async def promote_group_member(*, session: DbSession, group: GroupAsOwner, user_
 
 
 @router.post("/{group_id}/members/{user_id}/demote/", response_model=ExpenseGroupMemberPublic)
-async def demote_group_member(*, session: DbSession, group: GroupAsOwner, user_id: int) -> ExpenseGroupMemberPublic:
-    """Demote a group admin to regular member. Only the owner can demote. Returns 400 if owner or not currently an admin, 404 if not a member."""
+async def demote_group_member(*, session: DbSession, group: GroupAsAdmin, user_id: int) -> ExpenseGroupMemberPublic:
+    """Demote a group admin to regular member. Only admins can demote. Returns 400 if owner or not currently an admin, 404 if not a member."""
+    if group.created_by == user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot demote the group owner")
+    member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
+    if member_public is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if not member_public.is_admin:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Member is not an admin")
     demote_member(session=session, group=group, user_id=user_id)
     member_public = get_member_public(session=session, group_id=group.id, user_id=user_id)
     if member_public is None:

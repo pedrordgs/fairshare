@@ -10,7 +10,7 @@ from conftest import AuthenticatedClient
 from expenses.models import ExpenseCreate
 from expenses.service import create_expense
 from groups.models import ExpenseGroupCreate
-from groups.service import create_group, get_group_by_id, add_member
+from groups.service import add_member, create_group, get_group_by_id
 
 
 def create_test_user(session: Session, email: str, name: str = "Test User") -> tuple:
@@ -976,7 +976,6 @@ class TestDemoteMember:
         assert group.id is not None
         response = client.post(f"/groups/{group.id}/members/1/demote/")
         assert response.status_code == 401
-<<<<<<< HEAD
 
 
 class TestDelegatedGroupManagement:

@@ -11,14 +11,19 @@ import { Alert } from "@components/ui/Alert";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import { formatAmountInput } from "@utils/formatUtils";
+import type { ExpenseGroupMemberPublic } from "@schema/groups";
 
 interface AddExpenseFormProps {
   groupId: number;
+  isAdmin?: boolean;
+  members?: ExpenseGroupMemberPublic[];
   onSuccess?: () => void;
 }
 
 export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
   groupId,
+  isAdmin = false,
+  members = [],
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
@@ -35,11 +40,19 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
+    watch,
     reset,
   } = useForm<ExpenseCreate>({
     resolver: zodResolver(ExpenseCreateSchema),
-    defaultValues: { name: "", description: "", value: "" },
+    defaultValues: {
+      name: "",
+      description: "",
+      value: "",
+      created_for_user_id: undefined,
+    },
   });
+
+  const selectedOnBehalfOf = watch("created_for_user_id");
 
   const createExpenseMutation = useMutation({
     mutationFn: (data: ExpenseCreate) =>
@@ -49,7 +62,12 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
       toast.success("Expense added!");
       queryClient.invalidateQueries({ queryKey: ["group", groupId] });
       queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
-      reset({ name: "", description: "", value: "" });
+      reset({
+        name: "",
+        description: "",
+        value: "",
+        created_for_user_id: undefined,
+      });
       onSuccess?.();
     },
     onError: (error: unknown) => {
@@ -102,6 +120,38 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
         inputMode="decimal"
         error={errors.value?.message || fieldErrors.value}
       />
+
+      {isAdmin && members.length > 0 && (
+        <div className="space-y-2">
+          <label
+            htmlFor="expense-on-behalf-of"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Record on behalf of
+            <span className="ml-1 text-slate-400 font-normal">(optional)</span>
+          </label>
+          <select
+            id="expense-on-behalf-of"
+            className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
+            value={selectedOnBehalfOf ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setValue(
+                "created_for_user_id",
+                val === "" ? undefined : Number(val),
+                { shouldValidate: true, shouldDirty: true },
+              );
+            }}
+          >
+            <option value="">Yourself</option>
+            {members.map((member) => (
+              <option key={member.user_id} value={member.user_id}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <Button
         type="submit"

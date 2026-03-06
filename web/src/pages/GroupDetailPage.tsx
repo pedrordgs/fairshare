@@ -634,9 +634,15 @@ export const GroupDetailPage: React.FC = () => {
                     <div className="space-y-4">
                       {expensesData.items.map((expense) => {
                         const creatorName = membersById.get(expense.created_by);
+                        const onBehalfOfName =
+                          expense.on_behalf_of_user_id !== null &&
+                          expense.on_behalf_of_user_id !== undefined
+                            ? membersById.get(expense.on_behalf_of_user_id)
+                            : undefined;
                         const isCurrentUserExpense =
                           currentUserId !== null &&
                           expense.created_by === currentUserId;
+                        const canEditOrDelete = isCurrentUserExpense || isAdmin;
                         const expenseMeta = `${
                           creatorName
                             ? `Created by ${creatorName}`
@@ -671,12 +677,20 @@ export const GroupDetailPage: React.FC = () => {
                                 <p className="text-xs text-slate-400 mt-2">
                                   {expenseMeta}
                                 </p>
+                                {onBehalfOfName && (
+                                  <p className="text-xs text-slate-500 mt-1">
+                                    On behalf of{" "}
+                                    <span className="font-medium">
+                                      {onBehalfOfName}
+                                    </span>
+                                  </p>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <p className="text-lg font-bold text-slate-900">
                                   {formatCurrency(expense.value)}
                                 </p>
-                                {isCurrentUserExpense && (
+                                {canEditOrDelete && (
                                   <div className="flex items-center gap-1">
                                     <button
                                       type="button"
@@ -842,6 +856,8 @@ export const GroupDetailPage: React.FC = () => {
           groupId={groupId}
           isOpen={isAddExpenseOpen}
           onClose={() => setIsAddExpenseOpen(false)}
+          isAdmin={isAdmin}
+          members={group?.members ?? []}
         />
       )}
       {groupId && editingExpense && (

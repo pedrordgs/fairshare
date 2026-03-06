@@ -1,17 +1,22 @@
 import React from "react";
 import { Modal, ModalHeader, ModalContent } from "@components/ui/Modal";
 import { AddExpenseForm } from "./AddExpenseForm";
+import type { ExpenseGroupMemberPublic } from "@schema/groups";
 
 interface AddExpenseModalProps {
   groupId: number;
   isOpen: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
+  members?: ExpenseGroupMemberPublic[];
 }
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   groupId,
   isOpen,
   onClose,
+  isAdmin = false,
+  members = [],
 }) => {
   if (!isOpen) {
     return null;
@@ -33,7 +38,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         descriptionId="add-expense-modal-description"
       />
       <ModalContent>
-        <AddExpenseForm groupId={groupId} onSuccess={onClose} />
+        <AddExpenseForm
+          groupId={groupId}
+          isAdmin={isAdmin}
+          members={members}
+          onSuccess={onClose}
+        />
       </ModalContent>
     </Modal>
   );

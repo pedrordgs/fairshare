@@ -434,33 +434,35 @@ export const GroupDetailPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditGroupOpen(true)}
+              >
+                Edit
+              </Button>
+            )}
             {isOwner && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsEditGroupOpen(true)}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => setIsDeleteGroupOpen(true)}
-                >
-                  Delete
-                </Button>
-                <ButtonWithBadge
-                  variant="secondary"
-                  size="sm"
-                  badgeCount={joinRequestsCount}
-                  badgeVariant="warning"
-                  onClick={() => setIsJoinRequestsOpen(true)}
-                >
-                  Join requests
-                </ButtonWithBadge>
-              </>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => setIsDeleteGroupOpen(true)}
+              >
+                Delete
+              </Button>
+            )}
+            {isAdmin && (
+              <ButtonWithBadge
+                variant="secondary"
+                size="sm"
+                badgeCount={joinRequestsCount}
+                badgeVariant="warning"
+                onClick={() => setIsJoinRequestsOpen(true)}
+              >
+                Join requests
+              </ButtonWithBadge>
             )}
           </div>
         </div>
@@ -883,9 +885,12 @@ export const GroupDetailPage: React.FC = () => {
           onClose={() => setIsSettleUpOpen(false)}
           owedByUser={group.owed_by_user}
           membersById={membersById}
+          isAdmin={isAdmin}
+          members={group.members}
+          currentUserId={currentUserId}
         />
       )}
-      {isOwner && (
+      {isAdmin && (
         <JoinRequestsModal
           isOpen={isJoinRequestsOpen}
           onClose={() => setIsJoinRequestsOpen(false)}
@@ -902,7 +907,7 @@ export const GroupDetailPage: React.FC = () => {
           }
         />
       )}
-      {isOwner && group && (
+      {isAdmin && group && (
         <EditGroupModal
           group={group}
           isOpen={isEditGroupOpen}

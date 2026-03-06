@@ -9,6 +9,7 @@ const SettlementAmountInputSchema = z
 export const GroupSettlementCreateInputSchema = z.object({
   creditor_id: z.number().int().positive(),
   amount: SettlementAmountInputSchema,
+  debtor_id: z.number().int().positive().optional(),
 });
 
 export const GroupSettlementCreateSchema = z.object({
@@ -19,6 +20,7 @@ export const GroupSettlementCreateSchema = z.object({
     }
     return value;
   }, z.number().positive()),
+  debtor_id: z.number().int().positive().optional(),
 });
 
 export const GroupSettlementListItemSchema = z.object({

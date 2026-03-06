@@ -518,7 +518,7 @@ describe("GroupDetailPage", () => {
       });
     });
 
-    it("hides join requests for non-owner", async () => {
+    it("hides join requests and edit for regular member (non-admin)", async () => {
       vi.mocked(AuthContext.useAuth).mockReturnValue({
         user: { id: 2, email: "member@example.com", name: "Member" },
         isLoading: false,
@@ -566,6 +566,67 @@ describe("GroupDetailPage", () => {
       await waitFor(() => {
         expect(
           screen.queryByRole("button", { name: /Join requests/i }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: /Edit/i }),
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it("shows join requests and edit for non-owner admin", async () => {
+      vi.mocked(AuthContext.useAuth).mockReturnValue({
+        user: { id: 2, email: "admin@example.com", name: "Admin Member" },
+        isLoading: false,
+        isAuthenticated: true,
+        error: null,
+        login: vi.fn(),
+        logout: vi.fn(),
+      });
+
+      const mockGroup = {
+        ...baseGroup,
+        created_by: 1,
+        members: [
+          {
+            user_id: 1,
+            name: "Owner",
+            email: "owner@example.com",
+            is_admin: true,
+          },
+          {
+            user_id: 2,
+            name: "Admin Member",
+            email: "admin@example.com",
+            is_admin: true,
+          },
+        ],
+      };
+
+      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
+      vi.mocked(
+        ExpensesService.expensesApi.listAllGroupExpenses,
+      ).mockResolvedValue({
+        items: [],
+        total: 0,
+        offset: 0,
+        limit: 20,
+      });
+      mockSettlements();
+      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue(
+        baseJoinRequests,
+      );
+
+      renderWithProviders(<GroupDetailPage />);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /Join requests/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /Edit/i }),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole("button", { name: /Delete/i }),
         ).not.toBeInTheDocument();
       });
     });

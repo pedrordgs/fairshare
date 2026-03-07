@@ -47,7 +47,8 @@ def client_fixture(session: Session) -> Generator[TestClient, None, None]:
 @pytest.fixture(name="authenticated_client")
 def authenticated_client_fixture(client: TestClient, session: Session) -> Generator[AuthenticatedClient, None, None]:
     user = create_user(
-        session=session, user_in=UserCreate(name="Test User", email="testuser@example.com", password="testpassword123")
+        session=session,
+        user_in=UserCreate(name="Test User", email="testuser@example.com", password="Str0ng!Fixture#Pw"),
     )
     access_token = create_access_token(user=user)
     client.headers["Authorization"] = f"Bearer {access_token}"

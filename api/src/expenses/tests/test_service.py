@@ -20,7 +20,7 @@ from groups.service import add_member, create_group
 class TestCreateExpense:
     def test_creates_expense(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
 
@@ -44,7 +44,7 @@ class TestCreateExpense:
 
     def test_accepts_two_decimal_places(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="round@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="round@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Round Group"))
 
@@ -61,10 +61,10 @@ class TestCreateExpense:
 
     def test_creates_splits_for_members(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         other = create_user(
-            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="password")
+            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Split Group"))
         assert other.id is not None
@@ -87,7 +87,7 @@ class TestCreateExpense:
 class TestGetExpenseById:
     def test_returns_expense(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         assert group.id is not None
@@ -112,7 +112,7 @@ class TestGetExpenseById:
 class TestGetExpensesForGroup:
     def test_returns_expenses_ordered_by_date(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
 
@@ -140,7 +140,7 @@ class TestGetExpensesForGroup:
 
     def test_respects_pagination(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
 
@@ -169,7 +169,7 @@ class TestGetExpensesForGroup:
 class TestCountExpensesForGroup:
     def test_counts_expenses(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         assert group.id is not None
@@ -196,7 +196,7 @@ class TestCountExpensesForGroup:
 class TestUpdateExpense:
     def test_updates_all_fields(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         assert group.id is not None
@@ -222,7 +222,7 @@ class TestUpdateExpense:
 
     def test_partial_update(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         assert group.id is not None
@@ -245,7 +245,7 @@ class TestUpdateExpense:
 class TestDeleteExpense:
     def test_deletes_expense(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         assert group.id is not None

@@ -11,16 +11,11 @@ import type { ExpenseGroupListItem } from "@schema/groups";
 
 interface GroupCardProps {
   group: ExpenseGroupListItem;
-  currentUserId: number;
 }
 
-export const GroupCard: React.FC<GroupCardProps> = ({
-  group,
-  currentUserId,
-}) => {
+export const GroupCard: React.FC<GroupCardProps> = ({ group }) => {
   const navigate = useNavigate();
-  const currentMember = group.members.find((m) => m.user_id === currentUserId);
-  const isAdmin = currentMember?.is_admin ?? false;
+  const isAdmin = group.is_admin;
   const owedByTotal = group.owed_by_user_total;
   const owedToTotal = group.owed_to_user_total;
   const isSettled = owedByTotal === 0 && owedToTotal === 0;

@@ -27,6 +27,7 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           invite_code: "ABCD1234EF",
+          is_admin: false,
           members: [],
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 0,
@@ -53,6 +54,7 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           invite_code: "ABCD1234EF",
+          is_admin: false,
           members: [],
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 0,
@@ -124,6 +126,7 @@ describe("Groups Service", () => {
       name: "Test Group",
       created_by: 1,
       invite_code: "ABCD1234EF",
+      is_admin: true,
       members: [
         {
           user_id: 1,
@@ -259,6 +262,7 @@ describe("Groups Service", () => {
           name: "Test Group",
           created_by: 1,
           invite_code: "ABCD1234EF",
+          is_admin: false,
           members: [],
           created_at: "2026-01-05T10:30:00Z",
           expense_count: 0,
@@ -292,14 +296,7 @@ describe("Groups Service", () => {
               owed_by_user_total: 10,
               owed_to_user_total: 5,
               last_activity_at: null,
-              members: [
-                {
-                  user_id: 1,
-                  name: "John Doe",
-                  email: "john@example.com",
-                  is_admin: true,
-                },
-              ],
+              is_admin: true,
             },
           ],
           total: 1,
@@ -330,7 +327,7 @@ describe("Groups Service", () => {
               owed_by_user: [],
               owed_to_user: [],
               last_activity_at: null,
-              members: [],
+              is_admin: false,
             },
           ],
           total: 1,
@@ -352,7 +349,7 @@ describe("Groups Service", () => {
         owed_by_user_total: 10,
         owed_to_user_total: 5,
         last_activity_at: null,
-        members: [],
+        is_admin: false,
       });
     });
   });

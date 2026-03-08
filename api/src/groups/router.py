@@ -41,6 +41,7 @@ from .service import (
     get_member,
     get_member_public,
     get_pending_join_request,
+    get_user_admin_status_by_group,
     get_user_groups_count,
     get_user_groups_paginated,
     is_member,
@@ -79,12 +80,16 @@ async def list_expense_groups(
     totals_by_group = calculate_user_debt_totals(session=session, group_ids=group_ids, user_id=authenticated_user.id)
     expense_counts = get_group_expense_counts(session=session, group_ids=group_ids)
     last_activity_by_group = get_group_last_activity_by_group(session=session, group_ids=group_ids)
+    admin_status_by_group = get_user_admin_status_by_group(
+        session=session, group_ids=group_ids, user_id=authenticated_user.id
+    )
     items = [
         get_group_list_item(
             group=group,
             totals_by_group=totals_by_group,
             expense_counts=expense_counts,
             last_activity_by_group=last_activity_by_group,
+            admin_status_by_group=admin_status_by_group,
         )
         for group in groups
     ]

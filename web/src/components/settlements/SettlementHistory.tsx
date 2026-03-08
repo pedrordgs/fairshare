@@ -94,12 +94,14 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
     enabled,
   });
 
+  const handleIntersect = React.useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const loadMoreRef = useInfiniteScroll({
-    onIntersect: () => {
-      if (hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    },
+    onIntersect: handleIntersect,
     enabled: Boolean(hasNextPage) && !isFetchingNextPage,
   });
 

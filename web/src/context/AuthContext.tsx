@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   authApi,
@@ -60,14 +66,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/";
   }, [queryClient]);
 
-  const value: AuthContextType = {
-    user: user || null,
-    isLoading,
-    isAuthenticated,
-    error: error instanceof Error ? error : null,
-    login,
-    logout,
-  };
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user: user || null,
+      isLoading,
+      isAuthenticated,
+      error: error instanceof Error ? error : null,
+      login,
+      logout,
+    }),
+    [user, isLoading, isAuthenticated, error, login, logout],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -10,7 +10,7 @@ export interface BaseButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const baseClasses =
-  "font-medium rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 relative overflow-hidden group cursor-pointer inline-flex items-center justify-center";
+  "font-medium rounded-lg transition-[transform,box-shadow,background-color,color,border-color,opacity] duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 relative overflow-hidden group cursor-pointer inline-flex items-center justify-center";
 
 const sizeClasses = {
   sm: "py-2 px-4 text-sm",
@@ -42,8 +42,7 @@ export const ButtonPrimary: React.FC<ButtonPrimaryProps> = ({
       className={`${baseClasses} ${sizeClasses[size]} bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white focus:ring-accent-500 shadow-lg hover:shadow-xl transform hover:-translate-y-px ${className}`}
       {...props}
     >
-      <span className="relative z-10">{children}</span>
-      <div className="absolute inset-0 bg-gradient-to-r from-accent-600 to-accent-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {children}
     </button>
   );
 };

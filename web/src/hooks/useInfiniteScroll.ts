@@ -10,6 +10,12 @@ export function useInfiniteScroll({
   enabled = true,
 }: UseInfiniteScrollOptions) {
   const observerRef = useRef<IntersectionObserver | null>(null);
+  // Keep a stable ref to the latest callback so the observer never needs
+  // to be recreated just because the caller passed a new function reference.
+  const onIntersectRef = useRef(onIntersect);
+  useEffect(() => {
+    onIntersectRef.current = onIntersect;
+  }, [onIntersect]);
 
   useEffect(() => {
     return () => {
@@ -29,7 +35,7 @@ export function useInfiniteScroll({
       observerRef.current = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            onIntersect();
+            onIntersectRef.current();
           }
         },
         {
@@ -41,7 +47,9 @@ export function useInfiniteScroll({
         observerRef.current.observe(node);
       }
     },
-    [onIntersect, enabled],
+    // onIntersect is intentionally excluded: it is accessed through the ref,
+    // so changes to the callback never force the observer to be recreated.
+    [enabled],
   );
 
   return loadMoreRef;

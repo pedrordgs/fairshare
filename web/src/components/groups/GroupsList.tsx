@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { GroupCard } from "./GroupCard";
 import { GroupCardSkeleton } from "./GroupCardSkeleton";
@@ -39,12 +39,14 @@ export const GroupsList: React.FC<GroupsListProps> = ({ onCreateGroup }) => {
     initialPageParam: 0,
   });
 
+  const handleIntersect = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const loadMoreRef = useInfiniteScroll({
-    onIntersect: () => {
-      if (hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    },
+    onIntersect: handleIntersect,
     enabled: hasNextPage && !isFetchingNextPage,
   });
 

@@ -128,10 +128,9 @@ export const HomePage: React.FC = () => {
               </div>
 
               {/* Floating Elements */}
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-accent-100 rounded-full opacity-60 animate-pulse-slow"></div>
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-accent-100 rounded-full opacity-60"></div>
               <div
-                className="absolute -bottom-6 -left-6 w-32 h-32 bg-primary-100 rounded-full opacity-40 animate-pulse-slow"
-                style={{ animationDelay: "1s" }}
+                className="absolute -bottom-6 -left-6 w-32 h-32 bg-primary-100 rounded-full opacity-40"
               ></div>
             </div>
           </div>

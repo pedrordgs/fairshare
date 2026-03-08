@@ -18,7 +18,7 @@ export const HeaderWithAuth: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <header className="relative z-50 bg-white/95 border-b border-slate-200 shadow-sm">
       <div className="container-max">
         <div className="flex justify-between items-center h-20">
           {/* Logo/Brand */}
@@ -26,10 +26,10 @@ export const HeaderWithAuth: React.FC = () => {
             className="flex items-center space-x-3 group cursor-pointer"
             onClick={() => navigate({ to: "/" })}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
               <span className="text-white font-bold text-xl">F</span>
             </div>
-            <h1 className="text-2xl font-bold text-gradient transition-all duration-300 group-hover:text-accent-600">
+            <h1 className="text-2xl font-bold text-gradient">
               FairShare
             </h1>
           </div>
@@ -102,7 +102,7 @@ export const HeaderSimple: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="relative z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <header className="relative z-50 bg-white/95 border-b border-slate-200 shadow-sm">
       <div className="container-max">
         <div className="flex justify-between items-center h-20">
           {/* Logo/Brand */}
@@ -110,10 +110,10 @@ export const HeaderSimple: React.FC = () => {
             className="flex items-center space-x-3 group cursor-pointer"
             onClick={() => navigate({ to: "/" })}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-all duration-300 group-hover:scale-105 group-hover:rotate-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
               <span className="text-white font-bold text-xl">F</span>
             </div>
-            <h1 className="text-2xl font-bold text-gradient transition-all duration-300 group-hover:text-accent-600">
+            <h1 className="text-2xl font-bold text-gradient">
               FairShare
             </h1>
           </div>

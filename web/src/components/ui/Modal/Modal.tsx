@@ -23,7 +23,7 @@ const ANIMATION_OVERLAY_CLASSES =
 // Static JSX element for the animation overlay - hoisted outside component
 const AnimationOverlay = () => (
   <div className={ANIMATION_OVERLAY_CLASSES}>
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" />
+    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent" />
   </div>
 );
 
@@ -100,8 +100,8 @@ export const Modal: React.FC<ModalProps> = ({
         className={`
           relative bg-gradient-to-br from-white via-white to-slate-50/90 
           border border-slate-200/50 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]
-          backdrop-blur-xl max-w-lg w-full max-h-[90vh] overflow-y-auto
-          animate-slide-up transform transition-all duration-500 ease-out
+          max-w-lg w-full max-h-[90vh] overflow-y-auto
+          animate-slide-up transform transition-[transform,opacity] duration-500 ease-out
           before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br 
           before:from-transparent before:to-slate-900/5 before:pointer-events-none
           after:absolute after:inset-0 after:rounded-2xl after:border after:border-white/20 

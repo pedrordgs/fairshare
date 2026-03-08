@@ -29,9 +29,7 @@ export const HeaderWithAuth: React.FC = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
               <span className="text-white font-bold text-xl">F</span>
             </div>
-            <h1 className="text-2xl font-bold text-gradient">
-              FairShare
-            </h1>
+            <h1 className="text-2xl font-bold text-gradient">FairShare</h1>
           </div>
 
           {/* Right Section */}
@@ -113,9 +111,7 @@ export const HeaderSimple: React.FC = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
               <span className="text-white font-bold text-xl">F</span>
             </div>
-            <h1 className="text-2xl font-bold text-gradient">
-              FairShare
-            </h1>
+            <h1 className="text-2xl font-bold text-gradient">FairShare</h1>
           </div>
 
           {/* Right Section */}

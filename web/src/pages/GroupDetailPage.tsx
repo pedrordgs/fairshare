@@ -472,7 +472,7 @@ export const GroupDetailPage: React.FC = () => {
       <div className="grid lg:grid-cols-12 gap-8 slide-up stagger-1">
         {/* Left Column - Members (3 cols) */}
         <div className="lg:col-span-3">
-          <Card className="h-full bg-white/80 backdrop-blur-sm">
+          <Card className="h-full bg-white">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <span className="w-2 h-2 bg-accent-500 rounded-full"></span>
@@ -584,7 +584,7 @@ export const GroupDetailPage: React.FC = () => {
 
         {/* Center Column - Expenses & Settlements (6 cols) */}
         <div className="lg:col-span-6">
-          <Card className="h-full bg-white/80 backdrop-blur-sm">
+          <Card className="h-full bg-white">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl flex items-center gap-2">
                 <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
@@ -752,7 +752,7 @@ export const GroupDetailPage: React.FC = () => {
 
         {/* Right Column - Summary (3 cols) */}
         <div className="lg:col-span-3">
-          <Card className="h-full bg-white/80 backdrop-blur-sm">
+          <Card className="h-full bg-white">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>

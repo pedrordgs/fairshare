@@ -28,15 +28,16 @@ export const ExpenseGroupDebtItemSchema = z.object({
 });
 
 export const ExpenseGroupListItemSchema = ExpenseGroupSchema.extend({
+  is_admin: z.boolean(),
   created_at: z.iso.datetime({ local: true }),
   expense_count: z.number().nonnegative(),
   owed_by_user_total: z.number(),
   owed_to_user_total: z.number(),
   last_activity_at: z.iso.datetime({ local: true }).nullable(),
-  members: z.array(ExpenseGroupMemberPublicSchema),
 });
 
 export const ExpenseGroupDetailSchema = ExpenseGroupSchema.extend({
+  is_admin: z.boolean(),
   members: z.array(ExpenseGroupMemberPublicSchema),
   created_at: z.iso.datetime({ local: true }),
   expense_count: z.number().nonnegative(),

@@ -109,6 +109,7 @@ class ExpenseGroupDebtItem(SQLModel):
 
 
 class ExpenseGroupListItem(ExpenseGroupPublic):
+    is_admin: bool
     created_at: datetime
     expense_count: int
     owed_by_user_total: PositiveDecimal
@@ -125,6 +126,7 @@ class ExpenseGroupListItem(ExpenseGroupPublic):
 
 
 class ExpenseGroupDetail(ExpenseGroupPublic):
+    is_admin: bool
     members: list[ExpenseGroupMemberPublic] = []
     created_at: datetime
     expense_count: int

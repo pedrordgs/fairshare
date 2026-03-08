@@ -135,11 +135,7 @@ export const GroupDetailPage: React.FC = () => {
 
   const isOwner = !!group && !!user && group.created_by === user.id;
 
-  const isAdmin = React.useMemo(() => {
-    if (!group || !user) return false;
-    const currentMember = group.members.find((m) => m.user_id === user.id);
-    return currentMember?.is_admin ?? false;
-  }, [group, user]);
+  const isAdmin = group?.is_admin ?? false;
 
   const promoteMemberMutation = useMutation({
     mutationFn: (userId: number) => {

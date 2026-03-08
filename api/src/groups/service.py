@@ -268,6 +268,17 @@ def get_group_members(*, session: Session, group_id: int) -> list[ExpenseGroupMe
     ]
 
 
+def get_user_admin_status_by_group(*, session: Session, group_ids: list[int], user_id: int) -> dict[int, bool]:
+    """Get the admin status of a user across multiple groups in a single query."""
+    if not group_ids:
+        return {}
+
+    statement = select(ExpenseGroupMember.group_id, ExpenseGroupMember.is_admin).where(
+        col(ExpenseGroupMember.group_id).in_(group_ids), ExpenseGroupMember.user_id == user_id
+    )
+    return {group_id: is_admin for group_id, is_admin in session.exec(statement).all()}
+
+
 def get_user_groups_count(*, session: Session, user_id: int) -> int:
     """Count total groups where user is a member."""
     statement = (
@@ -298,6 +309,7 @@ def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | No
     members = get_group_members(session=session, group_id=group.id)
     expense_count = get_group_expense_count(session=session, group_id=group.id)
     last_activity_at = get_group_last_activity(session=session, group_id=group.id)
+    is_admin = any(m.user_id == user_id and m.is_admin for m in members) if user_id is not None else False
     owed_by_user_total = Decimal("0.00")
     owed_to_user_total = Decimal("0.00")
     owed_by_user: list[ExpenseGroupDebtItem] = []
@@ -311,6 +323,7 @@ def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | No
         name=group.name,
         created_by=group.created_by,
         invite_code=group.invite_code,
+        is_admin=is_admin,
         members=members,
         created_at=group.created_at,
         expense_count=expense_count,
@@ -390,16 +403,19 @@ def get_group_list_item(
     totals_by_group: dict[int, tuple[Decimal, Decimal]],
     expense_counts: dict[int, int],
     last_activity_by_group: dict[int, datetime | None],
+    admin_status_by_group: dict[int, bool],
 ) -> ExpenseGroupListItem:
     """Get expense group list item for a user with totals."""
     expense_count = expense_counts.get(group.id, 0)
     last_activity_at = last_activity_by_group.get(group.id)
     owed_by_user_total, owed_to_user_total = totals_by_group.get(group.id, (Decimal("0.00"), Decimal("0.00")))
+    is_admin = admin_status_by_group.get(group.id, False)
     return ExpenseGroupListItem(
         id=group.id,
         name=group.name,
         created_by=group.created_by,
         invite_code=group.invite_code,
+        is_admin=is_admin,
         created_at=group.created_at,
         expense_count=expense_count,
         owed_by_user_total=owed_by_user_total,

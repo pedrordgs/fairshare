@@ -134,6 +134,7 @@ describe("GroupDetailPage", () => {
     name: "Test Group",
     created_by: 1,
     invite_code: "ABCD1234EF",
+    is_admin: false,
     members: [],
     created_at: "2026-01-05T10:30:00Z",
     expense_count: 0,
@@ -193,6 +194,7 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         name: "Weekend Trip",
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -249,6 +251,7 @@ describe("GroupDetailPage", () => {
     it("displays correct member count", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -308,6 +311,7 @@ describe("GroupDetailPage", () => {
     it("renders member list with avatars", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -395,6 +399,7 @@ describe("GroupDetailPage", () => {
     it("shows join requests button for owner", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -431,6 +436,7 @@ describe("GroupDetailPage", () => {
     it("opens join requests modal for owner", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -481,6 +487,7 @@ describe("GroupDetailPage", () => {
     it("shows empty state in join requests modal", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -590,6 +597,7 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         created_by: 1,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -934,6 +942,7 @@ describe("GroupDetailPage", () => {
     it("renders settlement rows with member names", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -997,6 +1006,7 @@ describe("GroupDetailPage", () => {
     it("renders empty state when no settlements", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -1042,6 +1052,7 @@ describe("GroupDetailPage", () => {
     it("renders settlements from the API", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -1137,6 +1148,7 @@ describe("GroupDetailPage", () => {
       const mockGroup = {
         ...baseGroup,
         created_by: 3, // owner is user 3, not current user
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -1248,6 +1260,7 @@ describe("GroupDetailPage", () => {
     it("shows 'On behalf of' label when on_behalf_of_user_id is set", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,
@@ -1289,6 +1302,7 @@ describe("GroupDetailPage", () => {
     it("shows 'Record on behalf of' selector in Add Expense modal for admins", async () => {
       const mockGroup = {
         ...baseGroup,
+        is_admin: true,
         members: [
           {
             user_id: 1,

@@ -7,7 +7,6 @@ import { groupsApi } from "@services/groups";
 import type { ExpenseGroupListItem } from "@schema/groups";
 import { Button } from "@components/ui/Button";
 import { GettingStartedGuide } from "./GettingStartedGuide";
-import { useAuth } from "@context/AuthContext";
 
 interface GroupsListProps {
   onCreateGroup: () => void;
@@ -16,8 +15,6 @@ interface GroupsListProps {
 const SKELETON_COUNT = 6;
 
 export const GroupsList: React.FC<GroupsListProps> = ({ onCreateGroup }) => {
-  const { user } = useAuth();
-
   const {
     data,
     fetchNextPage,
@@ -95,11 +92,7 @@ export const GroupsList: React.FC<GroupsListProps> = ({ onCreateGroup }) => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {allGroups.map((group: ExpenseGroupListItem) => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                currentUserId={user?.id ?? 0}
-              />
+              <GroupCard key={group.id} group={group} />
             ))}
           </div>
 

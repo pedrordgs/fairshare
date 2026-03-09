@@ -1,10 +1,9 @@
 import React from "react";
 import { Modal, ModalHeader, ModalContent } from "@components/ui/Modal";
 import { EditGroupForm } from "./EditGroupForm";
-import { type ExpenseGroupDetail } from "@schema/groups";
 
 interface EditGroupModalProps {
-  group: ExpenseGroupDetail;
+  group: { id: number; name: string };
   isOpen: boolean;
   onClose: () => void;
 }

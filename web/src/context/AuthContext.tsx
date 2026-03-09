@@ -13,6 +13,7 @@ import {
   removeAuthToken,
 } from "@services/auth";
 import { type User } from "@schema/auth";
+import { router } from "@router/index";
 
 interface AuthContextType {
   user: User | null;
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setToken(null);
     queryClient.clear();
-    window.location.href = "/";
+    router.navigate({ to: "/" });
   }, [queryClient]);
 
   const value = useMemo<AuthContextType>(

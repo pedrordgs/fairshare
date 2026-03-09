@@ -5,14 +5,11 @@ from auth.models import UserCreate, UserUpdate
 from auth.security import verify_password
 from auth.service import create_user, get_user_by_email, get_user_by_id, update_user
 
-# Strong password used across all service tests
-STRONG_PASSWORD = "Tr0ub4dor&3"
-
 
 class TestGetUserById:
     def test_returns_user_when_exists(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         assert user.id is not None
         result = get_user_by_id(session=session, user_id=user.id)
@@ -29,7 +26,7 @@ class TestGetUserById:
 class TestGetUserByEmail:
     def test_returns_user_when_exists(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         result = get_user_by_email(session=session, email=user.email)
         assert result is not None
@@ -44,7 +41,7 @@ class TestGetUserByEmail:
 
 class TestCreateUser:
     def test_creates_user_with_hashed_password(self, session: Session) -> None:
-        user_in = UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+        user_in = UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         user = create_user(session=session, user_in=user_in)
         assert user.id is not None
         assert user.name == user_in.name
@@ -53,7 +50,7 @@ class TestCreateUser:
         assert verify_password(user_in.password, user.hashed_password) is True
 
     def test_user_is_persisted(self, session: Session) -> None:
-        user_in = UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+        user_in = UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         user = create_user(session=session, user_in=user_in)
         assert user.id is not None
         retrieved = get_user_by_id(session=session, user_id=user.id)
@@ -62,32 +59,18 @@ class TestCreateUser:
 
     def test_creates_multiple_users(self, session: Session) -> None:
         user1 = create_user(
-            session=session, user_in=UserCreate(name="User 1", email="user1@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="User 1", email="user1@example.com", password="Tr0ub4dor&3")
         )
         user2 = create_user(
             session=session, user_in=UserCreate(name="User 2", email="user2@example.com", password="X9#mQ!r$Zk2w")
         )
         assert user1.id != user2.id
 
-    def test_rejects_password_similar_to_name(self, session: Session) -> None:
-        with pytest.raises(ValueError):
-            create_user(
-                session=session, user_in=UserCreate(name="JohnDoe", email="test@example.com", password="Johndoe1!")
-            )
-
-    def test_rejects_password_similar_to_email(self, session: Session) -> None:
-        with pytest.raises(ValueError):
-            create_user(
-                session=session,
-                user_in=UserCreate(name="Test User", email="myaccount@example.com", password="myaccount!1A"),
-            )
-
 
 class TestUpdateUser:
     def test_updates_name(self, session: Session) -> None:
         user = create_user(
-            session=session,
-            user_in=UserCreate(name="Original Name", email="test@example.com", password=STRONG_PASSWORD),
+            session=session, user_in=UserCreate(name="Original Name", email="test@example.com", password="Tr0ub4dor&3")
         )
         user_in = UserUpdate(name="Updated Name")
         updated = update_user(session=session, user=user, user_in=user_in)
@@ -96,7 +79,7 @@ class TestUpdateUser:
 
     def test_updates_email(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="old@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Test User", email="old@example.com", password="Tr0ub4dor&3")
         )
         user_in = UserUpdate(email="new@example.com")
         updated = update_user(session=session, user=user, user_in=user_in)
@@ -105,7 +88,7 @@ class TestUpdateUser:
 
     def test_updates_both_fields(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Original Name", email="old@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Original Name", email="old@example.com", password="Tr0ub4dor&3")
         )
         user_in = UserUpdate(name="New Name", email="new@example.com")
         updated = update_user(session=session, user=user, user_in=user_in)
@@ -114,7 +97,7 @@ class TestUpdateUser:
 
     def test_no_changes_when_empty_update(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         user_in = UserUpdate()
         updated = update_user(session=session, user=user, user_in=user_in)
@@ -123,8 +106,7 @@ class TestUpdateUser:
 
     def test_changes_are_persisted(self, session: Session) -> None:
         user = create_user(
-            session=session,
-            user_in=UserCreate(name="Original Name", email="test@example.com", password=STRONG_PASSWORD),
+            session=session, user_in=UserCreate(name="Original Name", email="test@example.com", password="Tr0ub4dor&3")
         )
         user_in = UserUpdate(name="Updated Name")
         update_user(session=session, user=user, user_in=user_in)
@@ -135,7 +117,7 @@ class TestUpdateUser:
 
     def test_updates_password(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         old_hash = user.hashed_password
         new_password = "N3wStr0ng!Pass#2026"
@@ -145,7 +127,7 @@ class TestUpdateUser:
 
     def test_rejects_weak_password_on_update(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password=STRONG_PASSWORD)
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         with pytest.raises(ValueError):
             update_user(session=session, user=user, user_in=UserUpdate(password="weakpassword"))

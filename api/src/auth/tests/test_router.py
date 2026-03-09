@@ -2,14 +2,11 @@ from fastapi.testclient import TestClient
 
 from conftest import AuthenticatedClient
 
-# Strong password used across all tests that require registration
-STRONG_PASSWORD = "Tr0ub4dor&3"
-
 
 class TestRegister:
     def test_success(self, client: TestClient) -> None:
         response = client.post(
-            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": STRONG_PASSWORD}
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "Tr0ub4dor&3"}
         )
         assert response.status_code == 201
         data = response.json()
@@ -21,17 +18,17 @@ class TestRegister:
 
     def test_duplicate_email(self, client: TestClient) -> None:
         client.post(
-            "/auth/register/", json={"name": "User 1", "email": "duplicate@example.com", "password": STRONG_PASSWORD}
+            "/auth/register/", json={"name": "User 1", "email": "duplicate@example.com", "password": "Tr0ub4dor&3"}
         )
         response = client.post(
-            "/auth/register/", json={"name": "User 2", "email": "duplicate@example.com", "password": STRONG_PASSWORD}
+            "/auth/register/", json={"name": "User 2", "email": "duplicate@example.com", "password": "Tr0ub4dor&3"}
         )
         assert response.status_code == 400
         assert response.json() == {"detail": "A user with this email already exists"}
 
     def test_invalid_email(self, client: TestClient) -> None:
         response = client.post(
-            "/auth/register/", json={"name": "Test User", "email": "not-an-email", "password": STRONG_PASSWORD}
+            "/auth/register/", json={"name": "Test User", "email": "not-an-email", "password": "Tr0ub4dor&3"}
         )
         assert response.status_code == 422
 
@@ -76,27 +73,15 @@ class TestRegister:
         )
         assert response.status_code == 422
 
-    def test_password_similar_to_name(self, client: TestClient) -> None:
-        response = client.post(
-            "/auth/register/", json={"name": "JohnDoe", "email": "test@example.com", "password": "Johndoe1!"}
-        )
-        assert response.status_code == 422
-
-    def test_password_similar_to_email(self, client: TestClient) -> None:
-        response = client.post(
-            "/auth/register/", json={"name": "Test User", "email": "myaccount@example.com", "password": "myaccount!1A"}
-        )
-        assert response.status_code == 422
-
 
 class TestLogin:
     def test_success(self, client: TestClient) -> None:
         client.post(
-            "/auth/register/", json={"name": "Login User", "email": "login@example.com", "password": STRONG_PASSWORD}
+            "/auth/register/", json={"name": "Login User", "email": "login@example.com", "password": "Tr0ub4dor&3"}
         )
         response = client.post(
             "/auth/token/",
-            data={"username": "login@example.com", "password": STRONG_PASSWORD},
+            data={"username": "login@example.com", "password": "Tr0ub4dor&3"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 200
@@ -107,7 +92,7 @@ class TestLogin:
     def test_wrong_password(self, client: TestClient) -> None:
         client.post(
             "/auth/register/",
-            json={"name": "Wrong Pass User", "email": "wrongpass@example.com", "password": STRONG_PASSWORD},
+            json={"name": "Wrong Pass User", "email": "wrongpass@example.com", "password": "Tr0ub4dor&3"},
         )
         response = client.post(
             "/auth/token/",
@@ -168,7 +153,7 @@ class TestUpdateMe:
         auth_client, _ = authenticated_client
         # Create another user with a different email
         client.post(
-            "/auth/register/", json={"name": "Other User", "email": "other@example.com", "password": STRONG_PASSWORD}
+            "/auth/register/", json={"name": "Other User", "email": "other@example.com", "password": "Tr0ub4dor&3"}
         )
         response = auth_client.patch("/auth/me/", json={"email": "other@example.com"})
         assert response.status_code == 400

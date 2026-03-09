@@ -8,5 +8,6 @@
 
 ## Nice to have
 
+- Dark mode toggler
 - Allow the one that received the money to mark a settlement as "not paid"
 - Join requests per group on dashboard

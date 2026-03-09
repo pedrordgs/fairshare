@@ -8,15 +8,15 @@ import {
   type ExpenseGroupUpdate,
   type ExpenseGroupDetail,
 } from "@schema/groups";
+import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import { groupsApi } from "@services/groups";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
 import { Alert } from "@components/ui/Alert";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
-import { useApiFormErrors } from "@hooks/useApiFormErrors";
 
 interface EditGroupFormProps {
-  group: ExpenseGroupDetail;
+  group: { id: number; name: string };
   onSuccess?: (group: ExpenseGroupDetail) => void;
 }
 

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as AuthService from "@services/auth";
+import * as RouterModule from "@router/index";
 
 // Mock the auth service
 vi.mock("@services/auth", () => ({
@@ -15,10 +16,12 @@ vi.mock("@services/auth", () => ({
   removeAuthToken: vi.fn(),
 }));
 
-Object.defineProperty(window, "location", {
-  value: { href: "" },
-  writable: true,
-});
+// Mock the router
+vi.mock("@router/index", () => ({
+  router: {
+    navigate: vi.fn(),
+  },
+}));
 
 describe("AuthContext", () => {
   let queryClient: QueryClient;
@@ -33,7 +36,6 @@ describe("AuthContext", () => {
     });
 
     vi.clearAllMocks();
-    window.location.href = "";
 
     vi.mocked(AuthService.setAuthToken).mockReturnValue(true);
     vi.mocked(AuthService.removeAuthToken).mockReturnValue(true);
@@ -231,7 +233,7 @@ describe("AuthContext", () => {
         expect(AuthService.removeAuthToken).toHaveBeenCalled();
       });
 
-      expect(window.location.href).toBe("/");
+      expect(RouterModule.router.navigate).toHaveBeenCalledWith({ to: "/" });
     });
 
     it("clears query client on logout", async () => {

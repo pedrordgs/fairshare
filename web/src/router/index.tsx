@@ -12,6 +12,7 @@ import { GroupDetailPage } from "@pages/GroupDetailPage";
 import { HeaderWithAuth } from "@components/layout/Header";
 import { FooterWithAuth } from "@components/layout/Footer";
 import { getAuthToken } from "@services/auth";
+import { AuthModal } from "@components/auth/AuthModal";
 
 /**
  * Authentication guard for protected routes.
@@ -46,6 +47,7 @@ const rootRoute = createRootRoute({
           <Outlet />
         </main>
         <FooterWithAuth />
+        <AuthModal />
       </div>
     );
   },

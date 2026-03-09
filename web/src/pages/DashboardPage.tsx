@@ -1,7 +1,6 @@
 import React from "react";
 import { Button } from "@components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
-import { useNavigate } from "@tanstack/react-router";
 
 import { useAuth } from "@context/AuthContext";
 import { useCreateGroupModal } from "@hooks/useCreateGroupModal";
@@ -12,7 +11,6 @@ import { GroupsList } from "@components/groups/GroupsList";
 
 export const DashboardPage: React.FC = () => {
   const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
   const { openCreateGroupModal } = useCreateGroupModal();
   const { openJoinGroupModal } = useJoinGroupModal();
 
@@ -28,20 +26,8 @@ export const DashboardPage: React.FC = () => {
   }
 
   if (!user) {
-    // This shouldn't happen with auth guards, but as a fallback
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 mb-4">
-            Access Denied
-          </h1>
-          <p className="text-slate-600 mb-6">
-            Please sign in to access your dashboard.
-          </p>
-          <Button onClick={() => navigate({ to: "/" })}>Sign In</Button>
-        </div>
-      </div>
-    );
+    // Render nothing while the auth guard or logout redirects to "/"
+    return null;
   }
 
   return (

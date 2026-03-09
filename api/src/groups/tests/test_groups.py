@@ -15,7 +15,7 @@ from groups.service import add_member, create_group, get_group_by_id
 
 def create_test_user(session: Session, email: str, name: str = "Test User") -> tuple:
     """Helper to create a test user and return user with token."""
-    user = create_user(session=session, user_in=UserCreate(name=name, email=email, password="testpassword123"))
+    user = create_user(session=session, user_in=UserCreate(name=name, email=email, password="T3st!Pass#99"))
     token = create_access_token(user=user)
     return user, token
 

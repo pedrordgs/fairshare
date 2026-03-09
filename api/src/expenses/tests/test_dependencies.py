@@ -16,7 +16,7 @@ class TestGetExpenseAsMember:
     @pytest.mark.anyio
     async def test_returns_expense_for_creator(self, session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         expense = create_expense(
@@ -32,10 +32,10 @@ class TestGetExpenseAsMember:
     @pytest.mark.anyio
     async def test_returns_expense_for_group_member(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         member = create_user(
-            session=session, user_in=UserCreate(name="Member", email="member@example.com", password="password")
+            session=session, user_in=UserCreate(name="Member", email="member@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         add_member(session=session, group=group, user_id=member.id)
@@ -54,10 +54,10 @@ class TestGetExpenseAsMember:
     @pytest.mark.anyio
     async def test_raises_404_when_not_member(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         other_user = create_user(
-            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="password")
+            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         expense = create_expense(
@@ -75,7 +75,7 @@ class TestGetExpenseAsMember:
     @pytest.mark.anyio
     async def test_raises_404_when_expense_not_found(self, session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -87,7 +87,7 @@ class TestGetExpenseAsCreator:
     @pytest.mark.anyio
     async def test_returns_expense_for_creator(self, session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         expense = create_expense(
@@ -103,10 +103,10 @@ class TestGetExpenseAsCreator:
     @pytest.mark.anyio
     async def test_raises_403_for_non_creator_member(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         member = create_user(
-            session=session, user_in=UserCreate(name="Member", email="member@example.com", password="password")
+            session=session, user_in=UserCreate(name="Member", email="member@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         add_member(session=session, group=group, user_id=member.id)
@@ -127,10 +127,10 @@ class TestGetExpenseAsCreator:
     @pytest.mark.anyio
     async def test_raises_404_when_not_member(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         other_user = create_user(
-            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="password")
+            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         expense = create_expense(
@@ -148,7 +148,7 @@ class TestGetExpenseAsCreator:
     @pytest.mark.anyio
     async def test_raises_404_when_expense_not_found(self, session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -160,7 +160,7 @@ class TestGetExpenseAsCreatorOrAdmin:
     @pytest.mark.anyio
     async def test_returns_expense_for_creator(self, session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=user, group_in=ExpenseGroupCreate(name="Test Group"))
         expense = create_expense(
@@ -176,10 +176,10 @@ class TestGetExpenseAsCreatorOrAdmin:
     @pytest.mark.anyio
     async def test_returns_expense_for_group_admin(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         admin = create_user(
-            session=session, user_in=UserCreate(name="Admin", email="admin@example.com", password="password")
+            session=session, user_in=UserCreate(name="Admin", email="admin@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         add_member(session=session, group=group, user_id=admin.id)
@@ -199,10 +199,10 @@ class TestGetExpenseAsCreatorOrAdmin:
     @pytest.mark.anyio
     async def test_raises_403_for_non_creator_non_admin_member(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         member = create_user(
-            session=session, user_in=UserCreate(name="Member", email="member@example.com", password="password")
+            session=session, user_in=UserCreate(name="Member", email="member@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         add_member(session=session, group=group, user_id=member.id)
@@ -223,10 +223,10 @@ class TestGetExpenseAsCreatorOrAdmin:
     @pytest.mark.anyio
     async def test_raises_404_when_not_member(self, session) -> None:
         owner = create_user(
-            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="password")
+            session=session, user_in=UserCreate(name="Owner", email="owner@example.com", password="T3st!Pass#99")
         )
         other_user = create_user(
-            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="password")
+            session=session, user_in=UserCreate(name="Other", email="other@example.com", password="T3st!Pass#99")
         )
         group = create_group(session=session, user=owner, group_in=ExpenseGroupCreate(name="Test Group"))
         expense = create_expense(
@@ -244,7 +244,7 @@ class TestGetExpenseAsCreatorOrAdmin:
     @pytest.mark.anyio
     async def test_raises_404_when_expense_not_found(self, session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="password")
+            session=session, user_in=UserCreate(name="Test", email="test@example.com", password="T3st!Pass#99")
         )
 
         with pytest.raises(HTTPException) as exc_info:

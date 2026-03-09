@@ -14,7 +14,7 @@ class TestGetAuthenticatedUser:
     @pytest.mark.asyncio
     async def test_returns_user_with_valid_token(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="password123")
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         token = create_access_token(user)
         result = await get_authenticated_user(session=session, token=token)
@@ -69,7 +69,7 @@ class TestGetAuthenticatedUser:
     @pytest.mark.asyncio
     async def test_raises_401_with_expired_token(self, session: Session) -> None:
         user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="password123")
+            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
         )
         settings = get_settings()
         token = jwt.encode(

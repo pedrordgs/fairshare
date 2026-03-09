@@ -6,7 +6,7 @@ from conftest import AuthenticatedClient
 class TestRegister:
     def test_success(self, client: TestClient) -> None:
         response = client.post(
-            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "password123"}
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "Tr0ub4dor&3"}
         )
         assert response.status_code == 201
         data = response.json()
@@ -18,17 +18,58 @@ class TestRegister:
 
     def test_duplicate_email(self, client: TestClient) -> None:
         client.post(
-            "/auth/register/", json={"name": "User 1", "email": "duplicate@example.com", "password": "password123"}
+            "/auth/register/", json={"name": "User 1", "email": "duplicate@example.com", "password": "Tr0ub4dor&3"}
         )
         response = client.post(
-            "/auth/register/", json={"name": "User 2", "email": "duplicate@example.com", "password": "password456"}
+            "/auth/register/", json={"name": "User 2", "email": "duplicate@example.com", "password": "Tr0ub4dor&3"}
         )
         assert response.status_code == 400
         assert response.json() == {"detail": "A user with this email already exists"}
 
     def test_invalid_email(self, client: TestClient) -> None:
         response = client.post(
-            "/auth/register/", json={"name": "Test User", "email": "not-an-email", "password": "password123"}
+            "/auth/register/", json={"name": "Test User", "email": "not-an-email", "password": "Tr0ub4dor&3"}
+        )
+        assert response.status_code == 422
+
+    def test_password_too_short(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "Ab1!"}
+        )
+        assert response.status_code == 422
+        assert "at least 8 characters" in response.text
+
+    def test_password_too_long(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "Ab1!" + "x" * 125}
+        )
+        assert response.status_code == 422
+        assert "at most 128 characters" in response.text
+
+    def test_password_missing_uppercase(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "tr0ub4dor&3"}
+        )
+        assert response.status_code == 422
+        assert "uppercase" in response.text
+
+    def test_password_missing_digit(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "Troubador&x"}
+        )
+        assert response.status_code == 422
+        assert "digit" in response.text
+
+    def test_password_missing_special_character(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "Tr0ub4dor3"}
+        )
+        assert response.status_code == 422
+        assert "special character" in response.text
+
+    def test_password_too_common(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register/", json={"name": "Test User", "email": "test@example.com", "password": "P@ssw0rd1"}
         )
         assert response.status_code == 422
 
@@ -36,11 +77,11 @@ class TestRegister:
 class TestLogin:
     def test_success(self, client: TestClient) -> None:
         client.post(
-            "/auth/register/", json={"name": "Login User", "email": "login@example.com", "password": "correctpassword"}
+            "/auth/register/", json={"name": "Login User", "email": "login@example.com", "password": "Tr0ub4dor&3"}
         )
         response = client.post(
             "/auth/token/",
-            data={"username": "login@example.com", "password": "correctpassword"},
+            data={"username": "login@example.com", "password": "Tr0ub4dor&3"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
         assert response.status_code == 200
@@ -51,7 +92,7 @@ class TestLogin:
     def test_wrong_password(self, client: TestClient) -> None:
         client.post(
             "/auth/register/",
-            json={"name": "Wrong Pass User", "email": "wrongpass@example.com", "password": "correctpassword"},
+            json={"name": "Wrong Pass User", "email": "wrongpass@example.com", "password": "Tr0ub4dor&3"},
         )
         response = client.post(
             "/auth/token/",
@@ -112,7 +153,7 @@ class TestUpdateMe:
         auth_client, _ = authenticated_client
         # Create another user with a different email
         client.post(
-            "/auth/register/", json={"name": "Other User", "email": "other@example.com", "password": "password123"}
+            "/auth/register/", json={"name": "Other User", "email": "other@example.com", "password": "Tr0ub4dor&3"}
         )
         response = auth_client.patch("/auth/me/", json={"email": "other@example.com"})
         assert response.status_code == 400
@@ -144,3 +185,28 @@ class TestUpdateMe:
     def test_no_token(self, client: TestClient) -> None:
         response = client.patch("/auth/me/", json={"name": "New Name"})
         assert response.status_code == 401
+
+    def test_update_password_success(self, authenticated_client: AuthenticatedClient) -> None:
+        client, _ = authenticated_client
+        response = client.patch("/auth/me/", json={"password": "N3wStr0ng!Pass#2026"})
+        assert response.status_code == 200
+        data = response.json()
+        assert "password" not in data
+        assert "hashed_password" not in data
+
+    def test_update_password_too_weak(self, authenticated_client: AuthenticatedClient) -> None:
+        client, _ = authenticated_client
+        response = client.patch("/auth/me/", json={"password": "weakpassword"})
+        assert response.status_code == 422
+
+    def test_update_password_missing_uppercase(self, authenticated_client: AuthenticatedClient) -> None:
+        client, _ = authenticated_client
+        response = client.patch("/auth/me/", json={"password": "tr0ub4dor&3"})
+        assert response.status_code == 422
+        assert "uppercase" in response.text
+
+    def test_update_password_missing_special(self, authenticated_client: AuthenticatedClient) -> None:
+        client, _ = authenticated_client
+        response = client.patch("/auth/me/", json={"password": "Tr0ub4dor3"})
+        assert response.status_code == 422
+        assert "special character" in response.text

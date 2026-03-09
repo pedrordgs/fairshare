@@ -40,10 +40,10 @@ const redirectIfAuthenticated = () => {
 const rootRoute = createRootRoute({
   component: () => {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-accent-50">
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary-50 via-white to-accent-50">
         <div id="modal-root" />
         <HeaderWithAuth />
-        <main>
+        <main className="flex-1">
           <Outlet />
         </main>
         <FooterWithAuth />

@@ -12,20 +12,10 @@ export interface ModalProps {
 
 // Hoisted static class strings to avoid recreating on each render
 const BACKDROP_CLASSES =
-  "fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in";
-const BACKDROP_GRADIENT_CLASSES =
-  "absolute inset-0 bg-gradient-to-br from-slate-900/20 via-slate-800/30 to-slate-900/40 backdrop-blur-md pointer-events-none";
+  "fixed inset-0 z-50 flex items-center justify-center p-4";
+// Single backdrop div — no backdrop-filter to avoid full-page GPU compositing layer
 const BACKDROP_OVERLAY_CLASSES =
-  "absolute inset-0 bg-black/30 pointer-events-none";
-const ANIMATION_OVERLAY_CLASSES =
-  "absolute inset-0 opacity-5 pointer-events-none";
-
-// Static JSX element for the animation overlay - hoisted outside component
-const AnimationOverlay = () => (
-  <div className={ANIMATION_OVERLAY_CLASSES}>
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" />
-  </div>
-);
+  "absolute inset-0 bg-slate-900/50 pointer-events-none";
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -91,27 +81,20 @@ export const Modal: React.FC<ModalProps> = ({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
     >
-      <div className={BACKDROP_GRADIENT_CLASSES} />
       <div className={BACKDROP_OVERLAY_CLASSES} />
-      <AnimationOverlay />
 
       <div
         ref={modalRef}
         className={`
-          relative bg-gradient-to-br from-white via-white to-slate-50/90 
-          border border-slate-200/50 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]
-          backdrop-blur-xl max-w-lg w-full max-h-[90vh] overflow-y-auto
-          animate-slide-up transform transition-all duration-500 ease-out
-          before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br 
-          before:from-transparent before:to-slate-900/5 before:pointer-events-none
-          after:absolute after:inset-0 after:rounded-2xl after:border after:border-white/20 
-          after:pointer-events-none
+          relative bg-white border border-slate-200/50 rounded-2xl
+          shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]
+          max-w-lg w-full max-h-[90vh] overflow-y-auto
           md:mx-4
           ${className}
         `}
         tabIndex={-1}
         style={{
-          animation: "slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         }}
       >
         {children}

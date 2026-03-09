@@ -94,12 +94,14 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
     enabled,
   });
 
+  const handleIntersect = React.useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const loadMoreRef = useInfiniteScroll({
-    onIntersect: () => {
-      if (hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    },
+    onIntersect: handleIntersect,
     enabled: Boolean(hasNextPage) && !isFetchingNextPage,
   });
 
@@ -233,7 +235,7 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
 
   return (
     <>
-      <Card className="bg-white/80 backdrop-blur-sm">
+      <Card className="bg-white">
         <CardHeader className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <CardTitle className="text-2xl flex items-center gap-2">

@@ -1,7 +1,6 @@
 import React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { Badge } from "@components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Tabs, TabItem } from "@components/ui/Tabs";
 import { Button } from "@components/ui/Button";
@@ -11,18 +10,19 @@ import { expensesApi } from "@services/expenses";
 import { useAuth } from "@context/AuthContext";
 import { logError } from "@utils/errorUtils";
 import { copyToClipboard } from "@utils/clipboard";
-import { formatCurrency, formatDate } from "@utils/formatUtils";
-import receiptIcon from "@assets/icons/receipt-icon.svg";
-import { CopyIcon, EditIcon, TrashIcon } from "@assets/icons/form-icons";
+import { formatCurrency } from "@utils/formatUtils";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { EditExpenseModal } from "@components/expenses/EditExpenseModal";
 import { ConfirmationModal } from "@components/ui/ConfirmationModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
-import { SettlementHistory } from "@components/settlements/SettlementHistory";
 import { JoinRequestsModal } from "@components/groups/JoinRequestsModal";
 import { EditGroupModal } from "@components/groups/EditGroupModal";
 import { toast } from "sonner";
 import type { Expense } from "@schema/expenses";
+import { ExpensesTab } from "./components/ExpensesTab";
+import { SettlementsTab } from "./components/SettlementsTab";
+import { MembersTab } from "./components/MembersTab";
+import { Balances } from "./components/Balances";
 
 const routeApi = getRouteApi("/groups/$groupId");
 
@@ -506,243 +506,40 @@ export const GroupDetailPage: React.FC = () => {
                   }}
                 >
                   <TabItem label="Expenses" value="activity">
-                    {isExpensesLoading ? (
-                      <div className="text-center py-16">
-                        <div className="w-8 h-8 border-4 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                        <p className="text-slate-600">Loading expenses...</p>
-                      </div>
-                    ) : expensesError ? (
-                      <div className="text-center py-12">
-                        <p className="text-slate-600 font-medium mb-2">
-                          Couldn't load expenses
-                        </p>
-                        <p className="text-slate-400 text-sm">
-                          Please try again in a moment.
-                        </p>
-                      </div>
-                    ) : expensesData && expensesData.items.length > 0 ? (
-                      <div className="h-[420px] overflow-y-auto pr-1">
-                        <div className="space-y-4">
-                          {expensesData.items.map((expense) => {
-                            const creatorName = membersById.get(
-                              expense.created_by,
-                            );
-                            const onBehalfOfName =
-                              expense.on_behalf_of_user_id !== null &&
-                              expense.on_behalf_of_user_id !== undefined
-                                ? membersById.get(expense.on_behalf_of_user_id)
-                                : undefined;
-                            const isCurrentUserExpense =
-                              currentUserId !== null &&
-                              expense.created_by === currentUserId;
-                            const canEditOrDelete =
-                              isCurrentUserExpense || isAdmin;
-                            const expenseMeta = `${
-                              creatorName
-                                ? `Created by ${creatorName}`
-                                : "Created by member"
-                            } · ${formatDate(expense.created_at)}`;
-                            return (
-                              <div
-                                key={expense.id}
-                                className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${
-                                  isCurrentUserExpense
-                                    ? "border-sky-200 bg-sky-50/60"
-                                    : "border-primary-100 bg-white"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-semibold text-slate-900 truncate">
-                                        {expense.name}
-                                      </p>
-                                    </div>
-                                    {expense.description && (
-                                      <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                                        {expense.description}
-                                      </p>
-                                    )}
-                                    <p className="text-xs text-slate-400 mt-2">
-                                      {expenseMeta}
-                                    </p>
-                                    {onBehalfOfName && (
-                                      <p className="text-xs text-slate-500 mt-1">
-                                        On behalf of{" "}
-                                        <span className="font-medium">
-                                          {onBehalfOfName}
-                                        </span>
-                                      </p>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-lg font-bold text-slate-900">
-                                      {formatCurrency(expense.value)}
-                                    </p>
-                                    {canEditOrDelete && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          type="button"
-                                          aria-label={`Edit expense ${expense.name}`}
-                                          onClick={() =>
-                                            setEditingExpense(expense)
-                                          }
-                                          className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                                        >
-                                          <EditIcon className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          aria-label={`Delete expense ${expense.name}`}
-                                          onClick={() =>
-                                            setDeletingExpense(expense)
-                                          }
-                                          className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                        >
-                                          <TrashIcon className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-[420px] overflow-y-auto flex flex-col items-center justify-center text-center">
-                        <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                          <img
-                            src={receiptIcon}
-                            alt="Receipt"
-                            className="w-8 h-8 text-primary-600"
-                          />
-                        </div>
-                        <p className="text-slate-600 font-medium mb-2">
-                          No expenses yet
-                        </p>
-                        <p className="text-slate-400 text-sm">
-                          Start tracking shared costs by adding your first
-                          expense
-                        </p>
-                      </div>
-                    )}
+                    <ExpensesTab
+                      isLoading={isExpensesLoading}
+                      error={expensesError}
+                      expenses={expensesData?.items}
+                      membersById={membersById}
+                      currentUserId={currentUserId}
+                      isAdmin={isAdmin}
+                      onEditExpense={setEditingExpense}
+                      onDeleteExpense={setDeletingExpense}
+                    />
                   </TabItem>
                   <TabItem label="Settlements" value="settlements">
-                    <SettlementHistory
+                    <SettlementsTab
                       groupId={groupId}
                       membersById={membersById}
                       currentUserId={currentUserId}
-                      embedded
-                      enabled={activeCenterTab === "settlements"}
+                      isActive={activeCenterTab === "settlements"}
                     />
                   </TabItem>
                   <TabItem label="Members" value="members">
-                    {group.members.length > 0 ? (
-                      <div className="h-[420px] overflow-y-auto pr-1">
-                        <div className="flex items-center justify-between mb-4">
-                          <p className="text-slate-500 text-sm">
-                            {group.members.length} people in this group
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-400 shrink-0">
-                              Invite code:
-                            </span>
-                            <span className="font-mono text-sm text-slate-600 bg-slate-100 rounded px-1.5 py-0.5">
-                              {group.invite_code}
-                            </span>
-                            <button
-                              onClick={handleCopyInviteCode}
-                              aria-label="Copy invite code"
-                              className="text-slate-400 hover:text-primary-600 transition-colors"
-                            >
-                              <CopyIcon className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          {group.members.map((member) => {
-                            const isMemberOwner =
-                              member.user_id === group.created_by;
-                            const isCurrentUser =
-                              member.user_id === currentUserId;
-                            const canToggleAdmin =
-                              isOwner && !isCurrentUser && !isMemberOwner;
-                            return (
-                              <div
-                                key={member.user_id}
-                                className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
-                              >
-                                <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                  {member.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-medium text-slate-900 truncate">
-                                      {member.name}
-                                    </p>
-                                    {member.is_admin && (
-                                      <Badge
-                                        size="sm"
-                                        variant="warning"
-                                        ariaLabel="Group Administrator"
-                                      >
-                                        Admin
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-slate-500 truncate">
-                                    {member.email}
-                                  </p>
-                                </div>
-                                {canToggleAdmin && (
-                                  <div className="flex-shrink-0">
-                                    {member.is_admin ? (
-                                      <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="text-xs text-red-600 border-red-200 hover:bg-red-50"
-                                        onClick={() =>
-                                          setDemotingUserId(member.user_id)
-                                        }
-                                        disabled={
-                                          promoteMemberMutation.isPending ||
-                                          demoteMemberMutation.isPending
-                                        }
-                                      >
-                                        Demote
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="text-xs"
-                                        onClick={() =>
-                                          promoteMemberMutation.mutate(
-                                            member.user_id,
-                                          )
-                                        }
-                                        disabled={
-                                          promoteMemberMutation.isPending ||
-                                          demoteMemberMutation.isPending
-                                        }
-                                      >
-                                        Promote
-                                      </Button>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-[420px] flex items-center justify-center">
-                        <p className="text-slate-400 text-sm">No members yet</p>
-                      </div>
-                    )}
+                    <MembersTab
+                      members={group.members}
+                      groupCreatedBy={group.created_by}
+                      inviteCode={group.invite_code}
+                      currentUserId={currentUserId}
+                      isOwner={isOwner}
+                      isPromotePending={promoteMemberMutation.isPending}
+                      isDemotePending={demoteMemberMutation.isPending}
+                      onPromote={(userId) =>
+                        promoteMemberMutation.mutate(userId)
+                      }
+                      onDemote={setDemotingUserId}
+                      onCopyInviteCode={handleCopyInviteCode}
+                    />
                   </TabItem>
                 </Tabs>
               </CardContent>
@@ -750,68 +547,13 @@ export const GroupDetailPage: React.FC = () => {
           </div>
 
           {/* Balances Card — 1/3 width, shows all group transfers */}
-          {group.group_transfers.length > 0 && (
-            <div className="flex-[1] min-w-0 flex flex-col">
-              <Card className="bg-white h-full">
-                <CardHeader className="flex flex-row items-center justify-between min-h-9">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    Balances
-                  </CardTitle>
-                  {group.owed_by_user.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setIsSettleUpOpen(true)}
-                    >
-                      Settle Up
-                    </Button>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[420px] overflow-y-auto pr-1">
-                    <div className="space-y-2">
-                      {group.group_transfers.map((transfer, idx) => {
-                        const fromName =
-                          membersById.get(transfer.from_user_id) ?? "Member";
-                        const toName =
-                          membersById.get(transfer.to_user_id) ?? "Member";
-                        const fromIsCurrentUser =
-                          transfer.from_user_id === currentUserId;
-                        const toIsCurrentUser =
-                          transfer.to_user_id === currentUserId;
-                        return (
-                          <div
-                            key={idx}
-                            className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
-                              fromIsCurrentUser || toIsCurrentUser
-                                ? "border-sky-200 bg-sky-50/60"
-                                : "border-primary-100 bg-white"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-slate-400 text-sm">
-                                <strong>
-                                  {fromIsCurrentUser ? "You" : fromName}
-                                </strong>{" "}
-                                {fromIsCurrentUser ? "owe" : "owes"}{" "}
-                                <strong>
-                                  {toIsCurrentUser ? "you" : toName}
-                                </strong>
-                              </span>
-                            </div>
-                            <span className="font-bold text-slate-900 ml-4">
-                              {formatCurrency(transfer.amount)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+          <Balances
+            groupTransfers={group.group_transfers}
+            owedByUser={group.owed_by_user}
+            membersById={membersById}
+            currentUserId={currentUserId}
+            onSettleUp={() => setIsSettleUpOpen(true)}
+          />
         </div>
       </div>
 

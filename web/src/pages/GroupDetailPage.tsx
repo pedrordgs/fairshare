@@ -13,7 +13,7 @@ import { logError } from "@utils/errorUtils";
 import { copyToClipboard } from "@utils/clipboard";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
 import receiptIcon from "@assets/icons/receipt-icon.svg";
-import { EditIcon, TrashIcon } from "@assets/icons/form-icons";
+import { CopyIcon, EditIcon, TrashIcon } from "@assets/icons/form-icons";
 import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { EditExpenseModal } from "@components/expenses/EditExpenseModal";
 import { ConfirmationModal } from "@components/ui/ConfirmationModal";
@@ -102,8 +102,8 @@ export const GroupDetailPage: React.FC = () => {
   const [isEditGroupOpen, setIsEditGroupOpen] = React.useState(false);
   const [isDeleteGroupOpen, setIsDeleteGroupOpen] = React.useState(false);
   const [activeCenterTab, setActiveCenterTab] = React.useState<
-    "expenses" | "settlements"
-  >("expenses");
+    "activity" | "settlements" | "members"
+  >("activity");
   const [editingExpense, setEditingExpense] = React.useState<Expense | null>(
     null,
   );
@@ -327,28 +327,6 @@ export const GroupDetailPage: React.FC = () => {
     );
   }, [group]);
 
-  const owedByUserEntries = React.useMemo(() => {
-    if (!group) {
-      return [] as Array<{ user_id: number; name: string; amount: number }>;
-    }
-    return group.owed_by_user.map((entry) => ({
-      user_id: entry.user_id,
-      name: membersById.get(entry.user_id) ?? "Member",
-      amount: entry.amount,
-    }));
-  }, [group, membersById]);
-
-  const owedToUserEntries = React.useMemo(() => {
-    if (!group) {
-      return [] as Array<{ user_id: number; name: string; amount: number }>;
-    }
-    return group.owed_to_user.map((entry) => ({
-      user_id: entry.user_id,
-      name: membersById.get(entry.user_id) ?? "Member",
-      amount: entry.amount,
-    }));
-  }, [group, membersById]);
-
   if (isAuthLoading || isGroupLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -407,7 +385,7 @@ export const GroupDetailPage: React.FC = () => {
   return (
     <div className="container-max section-padding">
       {/* Hero Header */}
-      <div className="mb-12 fade-in">
+      <div className="mb-8 fade-in">
         <div className="flex items-center gap-2 mb-4">
           <Button
             variant="ghost"
@@ -425,11 +403,20 @@ export const GroupDetailPage: React.FC = () => {
             </h1>
             <div className="flex items-center gap-4 text-slate-500">
               <span className="text-lg">{group.members.length} members</span>
-              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-              <span className="text-lg">Group #{group.id}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {isAdmin && joinRequestsCount > 0 && (
+              <ButtonWithBadge
+                variant="secondary"
+                size="sm"
+                badgeCount={joinRequestsCount}
+                badgeVariant="warning"
+                onClick={() => setIsJoinRequestsOpen(true)}
+              >
+                Join requests
+              </ButtonWithBadge>
+            )}
             {isAdmin && (
               <Button
                 variant="secondary"
@@ -449,404 +436,385 @@ export const GroupDetailPage: React.FC = () => {
                 Delete
               </Button>
             )}
-            {isAdmin && (
-              <ButtonWithBadge
-                variant="secondary"
-                size="sm"
-                badgeCount={joinRequestsCount}
-                badgeVariant="warning"
-                onClick={() => setIsJoinRequestsOpen(true)}
-              >
-                Join requests
-              </ButtonWithBadge>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Three Column Layout - Placeholder for Future Features */}
-      <div className="grid lg:grid-cols-12 gap-8 slide-up stagger-1">
-        {/* Left Column - Members (3 cols) */}
-        <div className="lg:col-span-3">
-          <Card className="h-full bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <span className="w-2 h-2 bg-accent-500 rounded-full"></span>
-                Members
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-500 text-sm mb-4">
-                {group.members.length} people in this group
+      <div className="space-y-6 slide-up stagger-1">
+        {/* Summary Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Total Expenses — always shown */}
+          <div className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-accent-100/50 px-5 py-4">
+            <p className="text-sm text-slate-600 mb-1">Total Expenses</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(totalExpenses)}
+            </p>
+          </div>
+          {/* You Owe — only if non-zero */}
+          {group.owed_by_user_total > 0 && (
+            <div className="rounded-xl border border-rose-100 bg-rose-50 px-5 py-4">
+              <p className="text-sm text-rose-700 mb-1">You Owe</p>
+              <p className="text-2xl font-bold text-rose-700">
+                {formatCurrency(group.owed_by_user_total)}
               </p>
-              <div className="mb-4 rounded-lg border border-primary-100 bg-primary-50/40 px-3 py-2">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Invite Code
-                </p>
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm text-slate-900">
-                    {group.invite_code}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleCopyInviteCode}
-                  >
-                    Copy
-                  </Button>
-                </div>
-              </div>
-              {group.members.length > 0 ? (
-                <div className="space-y-3">
-                  {group.members.map((member) => {
-                    const isMemberOwner = member.user_id === group.created_by;
-                    const isCurrentUser = member.user_id === currentUserId;
-                    const canToggleAdmin =
-                      isOwner && !isCurrentUser && !isMemberOwner;
-                    return (
-                      <div
-                        key={member.user_id}
-                        className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                          {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-medium text-slate-900 truncate">
-                              {member.name}
-                            </p>
-                            {member.is_admin && (
-                              <Badge
-                                size="sm"
-                                variant="warning"
-                                ariaLabel="Group Administrator"
-                              >
-                                Admin
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-500 truncate">
-                            {member.email}
-                          </p>
-                        </div>
-                        {canToggleAdmin && (
-                          <div className="flex-shrink-0">
-                            {member.is_admin ? (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="text-xs text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() =>
-                                  setDemotingUserId(member.user_id)
-                                }
-                                disabled={
-                                  promoteMemberMutation.isPending ||
-                                  demoteMemberMutation.isPending
-                                }
-                              >
-                                Demote
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="text-xs"
-                                onClick={() =>
-                                  promoteMemberMutation.mutate(member.user_id)
-                                }
-                                disabled={
-                                  promoteMemberMutation.isPending ||
-                                  demoteMemberMutation.isPending
-                                }
-                              >
-                                Promote
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-slate-400 text-sm">No members yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+          )}
+          {/* Owed to You — only if non-zero */}
+          {group.owed_to_user_total > 0 && (
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+              <p className="text-sm text-emerald-700 mb-1">Owed to You</p>
+              <p className="text-2xl font-bold text-emerald-700">
+                {formatCurrency(group.owed_to_user_total)}
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Center Column - Expenses & Settlements (6 cols) */}
-        <div className="lg:col-span-6">
-          <Card className="h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
-                Activity
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => setIsAddExpenseOpen(true)}>
-                  + Add Expense
-                </Button>
-                {group.owed_by_user.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setIsSettleUpOpen(true)}
-                  >
-                    Record Settlement
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs
-                defaultTab="expenses"
-                activeTab={activeCenterTab}
-                onTabChange={(value) =>
-                  setActiveCenterTab(
-                    value === "settlements" ? "settlements" : "expenses",
-                  )
-                }
-              >
-                <TabItem label="Expenses" value="expenses">
-                  {isExpensesLoading ? (
-                    <div className="text-center py-16">
-                      <div className="w-8 h-8 border-4 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-slate-600">Loading expenses...</p>
-                    </div>
-                  ) : expensesError ? (
-                    <div className="text-center py-12">
-                      <p className="text-slate-600 font-medium mb-2">
-                        Couldn't load expenses
-                      </p>
-                      <p className="text-slate-400 text-sm">
-                        Please try again in a moment.
-                      </p>
-                    </div>
-                  ) : expensesData && expensesData.items.length > 0 ? (
-                    <div className="space-y-4">
-                      {expensesData.items.map((expense) => {
-                        const creatorName = membersById.get(expense.created_by);
-                        const onBehalfOfName =
-                          expense.on_behalf_of_user_id !== null &&
-                          expense.on_behalf_of_user_id !== undefined
-                            ? membersById.get(expense.on_behalf_of_user_id)
-                            : undefined;
-                        const isCurrentUserExpense =
-                          currentUserId !== null &&
-                          expense.created_by === currentUserId;
-                        const canEditOrDelete = isCurrentUserExpense || isAdmin;
-                        const expenseMeta = `${
-                          creatorName
-                            ? `Created by ${creatorName}`
-                            : "Created by member"
-                        } · ${formatDate(expense.created_at)}`;
+        <div className="flex gap-6 items-stretch">
+          {/* Tabs Card — Expenses | Settlements | Members */}
+          <div className="flex-[2] min-w-0">
+            <Card className="bg-white">
+              <CardHeader className="flex flex-row items-center justify-between min-h-9">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
+                  {activeCenterTab === "activity"
+                    ? "Expenses"
+                    : activeCenterTab === "settlements"
+                      ? "Settlements"
+                      : "Members"}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  {activeCenterTab === "activity" && (
+                    <Button size="sm" onClick={() => setIsAddExpenseOpen(true)}>
+                      + Add Expense
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs
+                  defaultTab="activity"
+                  activeTab={activeCenterTab}
+                  onTabChange={(value) => {
+                    if (
+                      value === "activity" ||
+                      value === "settlements" ||
+                      value === "members"
+                    ) {
+                      setActiveCenterTab(value);
+                    }
+                  }}
+                >
+                  <TabItem label="Expenses" value="activity">
+                    {isExpensesLoading ? (
+                      <div className="text-center py-16">
+                        <div className="w-8 h-8 border-4 border-primary-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                        <p className="text-slate-600">Loading expenses...</p>
+                      </div>
+                    ) : expensesError ? (
+                      <div className="text-center py-12">
+                        <p className="text-slate-600 font-medium mb-2">
+                          Couldn't load expenses
+                        </p>
+                        <p className="text-slate-400 text-sm">
+                          Please try again in a moment.
+                        </p>
+                      </div>
+                    ) : expensesData && expensesData.items.length > 0 ? (
+                      <div className="h-[420px] overflow-y-auto pr-1">
+                        <div className="space-y-4">
+                          {expensesData.items.map((expense) => {
+                            const creatorName = membersById.get(
+                              expense.created_by,
+                            );
+                            const onBehalfOfName =
+                              expense.on_behalf_of_user_id !== null &&
+                              expense.on_behalf_of_user_id !== undefined
+                                ? membersById.get(expense.on_behalf_of_user_id)
+                                : undefined;
+                            const isCurrentUserExpense =
+                              currentUserId !== null &&
+                              expense.created_by === currentUserId;
+                            const canEditOrDelete =
+                              isCurrentUserExpense || isAdmin;
+                            const expenseMeta = `${
+                              creatorName
+                                ? `Created by ${creatorName}`
+                                : "Created by member"
+                            } · ${formatDate(expense.created_at)}`;
+                            return (
+                              <div
+                                key={expense.id}
+                                className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${
+                                  isCurrentUserExpense
+                                    ? "border-sky-200 bg-sky-50/60"
+                                    : "border-primary-100 bg-white"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-semibold text-slate-900 truncate">
+                                        {expense.name}
+                                      </p>
+                                    </div>
+                                    {expense.description && (
+                                      <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                                        {expense.description}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-slate-400 mt-2">
+                                      {expenseMeta}
+                                    </p>
+                                    {onBehalfOfName && (
+                                      <p className="text-xs text-slate-500 mt-1">
+                                        On behalf of{" "}
+                                        <span className="font-medium">
+                                          {onBehalfOfName}
+                                        </span>
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-lg font-bold text-slate-900">
+                                      {formatCurrency(expense.value)}
+                                    </p>
+                                    {canEditOrDelete && (
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          type="button"
+                                          aria-label={`Edit expense ${expense.name}`}
+                                          onClick={() =>
+                                            setEditingExpense(expense)
+                                          }
+                                          className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                        >
+                                          <EditIcon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          aria-label={`Delete expense ${expense.name}`}
+                                          onClick={() =>
+                                            setDeletingExpense(expense)
+                                          }
+                                          className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                          <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-[420px] overflow-y-auto flex flex-col items-center justify-center text-center">
+                        <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <img
+                            src={receiptIcon}
+                            alt="Receipt"
+                            className="w-8 h-8 text-primary-600"
+                          />
+                        </div>
+                        <p className="text-slate-600 font-medium mb-2">
+                          No expenses yet
+                        </p>
+                        <p className="text-slate-400 text-sm">
+                          Start tracking shared costs by adding your first
+                          expense
+                        </p>
+                      </div>
+                    )}
+                  </TabItem>
+                  <TabItem label="Settlements" value="settlements">
+                    <SettlementHistory
+                      groupId={groupId}
+                      membersById={membersById}
+                      currentUserId={currentUserId}
+                      embedded
+                      enabled={activeCenterTab === "settlements"}
+                    />
+                  </TabItem>
+                  <TabItem label="Members" value="members">
+                    {group.members.length > 0 ? (
+                      <div className="h-[420px] overflow-y-auto pr-1">
+                        <div className="flex items-center justify-between mb-4">
+                          <p className="text-slate-500 text-sm">
+                            {group.members.length} people in this group
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-400 shrink-0">
+                              Invite code:
+                            </span>
+                            <span className="font-mono text-sm text-slate-600 bg-slate-100 rounded px-1.5 py-0.5">
+                              {group.invite_code}
+                            </span>
+                            <button
+                              onClick={handleCopyInviteCode}
+                              aria-label="Copy invite code"
+                              className="text-slate-400 hover:text-primary-600 transition-colors"
+                            >
+                              <CopyIcon className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          {group.members.map((member) => {
+                            const isMemberOwner =
+                              member.user_id === group.created_by;
+                            const isCurrentUser =
+                              member.user_id === currentUserId;
+                            const canToggleAdmin =
+                              isOwner && !isCurrentUser && !isMemberOwner;
+                            return (
+                              <div
+                                key={member.user_id}
+                                className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
+                              >
+                                <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                  {member.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-medium text-slate-900 truncate">
+                                      {member.name}
+                                    </p>
+                                    {member.is_admin && (
+                                      <Badge
+                                        size="sm"
+                                        variant="warning"
+                                        ariaLabel="Group Administrator"
+                                      >
+                                        Admin
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-slate-500 truncate">
+                                    {member.email}
+                                  </p>
+                                </div>
+                                {canToggleAdmin && (
+                                  <div className="flex-shrink-0">
+                                    {member.is_admin ? (
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                                        onClick={() =>
+                                          setDemotingUserId(member.user_id)
+                                        }
+                                        disabled={
+                                          promoteMemberMutation.isPending ||
+                                          demoteMemberMutation.isPending
+                                        }
+                                      >
+                                        Demote
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="text-xs"
+                                        onClick={() =>
+                                          promoteMemberMutation.mutate(
+                                            member.user_id,
+                                          )
+                                        }
+                                        disabled={
+                                          promoteMemberMutation.isPending ||
+                                          demoteMemberMutation.isPending
+                                        }
+                                      >
+                                        Promote
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-[420px] flex items-center justify-center">
+                        <p className="text-slate-400 text-sm">No members yet</p>
+                      </div>
+                    )}
+                  </TabItem>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Balances Card — 1/3 width, shows all group transfers */}
+          {group.group_transfers.length > 0 && (
+            <div className="flex-[1] min-w-0 flex flex-col">
+              <Card className="bg-white h-full">
+                <CardHeader className="flex flex-row items-center justify-between min-h-9">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    Balances
+                  </CardTitle>
+                  {group.owed_by_user.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setIsSettleUpOpen(true)}
+                    >
+                      Settle Up
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[420px] overflow-y-auto pr-1">
+                    <div className="space-y-2">
+                      {group.group_transfers.map((transfer, idx) => {
+                        const fromName =
+                          membersById.get(transfer.from_user_id) ?? "Member";
+                        const toName =
+                          membersById.get(transfer.to_user_id) ?? "Member";
+                        const fromIsCurrentUser =
+                          transfer.from_user_id === currentUserId;
+                        const toIsCurrentUser =
+                          transfer.to_user_id === currentUserId;
                         return (
                           <div
-                            key={expense.id}
-                            className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${
-                              isCurrentUserExpense
+                            key={idx}
+                            className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+                              fromIsCurrentUser || toIsCurrentUser
                                 ? "border-sky-200 bg-sky-50/60"
                                 : "border-primary-100 bg-white"
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-semibold text-slate-900 truncate">
-                                    {expense.name}
-                                  </p>
-                                  {isCurrentUserExpense && (
-                                    <Badge size="sm" variant="info">
-                                      You
-                                    </Badge>
-                                  )}
-                                </div>
-                                {expense.description && (
-                                  <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                                    {expense.description}
-                                  </p>
-                                )}
-                                <p className="text-xs text-slate-400 mt-2">
-                                  {expenseMeta}
-                                </p>
-                                {onBehalfOfName && (
-                                  <p className="text-xs text-slate-500 mt-1">
-                                    On behalf of{" "}
-                                    <span className="font-medium">
-                                      {onBehalfOfName}
-                                    </span>
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <p className="text-lg font-bold text-slate-900">
-                                  {formatCurrency(expense.value)}
-                                </p>
-                                {canEditOrDelete && (
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      aria-label={`Edit expense ${expense.name}`}
-                                      onClick={() => setEditingExpense(expense)}
-                                      className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                                    >
-                                      <EditIcon className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      aria-label={`Delete expense ${expense.name}`}
-                                      onClick={() =>
-                                        setDeletingExpense(expense)
-                                      }
-                                      className="p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                    >
-                                      <TrashIcon className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-slate-400 text-sm">
+                                <strong>
+                                  {fromIsCurrentUser ? "You" : fromName}
+                                </strong>{" "}
+                                {fromIsCurrentUser ? "owe" : "owes"}{" "}
+                                <strong>
+                                  {toIsCurrentUser ? "you" : toName}
+                                </strong>
+                              </span>
                             </div>
+                            <span className="font-bold text-slate-900 ml-4">
+                              {formatCurrency(transfer.amount)}
+                            </span>
                           </div>
                         );
                       })}
                     </div>
-                  ) : (
-                    <div className="text-center py-16">
-                      <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <img
-                          src={receiptIcon}
-                          alt="Receipt"
-                          className="w-8 h-8 text-primary-600"
-                        />
-                      </div>
-                      <p className="text-slate-600 font-medium mb-2">
-                        No expenses yet
-                      </p>
-                      <p className="text-slate-400 text-sm">
-                        Start tracking shared costs by adding your first expense
-                      </p>
-                    </div>
-                  )}
-                </TabItem>
-                <TabItem label="Settlements" value="settlements">
-                  <SettlementHistory
-                    groupId={groupId}
-                    membersById={membersById}
-                    currentUserId={currentUserId}
-                    embedded
-                    enabled={activeCenterTab === "settlements"}
-                  />
-                </TabItem>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Summary (3 cols) */}
-        <div className="lg:col-span-3">
-          <Card className="h-full bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 bg-gradient-to-br from-accent-50 to-accent-100/50 rounded-xl">
-                <p className="text-sm text-slate-600 mb-1">Total Expenses</p>
-                <p className="text-3xl font-bold text-slate-900">
-                  {formatCurrency(totalExpenses)}
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-sm font-medium text-slate-700">
-                  Your Balances
-                </p>
-                <div className="grid gap-3">
-                  <div className="rounded-lg bg-rose-50 px-3 py-3">
-                    <p className="text-xs uppercase tracking-wide text-rose-700">
-                      You owe
-                    </p>
-                    <p className="text-lg font-semibold text-rose-700">
-                      {formatCurrency(group.owed_by_user_total)}
-                    </p>
                   </div>
-                  <div className="rounded-lg bg-emerald-50 px-3 py-3">
-                    <p className="text-xs uppercase tracking-wide text-emerald-700">
-                      Owed to you
-                    </p>
-                    <p className="text-lg font-semibold text-emerald-700">
-                      {formatCurrency(group.owed_to_user_total)}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">
-                    You owe
-                  </p>
-                  {owedByUserEntries.length === 0 ? (
-                    <p className="text-sm text-slate-400">No one right now.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {owedByUserEntries.map((entry) => (
-                        <div
-                          key={`owed-${entry.user_id}`}
-                          className="flex items-center justify-between rounded-lg border border-rose-100 bg-rose-50/60 px-3 py-2"
-                        >
-                          <span className="text-sm text-slate-700">
-                            {entry.name}
-                          </span>
-                          <span className="text-sm font-semibold text-rose-700">
-                            {formatCurrency(entry.amount)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">
-                    Owed to you
-                  </p>
-                  {owedToUserEntries.length === 0 ? (
-                    <p className="text-sm text-slate-400">No one right now.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {owedToUserEntries.map((entry) => (
-                        <div
-                          key={`owed-to-${entry.user_id}`}
-                          className="flex items-center justify-between rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2"
-                        >
-                          <span className="text-sm text-slate-700">
-                            {entry.name}
-                          </span>
-                          <span className="text-sm font-semibold text-emerald-700">
-                            {formatCurrency(entry.amount)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {owedByUserEntries.length > 0 && (
-                <Button
-                  className="w-full"
-                  onClick={() => setIsSettleUpOpen(true)}
-                >
-                  Settle Up
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
+
       {groupId && (
         <AddExpenseModal
           groupId={groupId}

@@ -142,6 +142,7 @@ describe("GroupDetailPage", () => {
     owed_to_user_total: 0,
     owed_by_user: [],
     owed_to_user: [],
+    group_transfers: [],
     last_activity_at: null,
   };
 
@@ -285,29 +286,6 @@ describe("GroupDetailPage", () => {
       });
     });
 
-    it("displays group ID", async () => {
-      const mockGroup = {
-        ...baseGroup,
-        id: 42,
-      };
-
-      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
-      vi.mocked(
-        ExpensesService.expensesApi.listAllGroupExpenses,
-      ).mockResolvedValue({
-        items: [],
-        total: 0,
-        offset: 0,
-        limit: 20,
-      });
-
-      renderWithProviders(<GroupDetailPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Group #42/i)).toBeInTheDocument();
-      });
-    });
-
     it("renders member list with avatars", async () => {
       const mockGroup = {
         ...baseGroup,
@@ -338,6 +316,16 @@ describe("GroupDetailPage", () => {
 
       renderWithProviders(<GroupDetailPage />);
 
+      const user = userEvent.setup();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("tab", { name: "Members" }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("tab", { name: "Members" }));
+
       await waitFor(() => {
         expect(screen.getByText("John Doe")).toBeInTheDocument();
         expect(screen.getByText("john@example.com")).toBeInTheDocument();
@@ -364,6 +352,16 @@ describe("GroupDetailPage", () => {
       );
 
       renderWithProviders(<GroupDetailPage />);
+
+      const user = userEvent.setup();
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("tab", { name: "Members" }),
+        ).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole("tab", { name: "Members" }));
 
       await waitFor(() => {
         expect(screen.getByText(/No members yet/i)).toBeInTheDocument();
@@ -484,7 +482,7 @@ describe("GroupDetailPage", () => {
       });
     });
 
-    it("shows empty state in join requests modal", async () => {
+    it("hides join requests button when no pending requests", async () => {
       const mockGroup = {
         ...baseGroup,
         is_admin: true,
@@ -512,21 +510,13 @@ describe("GroupDetailPage", () => {
 
       renderWithProviders(<GroupDetailPage />);
 
-      const user = userEvent.setup();
-
       await waitFor(() => {
-        expect(
-          screen.getByRole("button", { name: /Join requests/i }),
-        ).toBeInTheDocument();
+        expect(screen.getByText("Test Group")).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole("button", { name: /Join requests/i }));
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(/No pending join requests/i),
-        ).toBeInTheDocument();
-      });
+      expect(
+        screen.queryByRole("button", { name: /Join requests/i }),
+      ).not.toBeInTheDocument();
     });
 
     it("hides join requests and edit for regular member (non-admin)", async () => {
@@ -1329,7 +1319,9 @@ describe("GroupDetailPage", () => {
       renderWithProviders(<GroupDetailPage />);
 
       await waitFor(() => {
-        expect(screen.getByText("Admin User")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /\+ Add Expense/i }),
+        ).toBeInTheDocument();
       });
 
       const user = userEvent.setup();
@@ -1381,7 +1373,9 @@ describe("GroupDetailPage", () => {
       renderWithProviders(<GroupDetailPage />);
 
       await waitFor(() => {
-        expect(screen.getByText("Regular User")).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /\+ Add Expense/i }),
+        ).toBeInTheDocument();
       });
 
       const user = userEvent.setup();

@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef } from "react";
+import { type RefObject, useCallback, useEffect, useRef } from "react";
 
 export interface UseInfiniteScrollOptions {
   onIntersect: () => void;
   enabled?: boolean;
+  root?: RefObject<HTMLElement | null>;
 }
 
 export function useInfiniteScroll({
   onIntersect,
   enabled = true,
+  root,
 }: UseInfiniteScrollOptions) {
   const observerRef = useRef<IntersectionObserver | null>(null);
   // Keep a stable ref to the latest callback so the observer never needs
@@ -16,6 +18,13 @@ export function useInfiniteScroll({
   useEffect(() => {
     onIntersectRef.current = onIntersect;
   }, [onIntersect]);
+
+  // Keep a stable ref to the root element so we can safely read it inside
+  // useCallback without triggering the React Compiler's memoization warning.
+  const rootRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    rootRef.current = root?.current ?? null;
+  });
 
   useEffect(() => {
     return () => {
@@ -39,6 +48,7 @@ export function useInfiniteScroll({
           }
         },
         {
+          root: rootRef.current,
           rootMargin: "100px",
         },
       );

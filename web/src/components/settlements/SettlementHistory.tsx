@@ -8,12 +8,12 @@ import { toast } from "sonner";
 import { settlementsApi } from "@services/settlements";
 import { useInfiniteScroll } from "@hooks/useInfiniteScroll";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
-import { Badge } from "@components/ui/Badge";
 import { Button } from "@components/ui/Button";
 import { ConfirmationModal } from "@components/ui/ConfirmationModal";
 import { EditSettlementModal } from "./EditSettlementModal";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
 import { EditIcon, TrashIcon } from "@assets/icons/form-icons";
+import moneyIcon from "@assets/icons/money-icon.svg";
 import type { GroupSettlementListItem } from "@schema/settlements";
 
 interface SettlementHistoryProps {
@@ -100,9 +100,12 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
   const loadMoreRef = useInfiniteScroll({
     onIntersect: handleIntersect,
     enabled: Boolean(hasNextPage) && !isFetchingNextPage,
+    root: scrollContainerRef,
   });
 
   const settlements = data ? data.pages.flatMap((page) => page.items) : [];
@@ -110,91 +113,101 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
   const isEmpty = !isLoading && settlements.length === 0;
 
   const content = (
-    <div className="space-y-6">
-      {isLoading && (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={`settlement-skeleton-${index}`}
-              className="h-20 animate-pulse rounded-xl border border-primary-100/80 bg-white"
-            />
-          ))}
-        </div>
-      )}
-
-      {error && !isLoading && (
-        <div className="rounded-xl border border-rose-100 bg-rose-50/60 px-4 py-4">
-          <p className="text-sm font-semibold text-rose-700">
-            Could not load settlement history.
-          </p>
-          <p className="text-sm text-rose-600/80">
-            {error instanceof Error ? error.message : "Please try again."}
-          </p>
-          <div className="mt-3">
-            <Button size="sm" variant="secondary" onClick={() => refetch()}>
-              Try again
-            </Button>
-          </div>
-        </div>
-      )}
-
+    <div
+      ref={scrollContainerRef}
+      className="h-[420px] overflow-y-auto pr-1 flex flex-col"
+    >
       {isEmpty && (
-        <div className="rounded-xl border border-dashed border-primary-200 bg-primary-50/40 px-6 py-8 text-center">
-          <p className="text-sm font-semibold text-slate-700">
-            No settlements yet
-          </p>
-          <p className="text-sm text-slate-500">
+        <div className="h-full flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <img
+              src={moneyIcon}
+              alt="Money"
+              className="w-8 h-8 text-primary-600"
+            />
+          </div>
+          <p className="text-slate-600 font-medium mb-2">No settlements yet</p>
+          <p className="text-slate-400 text-sm">
             Record a payment to start building your group ledger.
           </p>
         </div>
       )}
 
-      {!isLoading && !error && settlements.length > 0 && (
-        <div className="space-y-3">
-          {settlements.map((settlement) => {
-            const debtor = getDisplayName(
-              membersById,
-              settlement.debtor_id,
-              currentUserId,
-            );
-            const creditor = getDisplayName(
-              membersById,
-              settlement.creditor_id,
-              currentUserId,
-            );
-            const recordedBy = getDisplayName(
-              membersById,
-              settlement.created_by,
-              currentUserId,
-            );
-            return (
-              <SettlementRow
-                key={settlement.id}
-                settlement={settlement}
-                debtor={debtor}
-                creditor={creditor}
-                recordedBy={recordedBy}
-                currentUserId={currentUserId}
-                onEdit={() => setEditingSettlement(settlement)}
-                onDelete={() => setDeletingSettlement(settlement)}
+      <div className="space-y-6">
+        {isLoading && (
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`settlement-skeleton-${index}`}
+                className="h-20 animate-pulse rounded-xl border border-primary-100/80 bg-white"
               />
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {hasNextPage && !error && (
-        <div className="flex items-center justify-center" ref={loadMoreRef}>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? "Loading more..." : "Load more"}
-          </Button>
-        </div>
-      )}
+        {error && !isLoading && (
+          <div className="rounded-xl border border-rose-100 bg-rose-50/60 px-4 py-4">
+            <p className="text-sm font-semibold text-rose-700">
+              Could not load settlement history.
+            </p>
+            <p className="text-sm text-rose-600/80">
+              {error instanceof Error ? error.message : "Please try again."}
+            </p>
+            <div className="mt-3">
+              <Button size="sm" variant="secondary" onClick={() => refetch()}>
+                Try again
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!isLoading && !error && settlements.length > 0 && (
+          <div className="space-y-3">
+            {settlements.map((settlement) => {
+              const debtor = getDisplayName(
+                membersById,
+                settlement.debtor_id,
+                currentUserId,
+              );
+              const creditor = getDisplayName(
+                membersById,
+                settlement.creditor_id,
+                currentUserId,
+              );
+              const recordedBy = getDisplayName(
+                membersById,
+                settlement.created_by,
+                currentUserId,
+              );
+              return (
+                <SettlementRow
+                  key={settlement.id}
+                  settlement={settlement}
+                  debtor={debtor}
+                  creditor={creditor}
+                  recordedBy={recordedBy}
+                  currentUserId={currentUserId}
+                  onEdit={() => setEditingSettlement(settlement)}
+                  onDelete={() => setDeletingSettlement(settlement)}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {hasNextPage && !error && (
+          <div className="flex items-center justify-center" ref={loadMoreRef}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? "Loading more..." : "Load more"}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -299,11 +312,6 @@ const SettlementRow: React.FC<SettlementRowProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-bold text-slate-900 truncate">
               {debtor.name} paid {creditor.name}
-              {isCurrentUserInvolved && (
-                <Badge size="sm" variant="info" className="ml-2">
-                  You
-                </Badge>
-              )}
             </p>
           </div>
           <p className="text-xs text-slate-400 mt-2">

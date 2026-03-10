@@ -123,6 +123,7 @@ describe("CreateGroupForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
 
@@ -162,6 +163,7 @@ describe("CreateGroupForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
 
@@ -201,6 +203,7 @@ describe("CreateGroupForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
 
@@ -239,6 +242,7 @@ describe("CreateGroupForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
 
@@ -276,6 +280,7 @@ describe("CreateGroupForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
 
@@ -436,6 +441,7 @@ describe("CreateGroupForm", () => {
                   owed_to_user_total: 0,
                   owed_by_user: [],
                   owed_to_user: [],
+                  group_transfers: [],
                   last_activity_at: null,
                 }),
               100,
@@ -479,6 +485,7 @@ describe("CreateGroupForm", () => {
                   owed_to_user_total: 0,
                   owed_by_user: [],
                   owed_to_user: [],
+                  group_transfers: [],
                   last_activity_at: null,
                 }),
               100,

@@ -108,6 +108,16 @@ class ExpenseGroupDebtItem(SQLModel):
         return float(amount)
 
 
+class GroupTransferItem(SQLModel):
+    from_user_id: int
+    to_user_id: int
+    amount: PositiveDecimal
+
+    @field_serializer("amount")
+    def _serialize_amount(self, amount: PositiveDecimal) -> float:
+        return float(amount)
+
+
 class ExpenseGroupListItem(ExpenseGroupPublic):
     is_admin: bool
     created_at: datetime
@@ -134,6 +144,7 @@ class ExpenseGroupDetail(ExpenseGroupPublic):
     owed_to_user_total: PositiveDecimal
     owed_by_user: list[ExpenseGroupDebtItem] = []
     owed_to_user: list[ExpenseGroupDebtItem] = []
+    group_transfers: list[GroupTransferItem] = []
     last_activity_at: datetime | None
 
     @field_serializer("owed_by_user_total")

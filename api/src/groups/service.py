@@ -21,6 +21,7 @@ from .models import (
     ExpenseGroupSettlement,
     ExpenseGroupUpdate,
     GroupSettlementUpdate,
+    GroupTransferItem,
     JoinGroupRequesterPublic,
     JoinGroupRequestPublic,
     JoinRequestStatus,
@@ -318,6 +319,11 @@ def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | No
         (owed_by_user_total, owed_to_user_total, owed_by_user, owed_to_user) = calculate_user_debts(
             session=session, group_id=group.id, user_id=user_id
         )
+    raw_transfers = _calculate_group_settlement_plan(session=session, group_id=group.id)
+    group_transfers = [
+        GroupTransferItem(from_user_id=debtor_id, to_user_id=creditor_id, amount=amount)
+        for debtor_id, creditor_id, amount in raw_transfers
+    ]
     return ExpenseGroupDetail(
         id=group.id,
         name=group.name,
@@ -331,6 +337,7 @@ def get_group_detail(*, session: Session, group: ExpenseGroup, user_id: int | No
         owed_to_user_total=owed_to_user_total,
         owed_by_user=owed_by_user,
         owed_to_user=owed_to_user,
+        group_transfers=group_transfers,
         last_activity_at=last_activity_at,
     )
 

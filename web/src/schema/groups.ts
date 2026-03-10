@@ -27,6 +27,12 @@ export const ExpenseGroupDebtItemSchema = z.object({
   amount: z.number(),
 });
 
+export const GroupTransferItemSchema = z.object({
+  from_user_id: z.number().positive(),
+  to_user_id: z.number().positive(),
+  amount: z.number(),
+});
+
 export const ExpenseGroupListItemSchema = ExpenseGroupSchema.extend({
   is_admin: z.boolean(),
   created_at: z.iso.datetime({ local: true }),
@@ -45,6 +51,7 @@ export const ExpenseGroupDetailSchema = ExpenseGroupSchema.extend({
   owed_to_user_total: z.number(),
   owed_by_user: z.array(ExpenseGroupDebtItemSchema),
   owed_to_user: z.array(ExpenseGroupDebtItemSchema),
+  group_transfers: z.array(GroupTransferItemSchema),
   last_activity_at: z.iso.datetime({ local: true }).nullable(),
 });
 
@@ -80,6 +87,7 @@ export type ExpenseGroupMemberPublic = z.infer<
   typeof ExpenseGroupMemberPublicSchema
 >;
 export type ExpenseGroupDebtItem = z.infer<typeof ExpenseGroupDebtItemSchema>;
+export type GroupTransferItem = z.infer<typeof GroupTransferItemSchema>;
 export type ExpenseGroupListItem = z.infer<typeof ExpenseGroupListItemSchema>;
 export type ExpenseGroupDetail = z.infer<typeof ExpenseGroupDetailSchema>;
 export type PaginatedGroupsResponse = z.infer<

@@ -182,6 +182,7 @@ describe("SettleUpForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
       vi.mocked(
@@ -230,6 +231,7 @@ describe("SettleUpForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
       vi.mocked(
@@ -327,6 +329,7 @@ describe("SettleUpForm", () => {
         owed_to_user_total: 0,
         owed_by_user: [],
         owed_to_user: [],
+        group_transfers: [],
         last_activity_at: null,
       };
       vi.mocked(

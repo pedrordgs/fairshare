@@ -50,17 +50,15 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
       <div className="h-[420px] overflow-y-auto pr-1">
         <div className="space-y-4">
           {expenses.map((expense) => {
-            const creatorName = membersById.get(expense.created_by);
-            const onBehalfOfName =
-              expense.on_behalf_of_user_id !== null &&
-              expense.on_behalf_of_user_id !== undefined
+            const payerName =
+              expense.on_behalf_of_user_id != null
                 ? membersById.get(expense.on_behalf_of_user_id)
-                : undefined;
+                : membersById.get(expense.created_by);
             const isCurrentUserExpense =
               currentUserId !== null && expense.created_by === currentUserId;
             const canEditOrDelete = isCurrentUserExpense || isAdmin;
             const expenseMeta = `${
-              creatorName ? `Created by ${creatorName}` : "Created by member"
+              payerName ? `Paid by ${payerName}` : "Paid by member"
             } · ${formatDate(expense.created_at)}`;
             return (
               <div
@@ -84,12 +82,6 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                       </p>
                     )}
                     <p className="text-xs text-slate-400 mt-2">{expenseMeta}</p>
-                    {onBehalfOfName && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        On behalf of{" "}
-                        <span className="font-medium">{onBehalfOfName}</span>
-                      </p>
-                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="text-lg font-bold text-slate-900">

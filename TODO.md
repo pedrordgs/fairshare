@@ -1,7 +1,7 @@
 # TODO
 
-- Improve select input design
 - Improve design of individual Expenses, Settlements, members and balance
+- Improve select input design
 - Allow edit user information + password
 - Prepare production build and deploy
 - Fix pre-commit to run both (api and web)

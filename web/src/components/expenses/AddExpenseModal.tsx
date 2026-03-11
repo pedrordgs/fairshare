@@ -7,6 +7,7 @@ interface AddExpenseModalProps {
   groupId: number;
   isOpen: boolean;
   onClose: () => void;
+  currentUserId?: number;
   isAdmin?: boolean;
   members?: ExpenseGroupMemberPublic[];
 }
@@ -15,6 +16,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   groupId,
   isOpen,
   onClose,
+  currentUserId,
   isAdmin = false,
   members = [],
 }) => {
@@ -40,6 +42,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
       <ModalContent>
         <AddExpenseForm
           groupId={groupId}
+          currentUserId={currentUserId}
           isAdmin={isAdmin}
           members={members}
           onSuccess={onClose}

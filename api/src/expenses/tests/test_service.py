@@ -30,6 +30,7 @@ class TestCreateExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Dinner", description="Team dinner", value=Decimal("45.50")),
         )
 
@@ -54,6 +55,7 @@ class TestCreateExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Coffee", value=Decimal("10.01")),
         )
 
@@ -76,6 +78,7 @@ class TestCreateExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("10.00")),
         )
 
@@ -96,6 +99,7 @@ class TestGetExpenseById:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
         )
 
@@ -123,12 +127,14 @@ class TestGetExpensesForGroup:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="First", value=Decimal("10.00")),
         )
         create_expense(
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Second", value=Decimal("20.00")),
         )
 
@@ -151,6 +157,7 @@ class TestGetExpensesForGroup:
                 session=session,
                 group_id=group.id,
                 user_id=user.id,
+                creditor_id=user.id,
                 expense_in=ExpenseCreate(name=f"Expense {i}", value=Decimal("10.00")),
             )
 
@@ -180,6 +187,7 @@ class TestCountExpensesForGroup:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
         )
         assert count_expenses_for_group(session=session, group_id=group.id) == 1
@@ -188,6 +196,7 @@ class TestCountExpensesForGroup:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Test 2", value=Decimal("20.00")),
         )
         assert count_expenses_for_group(session=session, group_id=group.id) == 2
@@ -205,6 +214,7 @@ class TestUpdateExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Original", description="Original desc", value=Decimal("10.00")),
         )
         original_updated_at = expense.updated_at
@@ -231,6 +241,7 @@ class TestUpdateExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="Original", description="Original desc", value=Decimal("10.00")),
         )
 
@@ -254,6 +265,7 @@ class TestDeleteExpense:
             session=session,
             group_id=group.id,
             user_id=user.id,
+            creditor_id=user.id,
             expense_in=ExpenseCreate(name="To Delete", value=Decimal("10.00")),
         )
         expense_id = expense.id

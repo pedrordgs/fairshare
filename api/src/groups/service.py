@@ -450,11 +450,11 @@ def calculate_user_debts(
 def _calculate_group_settlement_plan(*, session: Session, group_id: int) -> list[tuple[int, int, Decimal]]:
     """Calculate a minimized settlement plan for a group."""
     statement = (
-        select(col(ExpenseSplit.user_id), col(Expense.created_by), func.coalesce(func.sum(ExpenseSplit.share), 0))
+        select(col(ExpenseSplit.user_id), col(Expense.creditor_id), func.coalesce(func.sum(ExpenseSplit.share), 0))
         .join(Expense, col(ExpenseSplit.expense_id) == col(Expense.id))
         .where(col(Expense.group_id) == group_id)
-        .where(col(ExpenseSplit.user_id) != col(Expense.created_by))
-        .group_by(col(ExpenseSplit.user_id), col(Expense.created_by))
+        .where(col(ExpenseSplit.user_id) != col(Expense.creditor_id))
+        .group_by(col(ExpenseSplit.user_id), col(Expense.creditor_id))
     )
 
     balances: dict[int, Decimal] = defaultdict(lambda: Decimal("0.00"))

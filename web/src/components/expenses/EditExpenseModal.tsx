@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, ModalHeader, ModalContent } from "@components/ui/Modal";
 import { type Expense } from "@schema/expenses";
+import type { ExpenseGroupMemberPublic } from "@schema/groups";
 import { EditExpenseForm } from "./EditExpenseForm";
 
 interface EditExpenseModalProps {
@@ -8,6 +9,9 @@ interface EditExpenseModalProps {
   expense: Expense;
   isOpen: boolean;
   onClose: () => void;
+  currentUserId?: number;
+  isAdmin?: boolean;
+  members?: ExpenseGroupMemberPublic[];
 }
 
 export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
@@ -15,6 +19,9 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   expense,
   isOpen,
   onClose,
+  currentUserId,
+  isAdmin,
+  members,
 }) => {
   if (!isOpen) {
     return null;
@@ -39,6 +46,9 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
         <EditExpenseForm
           groupId={groupId}
           expense={expense}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+          members={members}
           onSuccess={onClose}
         />
       </ModalContent>

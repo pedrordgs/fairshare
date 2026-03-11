@@ -24,6 +24,7 @@ class TestGetExpenseAsMember:
             group_id=group.id,
             user_id=user.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=user.id,
         )
 
         result = await get_expense_as_member(session=session, authenticated_user=user, expense_id=expense.id)
@@ -45,6 +46,7 @@ class TestGetExpenseAsMember:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         # Member can access the expense
@@ -65,6 +67,7 @@ class TestGetExpenseAsMember:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -95,6 +98,7 @@ class TestGetExpenseAsCreator:
             group_id=group.id,
             user_id=user.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=user.id,
         )
 
         result = await get_expense_as_creator(session=session, authenticated_user=user, expense_id=expense.id)
@@ -116,6 +120,7 @@ class TestGetExpenseAsCreator:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         # Member cannot modify the expense
@@ -138,6 +143,7 @@ class TestGetExpenseAsCreator:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         # Non-member sees 404 (not 403) to avoid leaking info
@@ -168,6 +174,7 @@ class TestGetExpenseAsCreatorOrAdmin:
             group_id=group.id,
             user_id=user.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=user.id,
         )
 
         result = await get_expense_as_creator_or_admin(session=session, authenticated_user=user, expense_id=expense.id)
@@ -190,6 +197,7 @@ class TestGetExpenseAsCreatorOrAdmin:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         # Admin (non-creator) can access and modify the expense
@@ -212,6 +220,7 @@ class TestGetExpenseAsCreatorOrAdmin:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         # Regular member (non-creator, non-admin) gets 403
@@ -234,6 +243,7 @@ class TestGetExpenseAsCreatorOrAdmin:
             group_id=group.id,
             user_id=owner.id,
             expense_in=ExpenseCreate(name="Test", value=Decimal("10.00")),
+            creditor_id=owner.id,
         )
 
         # Non-member sees 404 (not 403) to avoid leaking info

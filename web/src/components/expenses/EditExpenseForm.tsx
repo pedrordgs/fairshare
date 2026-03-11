@@ -15,16 +15,23 @@ import { Alert } from "@components/ui/Alert";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import { formatAmountInput } from "@utils/formatUtils";
+import type { ExpenseGroupMemberPublic } from "@schema/groups";
 
 interface EditExpenseFormProps {
   groupId: number;
   expense: Expense;
+  currentUserId?: number;
+  isAdmin?: boolean;
+  members?: ExpenseGroupMemberPublic[];
   onSuccess?: () => void;
 }
 
 export const EditExpenseForm: React.FC<EditExpenseFormProps> = ({
   groupId,
   expense,
+  currentUserId,
+  isAdmin = false,
+  members = [],
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
@@ -41,14 +48,18 @@ export const EditExpenseForm: React.FC<EditExpenseFormProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
+    watch,
   } = useForm<ExpenseUpdate>({
     resolver: zodResolver(ExpenseUpdateSchema),
     defaultValues: {
       name: expense.name,
       description: expense.description ?? "",
       value: String(expense.value),
+      creditor_id: expense.creditor_id,
     },
   });
+
+  const selectedCreditorId = watch("creditor_id");
 
   const updateExpenseMutation = useMutation({
     mutationFn: (data: ExpenseUpdate) =>
@@ -79,6 +90,37 @@ export const EditExpenseForm: React.FC<EditExpenseFormProps> = ({
         >
           {generalError}
         </Alert>
+      )}
+
+      {isAdmin && members.length > 0 && (
+        <div className="space-y-2">
+          <label
+            htmlFor="edit-expense-creditor"
+            className="block text-sm font-medium text-slate-700"
+          >
+            Paid by
+          </label>
+          <select
+            id="edit-expense-creditor"
+            className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
+            value={selectedCreditorId ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setValue(
+                "creditor_id",
+                val === "" ? expense.creditor_id : Number(val),
+                { shouldValidate: true, shouldDirty: true },
+              );
+            }}
+          >
+            {members.map((member) => (
+              <option key={member.user_id} value={member.user_id}>
+                {member.name}
+                {member.user_id === currentUserId ? " (you)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       <Input

@@ -216,6 +216,7 @@ class TestGetExpense:
             group_id=other_group.id,
             user_id=other_user.id,
             expense_in=ExpenseCreate(name="Other Expense", value=Decimal("10.00")),
+            creditor_id=other_user.id,
         )
 
         response = client.get(f"/expenses/{expense.id}/")
@@ -283,6 +284,7 @@ class TestUpdateExpense:
             group_id=other_group.id,
             user_id=other_user.id,
             expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+            creditor_id=other_user.id,
         )
 
         # Current user tries to update it
@@ -334,6 +336,7 @@ class TestDeleteExpense:
             group_id=other_group.id,
             user_id=other_user.id,
             expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+            creditor_id=other_user.id,
         )
 
         # Current user tries to delete it
@@ -427,6 +430,7 @@ def test_expense_update_forbidden(authenticated_client: AuthenticatedClient, ses
         group_id=other_group.id,
         user_id=other_user.id,
         expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+        creditor_id=other_user.id,
     )
 
     response = client.patch(f"/expenses/{expense.id}/", json={"name": "Hijacked"})
@@ -449,6 +453,7 @@ def test_expense_delete_forbidden(authenticated_client: AuthenticatedClient, ses
         group_id=other_group.id,
         user_id=other_user.id,
         expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+        creditor_id=other_user.id,
     )
 
     response = client.delete(f"/expenses/{expense.id}/")
@@ -472,6 +477,7 @@ def test_admin_can_update_any_expense(authenticated_client: AuthenticatedClient,
         group_id=other_group.id,
         user_id=other_user.id,
         expense_in=ExpenseCreate(name="Original", value=Decimal("10.00")),
+        creditor_id=other_user.id,
     )
 
     response = client.patch(f"/expenses/{expense.id}/", json={"name": "Admin Updated"})
@@ -496,6 +502,7 @@ def test_admin_can_delete_any_expense(authenticated_client: AuthenticatedClient,
         group_id=other_group.id,
         user_id=other_user.id,
         expense_in=ExpenseCreate(name="To Delete", value=Decimal("10.00")),
+        creditor_id=other_user.id,
     )
 
     response = client.delete(f"/expenses/{expense.id}/")
@@ -523,6 +530,7 @@ def test_non_admin_non_creator_update_forbidden(authenticated_client: Authentica
         group_id=other_group.id,
         user_id=other_user.id,
         expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+        creditor_id=other_user.id,
     )
 
     response = client.patch(f"/expenses/{expense.id}/", json={"name": "Hijacked"})
@@ -546,14 +554,15 @@ def test_non_admin_non_creator_delete_forbidden(authenticated_client: Authentica
         group_id=other_group.id,
         user_id=other_user.id,
         expense_in=ExpenseCreate(name="Other's Expense", value=Decimal("10.00")),
+        creditor_id=other_user.id,
     )
 
     response = client.delete(f"/expenses/{expense.id}/")
     assert response.status_code == 403
 
 
-def test_admin_creates_expense_on_behalf_of_member(authenticated_client: AuthenticatedClient, session: Session) -> None:
-    """Admin supplies created_for_user_id; asserts 201 and correct on_behalf_of_user_id / created_by values."""
+def test_admin_creates_expense_with_creditor(authenticated_client: AuthenticatedClient, session: Session) -> None:
+    """Admin supplies creditor_id; asserts 201 and correct creditor_id / created_by values."""
     client, admin_user = authenticated_client
     other_user, _ = create_test_user(session, "member@example.com")
     other_group = create_test_group(session, other_user, "Other Group")
@@ -565,19 +574,17 @@ def test_admin_creates_expense_on_behalf_of_member(authenticated_client: Authent
 
     response = client.post(
         f"/groups/{other_group.id}/expenses/",
-        json={"name": "On Behalf Expense", "value": "30.00", "created_for_user_id": other_user.id},
+        json={"name": "On Behalf Expense", "value": "30.00", "creditor_id": other_user.id},
     )
     assert response.status_code == 201
     data = response.json()
     assert data["created_by"] == admin_user.id
-    assert data["on_behalf_of_user_id"] == other_user.id
+    assert data["creditor_id"] == other_user.id
     assert data["name"] == "On Behalf Expense"
 
 
-def test_non_admin_cannot_create_expense_on_behalf_of_member(
-    authenticated_client: AuthenticatedClient, session: Session
-) -> None:
-    """Non-admin supplies created_for_user_id; asserts 403."""
+def test_non_admin_cannot_set_creditor(authenticated_client: AuthenticatedClient, session: Session) -> None:
+    """Non-admin supplies creditor_id; asserts 403."""
     client, regular_user = authenticated_client
     other_user, _ = create_test_user(session, "owner@example.com")
     other_group = create_test_group(session, other_user, "Other Group")
@@ -589,16 +596,16 @@ def test_non_admin_cannot_create_expense_on_behalf_of_member(
 
     response = client.post(
         f"/groups/{other_group.id}/expenses/",
-        json={"name": "Sneaky Expense", "value": "10.00", "created_for_user_id": other_user.id},
+        json={"name": "Sneaky Expense", "value": "10.00", "creditor_id": other_user.id},
     )
     assert response.status_code == 403
     assert response.json()["detail"] == "Not authorized to create expenses on behalf of others"
 
 
-def test_admin_creates_expense_with_invalid_created_for_user_id(
+def test_admin_creates_expense_with_invalid_creditor_id(
     authenticated_client: AuthenticatedClient, session: Session
 ) -> None:
-    """Admin supplies created_for_user_id that is not a group member; asserts 400."""
+    """Admin supplies creditor_id that is not a group member; asserts 400."""
     client, admin_user = authenticated_client
     group_owner, _ = create_test_user(session, "owner@example.com")
     other_group = create_test_group(session, group_owner, "Other Group")
@@ -611,14 +618,14 @@ def test_admin_creates_expense_with_invalid_created_for_user_id(
 
     response = client.post(
         f"/groups/{other_group.id}/expenses/",
-        json={"name": "Bad Expense", "value": "20.00", "created_for_user_id": non_member.id},
+        json={"name": "Bad Expense", "value": "20.00", "creditor_id": non_member.id},
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "created_for_user_id does not belong to a group member"
+    assert response.json()["detail"] == "creditor_id does not belong to a group member"
 
 
-def test_normal_expense_creation_without_created_for_user_id(authenticated_client: AuthenticatedClient) -> None:
-    """Normal expense creation without created_for_user_id; asserts 201 and on_behalf_of_user_id is None."""
+def test_normal_expense_creation_defaults_creditor_to_creator(authenticated_client: AuthenticatedClient) -> None:
+    """Normal expense creation without creditor_id; asserts 201 and creditor_id defaults to created_by."""
     client, user = authenticated_client
     group_response = client.post("/groups/", json={"name": "Test Group"})
     group_id = group_response.json()["id"]
@@ -626,5 +633,5 @@ def test_normal_expense_creation_without_created_for_user_id(authenticated_clien
     response = client.post(f"/groups/{group_id}/expenses/", json={"name": "Regular Expense", "value": "15.00"})
     assert response.status_code == 201
     data = response.json()
-    assert data["on_behalf_of_user_id"] is None
+    assert data["creditor_id"] == user.id
     assert data["created_by"] == user.id

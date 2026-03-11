@@ -218,7 +218,7 @@ describe("GroupDetailPage", () => {
             value: 45.5,
             group_id: 1,
             created_by: 1,
-            on_behalf_of_user_id: null,
+            creditor_id: 1,
             created_at: "2026-01-05T12:00:00Z",
             updated_at: "2026-01-05T12:00:00Z",
           },
@@ -1127,7 +1127,7 @@ describe("GroupDetailPage", () => {
       value: 30,
       group_id: 1,
       created_by: 2,
-      on_behalf_of_user_id: null,
+      creditor_id: 2,
       created_at: "2026-02-01T12:00:00Z",
       updated_at: "2026-02-01T12:00:00Z",
       ...overrides,
@@ -1247,49 +1247,7 @@ describe("GroupDetailPage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("shows 'On behalf of' label when on_behalf_of_user_id is set", async () => {
-      const mockGroup = {
-        ...baseGroup,
-        is_admin: true,
-        members: [
-          {
-            user_id: 1,
-            name: "Admin User",
-            email: "admin@example.com",
-            is_admin: true,
-          },
-          {
-            user_id: 2,
-            name: "Jane Smith",
-            email: "jane@example.com",
-            is_admin: false,
-          },
-        ],
-      };
-
-      vi.mocked(GroupsService.groupsApi.getGroup).mockResolvedValue(mockGroup);
-      vi.mocked(GroupsService.groupsApi.listJoinRequests).mockResolvedValue([]);
-      vi.mocked(
-        ExpensesService.expensesApi.listAllGroupExpenses,
-      ).mockResolvedValue({
-        items: [makeExpense({ created_by: 1, on_behalf_of_user_id: 2 })],
-        total: 1,
-        offset: 0,
-        limit: 20,
-      });
-      mockSettlements();
-
-      renderWithProviders(<GroupDetailPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/On behalf of/i)).toBeInTheDocument();
-        expect(screen.getAllByText("Jane Smith").length).toBeGreaterThanOrEqual(
-          1,
-        );
-      });
-    });
-
-    it("shows 'Record on behalf of' selector in Add Expense modal for admins", async () => {
+    it("shows 'Paid by' selector in Add Expense modal for admins", async () => {
       const mockGroup = {
         ...baseGroup,
         is_admin: true,
@@ -1328,13 +1286,11 @@ describe("GroupDetailPage", () => {
       await user.click(screen.getByRole("button", { name: /\+ Add Expense/i }));
 
       await waitFor(() => {
-        expect(
-          screen.getByLabelText(/Record on behalf of/i),
-        ).toBeInTheDocument();
+        expect(screen.getByLabelText(/Paid by/i)).toBeInTheDocument();
       });
     });
 
-    it("does not show 'Record on behalf of' selector for non-admins", async () => {
+    it("does not show 'Paid by' selector for non-admins", async () => {
       vi.mocked(AuthContext.useAuth).mockReturnValue({
         user: { id: 1, email: "test@example.com", name: "Regular User" },
         isLoading: false,
@@ -1387,7 +1343,7 @@ describe("GroupDetailPage", () => {
 
       const dialog = screen.getByRole("dialog");
       expect(
-        within(dialog).queryByLabelText(/Record on behalf of/i),
+        within(dialog).queryByLabelText(/Paid by/i),
       ).not.toBeInTheDocument();
     });
   });

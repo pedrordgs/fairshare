@@ -50,10 +50,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
       <div className="h-[420px] overflow-y-auto pr-1">
         <div className="space-y-4">
           {expenses.map((expense) => {
-            const payerName =
-              expense.on_behalf_of_user_id != null
-                ? membersById.get(expense.on_behalf_of_user_id)
-                : membersById.get(expense.created_by);
+            const payerName = membersById.get(expense.creditor_id);
             const isCurrentUserExpense =
               currentUserId !== null && expense.created_by === currentUserId;
             const canEditOrDelete = isCurrentUserExpense || isAdmin;

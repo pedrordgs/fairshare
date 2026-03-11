@@ -123,6 +123,7 @@ class TestGetGroup:
             session=session,
             group_id=group.id,
             user_id=other_user.id,
+            creditor_id=other_user.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("10.00")),
         )
 
@@ -155,12 +156,14 @@ class TestGetGroup:
             session=session,
             group_id=group.id,
             user_id=john.id,
+            creditor_id=john.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
         )
         create_expense(
             session=session,
             group_id=group.id,
             user_id=jane.id,
+            creditor_id=jane.id,
             expense_in=ExpenseCreate(name="Taxi", value=Decimal("6.00")),
         )
 
@@ -215,12 +218,14 @@ class TestGroupSettlementPlan:
             session=session,
             group_id=group.id,
             user_id=john.id,
+            creditor_id=john.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
         )
         create_expense(
             session=session,
             group_id=group.id,
             user_id=jane.id,
+            creditor_id=jane.id,
             expense_in=ExpenseCreate(name="Taxi", value=Decimal("6.00")),
         )
 
@@ -256,6 +261,7 @@ class TestGroupSettlementPayment:
             session=session,
             group_id=group.id,
             user_id=john.id,
+            creditor_id=john.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
         )
 
@@ -287,6 +293,7 @@ class TestGroupSettlementPayment:
             session=session,
             group_id=group.id,
             user_id=john.id,
+            creditor_id=john.id,
             expense_in=ExpenseCreate(name="Groceries", value=Decimal("10.00")),
         )
 
@@ -342,6 +349,7 @@ class TestListGroupSettlements:
             session=session,
             group_id=group.id,
             user_id=owner.id,
+            creditor_id=owner.id,
             expense_in=ExpenseCreate(name="Lunch", value=Decimal("12.00")),
         )
 
@@ -384,6 +392,7 @@ class TestListGroupSettlements:
             session=session,
             group_id=group.id,
             user_id=owner.id,
+            creditor_id=owner.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
         )
 
@@ -520,6 +529,7 @@ class TestUpdateSettlement:
             session=session,
             group_id=group.id,
             user_id=creditor.id,
+            creditor_id=creditor.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("20.00")),
         )
 
@@ -1005,6 +1015,7 @@ class TestGroupSettlementOnBehalfOf:
             session=session,
             group_id=group.id,
             user_id=owner.id,
+            creditor_id=owner.id,
             expense_in=ExpenseCreate(name="Dinner", value=Decimal("12.00")),
         )
 

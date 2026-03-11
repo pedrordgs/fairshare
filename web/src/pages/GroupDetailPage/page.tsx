@@ -562,6 +562,7 @@ export const GroupDetailPage: React.FC = () => {
           groupId={groupId}
           isOpen={isAddExpenseOpen}
           onClose={() => setIsAddExpenseOpen(false)}
+          currentUserId={currentUserId ?? undefined}
           isAdmin={isAdmin}
           members={group?.members ?? []}
         />
@@ -572,6 +573,9 @@ export const GroupDetailPage: React.FC = () => {
           expense={editingExpense}
           isOpen={!!editingExpense}
           onClose={() => setEditingExpense(null)}
+          currentUserId={currentUserId ?? undefined}
+          isAdmin={isAdmin}
+          members={group?.members ?? []}
         />
       )}
       {deletingExpense && (

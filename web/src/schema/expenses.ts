@@ -20,7 +20,7 @@ export const ExpenseSchema = z.object({
   value: ExpenseValueSchema,
   group_id: z.number(),
   created_by: z.number(),
-  on_behalf_of_user_id: z.number().nullable(),
+  creditor_id: z.number(),
   created_at: z.iso.datetime({ local: true }),
   updated_at: z.iso.datetime({ local: true }),
 });
@@ -29,13 +29,14 @@ export const ExpenseCreateSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   value: ExpenseValueInputSchema,
-  created_for_user_id: z.number().optional(),
+  creditor_id: z.number().optional(),
 });
 
 export const ExpenseUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().optional(),
   value: ExpenseValueInputSchema.optional(),
+  creditor_id: z.number().optional(),
 });
 
 export const ExpenseListSchema = z.object({

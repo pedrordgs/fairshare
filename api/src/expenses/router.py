@@ -17,29 +17,29 @@ async def create_group_expense(
     *, session: DbSession, authenticated_user: AuthenticatedUser, group: GroupAsMember, expense_in: ExpenseCreate
 ) -> ExpensePublic:
     """Create a new expense in a group. User must be a group member."""
-    on_behalf_of_user_id: int | None = None
+    creditor_id = authenticated_user.id
 
-    if expense_in.created_for_user_id is not None:
-        # Only admins can create expenses on behalf of others
+    if expense_in.creditor_id is not None and expense_in.creditor_id != authenticated_user.id:
+        # Only admins can set a creditor other than themselves
         member = get_member(session=session, group_id=group.id, user_id=authenticated_user.id)
         if member is None or not member.is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create expenses on behalf of others"
             )
-        # The target user must be an existing group member
-        target_member = get_member(session=session, group_id=group.id, user_id=expense_in.created_for_user_id)
+        # The target creditor must be an existing group member
+        target_member = get_member(session=session, group_id=group.id, user_id=expense_in.creditor_id)
         if target_member is None:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="created_for_user_id does not belong to a group member"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="creditor_id does not belong to a group member"
             )
-        on_behalf_of_user_id = expense_in.created_for_user_id
+        creditor_id = expense_in.creditor_id
 
     expense = create_expense(
         session=session,
         group_id=group.id,
         user_id=authenticated_user.id,
         expense_in=expense_in,
-        on_behalf_of_user_id=on_behalf_of_user_id,
+        creditor_id=creditor_id,
     )
     return ExpensePublic.model_validate(expense)
 
@@ -68,9 +68,24 @@ async def get_expense(*, expense: ExpenseAsMember) -> ExpensePublic:
 
 @router.patch("/expenses/{expense_id}/", response_model=ExpensePublic)
 async def update_group_expense(
-    *, session: DbSession, expense: ExpenseAsCreatorOrAdmin, expense_in: ExpenseUpdate
+    *,
+    session: DbSession,
+    authenticated_user: AuthenticatedUser,
+    expense: ExpenseAsCreatorOrAdmin,
+    expense_in: ExpenseUpdate,
 ) -> ExpensePublic:
     """Update an expense. The creator or a group admin can update."""
+    if expense_in.creditor_id is not None and expense_in.creditor_id != expense.creditor_id:
+        # Only admins can change the creditor
+        member = get_member(session=session, group_id=expense.group_id, user_id=authenticated_user.id)
+        if member is None or not member.is_admin:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to change the creditor")
+        # The new creditor must be a group member
+        target_member = get_member(session=session, group_id=expense.group_id, user_id=expense_in.creditor_id)
+        if target_member is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="creditor_id does not belong to a group member"
+            )
     updated = update_expense(session=session, expense=expense, expense_in=expense_in)
     return ExpensePublic.model_validate(updated)
 

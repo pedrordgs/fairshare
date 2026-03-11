@@ -33,11 +33,11 @@ def count_expenses_for_group(*, session: Session, group_id: int) -> int:
 
 
 def create_expense(
-    *, session: Session, group_id: int, user_id: int, expense_in: ExpenseCreate, on_behalf_of_user_id: int | None = None
+    *, session: Session, group_id: int, user_id: int, expense_in: ExpenseCreate, creditor_id: int
 ) -> Expense:
     """Create a new expense in a group."""
     db_expense = Expense.model_validate(
-        expense_in, update={"group_id": group_id, "created_by": user_id, "on_behalf_of_user_id": on_behalf_of_user_id}
+        expense_in, update={"group_id": group_id, "created_by": user_id, "creditor_id": creditor_id}
     )
     session.add(db_expense)
     session.flush()

@@ -6,7 +6,6 @@ import type { GroupSettlementListItem } from "@schema/settlements";
 interface EditSettlementModalProps {
   groupId: number;
   settlement: GroupSettlementListItem;
-  membersById: Map<number, string>;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -14,7 +13,6 @@ interface EditSettlementModalProps {
 export const EditSettlementModal: React.FC<EditSettlementModalProps> = ({
   groupId,
   settlement,
-  membersById,
   isOpen,
   onClose,
 }) => {
@@ -32,7 +30,7 @@ export const EditSettlementModal: React.FC<EditSettlementModalProps> = ({
     >
       <ModalHeader
         title="Edit Settlement"
-        description="Update the payment amount or payee."
+        description="Update the payment amount."
         onClose={onClose}
         titleId="edit-settlement-modal-title"
         descriptionId="edit-settlement-modal-description"
@@ -41,7 +39,6 @@ export const EditSettlementModal: React.FC<EditSettlementModalProps> = ({
         <EditSettlementForm
           groupId={groupId}
           settlement={settlement}
-          membersById={membersById}
           onSuccess={onClose}
         />
       </ModalContent>

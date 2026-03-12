@@ -15,6 +15,7 @@ import { AddExpenseModal } from "@components/expenses/AddExpenseModal";
 import { EditExpenseModal } from "@components/expenses/EditExpenseModal";
 import { ConfirmationModal } from "@components/ui/ConfirmationModal";
 import { SettleUpModal } from "@components/settlements/SettleUpModal";
+import { AddSettlementModal } from "@components/settlements/AddSettlementModal";
 import { JoinRequestsModal } from "@components/groups/JoinRequestsModal";
 import { EditGroupModal } from "@components/groups/EditGroupModal";
 import { toast } from "sonner";
@@ -98,6 +99,7 @@ export const GroupDetailPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
   const [isSettleUpOpen, setIsSettleUpOpen] = React.useState(false);
+  const [isAddSettlementOpen, setIsAddSettlementOpen] = React.useState(false);
   const [isJoinRequestsOpen, setIsJoinRequestsOpen] = React.useState(false);
   const [isEditGroupOpen, setIsEditGroupOpen] = React.useState(false);
   const [isDeleteGroupOpen, setIsDeleteGroupOpen] = React.useState(false);
@@ -489,6 +491,16 @@ export const GroupDetailPage: React.FC = () => {
                       + Add Expense
                     </Button>
                   )}
+                  {activeCenterTab === "settlements" &&
+                    isAdmin &&
+                    (group?.group_transfers?.length ?? 0) > 0 && (
+                      <Button
+                        size="sm"
+                        onClick={() => setIsAddSettlementOpen(true)}
+                      >
+                        + Add Settlement
+                      </Button>
+                    )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -595,9 +607,16 @@ export const GroupDetailPage: React.FC = () => {
           onClose={() => setIsSettleUpOpen(false)}
           owedByUser={group.owed_by_user}
           membersById={membersById}
-          isAdmin={isAdmin}
+        />
+      )}
+      {isAdmin && groupId && group && (
+        <AddSettlementModal
+          groupId={groupId}
+          isOpen={isAddSettlementOpen}
+          onClose={() => setIsAddSettlementOpen(false)}
           members={group.members}
-          currentUserId={currentUserId}
+          groupTransfers={group.group_transfers}
+          membersById={membersById}
         />
       )}
       {isAdmin && (

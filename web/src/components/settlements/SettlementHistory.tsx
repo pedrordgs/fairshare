@@ -217,7 +217,6 @@ export const SettlementHistory: React.FC<SettlementHistoryProps> = ({
         <EditSettlementModal
           groupId={groupId}
           settlement={editingSettlement}
-          membersById={membersById}
           isOpen={!!editingSettlement}
           onClose={() => setEditingSettlement(null)}
         />

@@ -8,10 +8,7 @@ import { Button } from "@components/ui/Button";
 import { Alert } from "@components/ui/Alert";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
-import type {
-  ExpenseGroupDebtItem,
-  ExpenseGroupMemberPublic,
-} from "@schema/groups";
+import type { ExpenseGroupDebtItem } from "@schema/groups";
 import {
   GroupSettlementCreateInputSchema,
   type GroupSettlementCreateInput,
@@ -24,9 +21,6 @@ interface SettleUpFormProps {
   groupId: number;
   owedByUser: ExpenseGroupDebtItem[];
   membersById: Map<number, string>;
-  isAdmin?: boolean;
-  members?: ExpenseGroupMemberPublic[];
-  currentUserId?: number | null;
   onSuccess?: () => void;
 }
 
@@ -34,9 +28,6 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
   groupId,
   owedByUser,
   membersById,
-  isAdmin = false,
-  members = [],
-  currentUserId,
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
@@ -73,21 +64,14 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
     defaultValues: {
       creditor_id: defaultCreditor,
       amount: "",
-      debtor_id: undefined,
     },
   });
 
   const selectedCreditorId = watch("creditor_id");
-  const selectedDebtorId = watch("debtor_id");
   const selectedEntry = options.find(
     (entry) => entry.userId === Number(selectedCreditorId),
   );
   const maxAmount = selectedEntry?.amount ?? 0;
-
-  // Debtor options: all members except the currently selected creditor
-  const debtorOptions = React.useMemo(() => {
-    return members.filter((m) => m.user_id !== Number(selectedCreditorId));
-  }, [members, selectedCreditorId]);
 
   const settleUpMutation = useMutation({
     mutationFn: (data: GroupSettlementCreate) =>
@@ -115,19 +99,9 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
     clearApiErrors();
     clearErrors("amount");
 
-    // Client-side check: debtor must not equal creditor
-    if (data.debtor_id !== undefined && data.debtor_id === data.creditor_id) {
-      setError("debtor_id", {
-        type: "manual",
-        message: "Debtor cannot be the same as creditor",
-      });
-      return;
-    }
-
     const payload: GroupSettlementCreate = {
       creditor_id: data.creditor_id,
       amount: Number(data.amount),
-      ...(data.debtor_id !== undefined && { debtor_id: data.debtor_id }),
     };
     if (payload.amount > maxAmount) {
       setError("amount", {
@@ -169,48 +143,6 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
           ))}
         </select>
       </div>
-
-      {isAdmin && members.length > 0 && (
-        <div className="space-y-2">
-          <label
-            htmlFor="settle-debtor"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Record on behalf of
-            <span className="ml-1 text-slate-400 font-normal">(optional)</span>
-          </label>
-          <select
-            id="settle-debtor"
-            className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
-            {...register("debtor_id", {
-              setValueAs: (v) =>
-                v === "" || v === undefined ? undefined : Number(v),
-            })}
-            value={selectedDebtorId ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              setValue("debtor_id", val === "" ? undefined : Number(val), {
-                shouldValidate: true,
-                shouldDirty: true,
-              });
-            }}
-          >
-            <option value="">
-              {currentUserId
-                ? (membersById.get(currentUserId) ?? "Yourself")
-                : "Yourself"}
-            </option>
-            {debtorOptions.map((member) => (
-              <option key={member.user_id} value={member.user_id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-          {errors.debtor_id && (
-            <p className="text-sm text-red-600">{errors.debtor_id.message}</p>
-          )}
-        </div>
-      )}
 
       <Input
         {...register("amount", {

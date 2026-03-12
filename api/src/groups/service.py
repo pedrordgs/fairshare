@@ -576,13 +576,13 @@ def _get_user_expense_balance_by_group(*, session: Session, group_ids: list[int]
     expense_statement = (
         select(
             col(Expense.group_id),
-            func.coalesce(func.sum(case((col(Expense.created_by) == user_id, col(ExpenseSplit.share)), else_=0)), 0),
+            func.coalesce(func.sum(case((col(Expense.creditor_id) == user_id, col(ExpenseSplit.share)), else_=0)), 0),
             func.coalesce(func.sum(case((col(ExpenseSplit.user_id) == user_id, col(ExpenseSplit.share)), else_=0)), 0),
         )
         .join(Expense, col(ExpenseSplit.expense_id) == col(Expense.id))
         .where(col(Expense.group_id).in_(group_ids))
-        .where(col(ExpenseSplit.user_id) != col(Expense.created_by))
-        .where(or_(col(ExpenseSplit.user_id) == user_id, col(Expense.created_by) == user_id))
+        .where(col(ExpenseSplit.user_id) != col(Expense.creditor_id))
+        .where(or_(col(ExpenseSplit.user_id) == user_id, col(Expense.creditor_id) == user_id))
         .group_by(col(Expense.group_id))
     )
 

@@ -267,16 +267,15 @@ async def create_group_settlement_payment(
 async def update_group_settlement(
     *, session: DbSession, settlement: SettlementAsCreator, update_in: GroupSettlementUpdate
 ) -> ExpenseGroupSettlementPublic:
-    """Update a settlement's amount and/or payee. Only the creator can update."""
-    target_creditor_id = update_in.creditor_id if update_in.creditor_id is not None else settlement.creditor_id
+    """Update a settlement's amount. Only the creator can update."""
     target_amount = update_in.amount if update_in.amount is not None else settlement.amount
     validate_settlement_creditor_and_amount(
         session=session,
         group_id=settlement.group_id,
         debtor_id=settlement.debtor_id,
-        creditor_id=target_creditor_id,
+        creditor_id=settlement.creditor_id,
         amount=target_amount,
-        existing_amount=settlement.amount if target_creditor_id == settlement.creditor_id else None,
+        existing_amount=settlement.amount,
     )
     updated = update_settlement(session=session, settlement=settlement, update_data=update_in)
     return ExpenseGroupSettlementPublic.model_validate(updated)

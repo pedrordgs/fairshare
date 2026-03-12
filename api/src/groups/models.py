@@ -190,4 +190,3 @@ class GroupSettlementCreate(SQLModel):
 
 class GroupSettlementUpdate(SQLModel):
     amount: PositiveDecimal | None = Field(default=None, decimal_places=PRICING_DECIMAL_PLACES)
-    creditor_id: int | None = None

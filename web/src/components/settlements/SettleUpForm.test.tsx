@@ -97,9 +97,10 @@ describe("SettleUpForm", () => {
       const creditorSelect = screen.getByLabelText(/settle with/i);
       await user.click(creditorSelect);
 
-      expect(
-        screen.getByRole("option", { name: /Bob · Owe/i }),
-      ).toBeInTheDocument();
+      const option = await screen.findByRole("option", {
+        name: /Bob · Owe/i,
+      });
+      expect(option).toBeInTheDocument();
     });
   });
 

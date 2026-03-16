@@ -1,11 +1,12 @@
 import React from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Input } from "@components/ui/Input";
 import { Button } from "@components/ui/Button";
 import { Alert } from "@components/ui/Alert";
+import { Select } from "@components/ui/Select";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import type { ExpenseGroupDebtItem } from "@schema/groups";
@@ -58,6 +59,7 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
     setError,
     clearErrors,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<GroupSettlementCreateInput>({
     resolver: zodResolver(GroupSettlementCreateInputSchema),
@@ -125,23 +127,22 @@ export const SettleUpForm: React.FC<SettleUpFormProps> = ({
       )}
 
       <div className="space-y-2">
-        <label
-          htmlFor="settle-creditor"
-          className="block text-sm font-medium text-slate-700"
-        >
-          Settle with
-        </label>
-        <select
-          id="settle-creditor"
-          className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
-          {...register("creditor_id", { valueAsNumber: true })}
-        >
-          {options.map((option) => (
-            <option key={option.userId} value={option.userId}>
-              {option.label} · Owe {formatCurrency(option.amount)}
-            </option>
-          ))}
-        </select>
+        <Controller
+          control={control}
+          name="creditor_id"
+          render={({ field }) => (
+            <Select
+              label="Settle with"
+              value={field.value ? String(field.value) : ""}
+              onValueChange={(val) => field.onChange(Number(val))}
+              options={options.map((option) => ({
+                value: String(option.userId),
+                label: `${option.label} · Owe ${formatCurrency(option.amount)}`,
+              }))}
+              error={errors.creditor_id?.message}
+            />
+          )}
+        />
       </div>
 
       <Input

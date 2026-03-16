@@ -1,5 +1,5 @@
 import React from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Input } from "@components/ui/Input";
 import { Button } from "@components/ui/Button";
 import { Alert } from "@components/ui/Alert";
+import { Select } from "@components/ui/Select";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import type {
@@ -68,6 +69,7 @@ export const AddSettlementForm: React.FC<AddSettlementFormProps> = ({
     setError,
     clearErrors,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<AddSettlementInput>({
     resolver: zodResolver(AddSettlementInputSchema),
@@ -182,56 +184,56 @@ export const AddSettlementForm: React.FC<AddSettlementFormProps> = ({
 
       {/* Debtor — only members with outstanding debts */}
       <div className="space-y-2">
-        <label
-          htmlFor="add-settlement-debtor"
-          className="block text-sm font-medium text-slate-700"
-        >
-          Debtor
-          <span className="ml-1 text-slate-400 font-normal">
-            (who is paying)
-          </span>
-        </label>
-        <select
-          id="add-settlement-debtor"
-          className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
-          {...register("debtor_id", { valueAsNumber: true })}
-        >
-          {debtorOptions.map((member) => (
-            <option key={member.user_id} value={member.user_id}>
-              {member.name}
-            </option>
-          ))}
-        </select>
-        {errors.debtor_id && (
-          <p className="text-sm text-red-600">{errors.debtor_id.message}</p>
-        )}
+        <Controller
+          control={control}
+          name="debtor_id"
+          render={({ field }) => (
+            <Select
+              label={
+                <>
+                  Debtor
+                  <span className="ml-1 text-slate-400 font-normal">
+                    (who is paying)
+                  </span>
+                </>
+              }
+              value={field.value ? String(field.value) : ""}
+              onValueChange={(val) => field.onChange(Number(val))}
+              options={debtorOptions.map((member) => ({
+                value: String(member.user_id),
+                label: member.name,
+              }))}
+              error={errors.debtor_id?.message}
+            />
+          )}
+        />
       </div>
 
       {/* Creditor */}
       <div className="space-y-2">
-        <label
-          htmlFor="add-settlement-creditor"
-          className="block text-sm font-medium text-slate-700"
-        >
-          Creditor
-          <span className="ml-1 text-slate-400 font-normal">
-            (who receives the payment)
-          </span>
-        </label>
-        <select
-          id="add-settlement-creditor"
-          className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
-          {...register("creditor_id", { valueAsNumber: true })}
-        >
-          {creditorOptions.map((option) => (
-            <option key={option.userId} value={option.userId}>
-              {option.label} · Owed {formatCurrency(option.amount)}
-            </option>
-          ))}
-        </select>
-        {errors.creditor_id && (
-          <p className="text-sm text-red-600">{errors.creditor_id.message}</p>
-        )}
+        <Controller
+          control={control}
+          name="creditor_id"
+          render={({ field }) => (
+            <Select
+              label={
+                <>
+                  Creditor
+                  <span className="ml-1 text-slate-400 font-normal">
+                    (who receives the payment)
+                  </span>
+                </>
+              }
+              value={field.value ? String(field.value) : ""}
+              onValueChange={(val) => field.onChange(Number(val))}
+              options={creditorOptions.map((option) => ({
+                value: String(option.userId),
+                label: `${option.label} · Owed ${formatCurrency(option.amount)}`,
+              }))}
+              error={errors.creditor_id?.message}
+            />
+          )}
+        />
       </div>
 
       {/* Amount */}

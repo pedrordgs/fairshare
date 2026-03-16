@@ -1,5 +1,5 @@
 import React from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { expensesApi } from "@services/expenses";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
 import { Alert } from "@components/ui/Alert";
+import { Select } from "@components/ui/Select";
 import { LoadingSpinnerIcon } from "@assets/icons/loading-icons";
 import { useApiFormErrors } from "@hooks/useApiFormErrors";
 import { formatAmountInput } from "@utils/formatUtils";
@@ -42,8 +43,8 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
-    watch,
     reset,
+    control,
   } = useForm<ExpenseCreate>({
     resolver: zodResolver(ExpenseCreateSchema),
     defaultValues: {
@@ -53,8 +54,6 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
       creditor_id: currentUserId,
     },
   });
-
-  const selectedCreditorId = watch("creditor_id");
 
   const createExpenseMutation = useMutation({
     mutationFn: (data: ExpenseCreate) =>
@@ -95,32 +94,28 @@ export const AddExpenseForm: React.FC<AddExpenseFormProps> = ({
 
       {isAdmin && members.length > 0 && (
         <div className="space-y-2">
-          <label
-            htmlFor="expense-creditor"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Paid by
-          </label>
-          <select
-            id="expense-creditor"
-            className="w-full px-4 py-3 text-slate-900 border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500 transition-all duration-200"
-            value={selectedCreditorId ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              setValue(
-                "creditor_id",
-                val === "" ? currentUserId : Number(val),
-                { shouldValidate: true, shouldDirty: true },
-              );
-            }}
-          >
-            {members.map((member) => (
-              <option key={member.user_id} value={member.user_id}>
-                {member.name}
-                {member.user_id === currentUserId ? " (you)" : ""}
-              </option>
-            ))}
-          </select>
+          <Controller
+            control={control}
+            name="creditor_id"
+            render={({ field }) => (
+              <Select
+                label="Paid by"
+                value={
+                  field.value === undefined || field.value === null
+                    ? ""
+                    : String(field.value)
+                }
+                onValueChange={(val) => field.onChange(Number(val))}
+                options={members.map((member) => ({
+                  value: String(member.user_id),
+                  label: `${member.name}${
+                    member.user_id === currentUserId ? " (you)" : ""
+                  }`,
+                }))}
+                error={fieldErrors.creditor_id}
+              />
+            )}
+          />
         </div>
       )}
 

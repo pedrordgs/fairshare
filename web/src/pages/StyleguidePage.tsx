@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@components/ui/Card";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
+import { Select } from "@components/ui/Select";
 import { Badge } from "@components/ui/Badge";
 import { Alert } from "@components/ui/Alert";
 import { Tabs, TabItem } from "@components/ui/Tabs";
@@ -13,6 +14,15 @@ import { useState } from "react";
 
 export const StyleguidePage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectValue, setSelectValue] = useState("alice");
+  const [selectErrorValue, setSelectErrorValue] = useState("bob");
+  const [selectDisabledValue] = useState("carol");
+
+  const selectOptions = [
+    { value: "alice", label: "Alice Johnson" },
+    { value: "bob", label: "Bob Smith" },
+    { value: "carol", label: "Carol Nguyen" },
+  ];
 
   return (
     <div className="container-max section-padding">
@@ -237,6 +247,33 @@ export const StyleguidePage: React.FC = () => {
                     placeholder="Enter password..."
                   />
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">
+                Select Fields
+              </h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Select
+                  label="Standard Select"
+                  value={selectValue}
+                  onValueChange={setSelectValue}
+                  options={selectOptions}
+                />
+                <Select
+                  label="Select with Error"
+                  value={selectErrorValue}
+                  onValueChange={setSelectErrorValue}
+                  options={selectOptions}
+                  error="Please select a valid option"
+                />
+                <Select
+                  label="Disabled Select"
+                  value={selectDisabledValue}
+                  options={selectOptions}
+                  disabled
+                />
               </div>
             </div>
           </div>

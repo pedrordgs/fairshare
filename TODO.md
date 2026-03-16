@@ -1,6 +1,5 @@
 # TODO
 
-- Improve select input design
 - Allow edit user information
 - Fix pre-commit to run both (api and web)
 - Prepare production build and deploy

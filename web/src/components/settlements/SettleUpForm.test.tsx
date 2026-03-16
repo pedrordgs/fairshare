@@ -83,7 +83,9 @@ describe("SettleUpForm", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("shows each owed-to member with owed amount in the creditor dropdown", () => {
+    it("shows each owed-to member with owed amount in the creditor dropdown", async () => {
+      const user = userEvent.setup();
+
       renderWithProviders(
         <SettleUpForm
           groupId={1}
@@ -93,10 +95,12 @@ describe("SettleUpForm", () => {
       );
 
       const creditorSelect = screen.getByLabelText(/settle with/i);
-      const options = Array.from(creditorSelect.querySelectorAll("option")).map(
-        (o) => o.textContent,
-      );
-      expect(options.some((o) => o?.includes("Bob"))).toBe(true);
+      await user.click(creditorSelect);
+
+      const option = await screen.findByRole("option", {
+        name: /Bob · Owe/i,
+      });
+      expect(option).toBeInTheDocument();
     });
   });
 

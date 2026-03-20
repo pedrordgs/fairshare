@@ -42,10 +42,4 @@ async def get_authenticated_user_data(*, authenticated_user: AuthenticatedUser) 
 def update_authenticated_user(
     *, session: DbSession, authenticated_user: AuthenticatedUser, user_in: UserUpdate
 ) -> User:
-    if (
-        user_in.email
-        and (user := get_user_by_email(session=session, email=user_in.email))
-        and user.id != authenticated_user.id
-    ):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
     return update_user(session=session, user=authenticated_user, user_in=user_in)

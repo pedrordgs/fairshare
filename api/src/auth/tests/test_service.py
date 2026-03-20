@@ -1,4 +1,3 @@
-import pytest
 from sqlmodel import Session
 
 from auth.models import UserCreate, UserUpdate
@@ -77,24 +76,6 @@ class TestUpdateUser:
         assert updated.name == user_in.name
         assert updated.email == user.email
 
-    def test_updates_email(self, session: Session) -> None:
-        user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="old@example.com", password="Tr0ub4dor&3")
-        )
-        user_in = UserUpdate(email="new@example.com")
-        updated = update_user(session=session, user=user, user_in=user_in)
-        assert updated.name == user.name
-        assert updated.email == user_in.email
-
-    def test_updates_both_fields(self, session: Session) -> None:
-        user = create_user(
-            session=session, user_in=UserCreate(name="Original Name", email="old@example.com", password="Tr0ub4dor&3")
-        )
-        user_in = UserUpdate(name="New Name", email="new@example.com")
-        updated = update_user(session=session, user=user, user_in=user_in)
-        assert updated.name == user_in.name
-        assert updated.email == user_in.email
-
     def test_no_changes_when_empty_update(self, session: Session) -> None:
         user = create_user(
             session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
@@ -114,20 +95,3 @@ class TestUpdateUser:
         retrieved = get_user_by_id(session=session, user_id=user.id)
         assert retrieved is not None
         assert retrieved.name == user_in.name
-
-    def test_updates_password(self, session: Session) -> None:
-        user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
-        )
-        old_hash = user.hashed_password
-        new_password = "N3wStr0ng!Pass#2026"
-        updated = update_user(session=session, user=user, user_in=UserUpdate(password=new_password))
-        assert updated.hashed_password != old_hash
-        assert verify_password(new_password, updated.hashed_password) is True
-
-    def test_rejects_weak_password_on_update(self, session: Session) -> None:
-        user = create_user(
-            session=session, user_in=UserCreate(name="Test User", email="test@example.com", password="Tr0ub4dor&3")
-        )
-        with pytest.raises(ValueError):
-            update_user(session=session, user=user, user_in=UserUpdate(password="weakpassword"))

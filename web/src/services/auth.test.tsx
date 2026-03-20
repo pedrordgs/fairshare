@@ -281,22 +281,11 @@ describe("Auth Service", () => {
       expect(result).toEqual(mockUser);
     });
 
-    it("updates multiple fields", async () => {
-      const mockUser = { id: 1, name: "New Name", email: "new@example.com" };
-      vi.mocked(api.patch).mockResolvedValue({ data: mockUser });
-
-      const updateData = { name: "New Name", email: "new@example.com" };
-      const result = await authApi.updateMe(updateData);
-
-      expect(api.patch).toHaveBeenCalledWith("/auth/me/", updateData);
-      expect(result).toEqual(mockUser);
-    });
-
     it("throws error on update failure", async () => {
       const error = new Error("Email already in use");
       vi.mocked(api.patch).mockRejectedValue(error);
 
-      const updateData = { email: "existing@example.com" };
+      const updateData = { name: "Updated Name" };
       await expect(authApi.updateMe(updateData)).rejects.toThrow(
         "Email already in use",
       );

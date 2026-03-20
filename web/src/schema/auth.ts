@@ -13,8 +13,7 @@ export const UserCreateSchema = z.object({
 });
 
 export const UserUpdateSchema = z.object({
-  name: z.string().min(1).optional(),
-  email: z.email().optional(),
+  name: z.string().min(2).optional(),
 });
 
 export const TokenSchema = z.object({

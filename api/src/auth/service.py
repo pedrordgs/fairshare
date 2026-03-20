@@ -23,8 +23,6 @@ def create_user(*, session: Session, user_in: UserCreate) -> User:
 
 def update_user(*, session: Session, user: User, user_in: UserUpdate) -> User:
     update_data = user_in.model_dump(exclude_unset=True)
-    if "password" in update_data:
-        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
     user.sqlmodel_update(update_data)
     session.add(user)
     session.commit()

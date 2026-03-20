@@ -112,9 +112,9 @@ export const authApi = {
 
   /**
    * Updates the current authenticated user's profile.
-   * Supports partial updates - only provided fields will be modified.
+   * Supports partial updates - only the name can be modified.
    *
-   * @param userData - Partial user data to update (name, email, password)
+   * @param userData - Partial user data to update (name only)
    * @returns Promise resolving to the updated user profile
    */
   updateMe: async (userData: UserUpdate): Promise<User> => {

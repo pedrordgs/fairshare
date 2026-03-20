@@ -141,30 +141,28 @@ class TestUpdateMe:
         assert data["name"] == "Updated Name"
         assert data["email"] == user.email
 
-    def test_update_email_to_unique(self, authenticated_client: AuthenticatedClient) -> None:
+    def test_ignore_email_updates(self, authenticated_client: AuthenticatedClient) -> None:
         client, user = authenticated_client
         response = client.patch("/auth/me/", json={"email": "newemail@example.com"})
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == user.name
-        assert data["email"] == "newemail@example.com"
+        assert data["email"] == user.email
 
-    def test_update_email_to_existing(self, authenticated_client: AuthenticatedClient, client: TestClient) -> None:
-        auth_client, _ = authenticated_client
-        # Create another user with a different email
-        client.post(
-            "/auth/register/", json={"name": "Other User", "email": "other@example.com", "password": "Tr0ub4dor&3"}
-        )
-        response = auth_client.patch("/auth/me/", json={"email": "other@example.com"})
-        assert response.status_code == 400
-        assert response.json() == {"detail": "A user with this email already exists"}
-
-    def test_update_email_to_own_email(self, authenticated_client: AuthenticatedClient) -> None:
+    def test_ignore_password_updates(self, authenticated_client: AuthenticatedClient) -> None:
         client, user = authenticated_client
-        response = client.patch("/auth/me/", json={"email": user.email})
+        response = client.patch("/auth/me/", json={"password": "N3wStr0ng!Pass#2026"})
         assert response.status_code == 200
         data = response.json()
+        assert data["name"] == user.name
         assert data["email"] == user.email
+        assert "password" not in data
+        assert "hashed_password" not in data
+
+    def test_name_too_short(self, authenticated_client: AuthenticatedClient) -> None:
+        client, _ = authenticated_client
+        response = client.patch("/auth/me/", json={"name": "A"})
+        assert response.status_code == 422
 
     def test_no_changes(self, authenticated_client: AuthenticatedClient) -> None:
         client, user = authenticated_client
@@ -174,39 +172,6 @@ class TestUpdateMe:
         assert data["name"] == user.name
         assert data["email"] == user.email
 
-    def test_update_both_name_and_email(self, authenticated_client: AuthenticatedClient) -> None:
-        client, _ = authenticated_client
-        response = client.patch("/auth/me/", json={"name": "New Name", "email": "newemail2@example.com"})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["name"] == "New Name"
-        assert data["email"] == "newemail2@example.com"
-
     def test_no_token(self, client: TestClient) -> None:
         response = client.patch("/auth/me/", json={"name": "New Name"})
         assert response.status_code == 401
-
-    def test_update_password_success(self, authenticated_client: AuthenticatedClient) -> None:
-        client, _ = authenticated_client
-        response = client.patch("/auth/me/", json={"password": "N3wStr0ng!Pass#2026"})
-        assert response.status_code == 200
-        data = response.json()
-        assert "password" not in data
-        assert "hashed_password" not in data
-
-    def test_update_password_too_weak(self, authenticated_client: AuthenticatedClient) -> None:
-        client, _ = authenticated_client
-        response = client.patch("/auth/me/", json={"password": "weakpassword"})
-        assert response.status_code == 422
-
-    def test_update_password_missing_uppercase(self, authenticated_client: AuthenticatedClient) -> None:
-        client, _ = authenticated_client
-        response = client.patch("/auth/me/", json={"password": "tr0ub4dor&3"})
-        assert response.status_code == 422
-        assert "uppercase" in response.text
-
-    def test_update_password_missing_special(self, authenticated_client: AuthenticatedClient) -> None:
-        client, _ = authenticated_client
-        response = client.patch("/auth/me/", json={"password": "Tr0ub4dor3"})
-        assert response.status_code == 422
-        assert "special character" in response.text

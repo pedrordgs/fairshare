@@ -28,16 +28,7 @@ class UserPublic(UserBase):
 
 
 class UserUpdate(SQLModel):
-    name: str | None = None
-    email: EmailStr | None = None
-    password: str | None = None
-
-    @field_validator("password")
-    @classmethod
-    def password_strength(cls, password: str | None) -> str | None:
-        if password is None:
-            return None
-        return validate_password_strength(password)
+    name: str | None = Field(default=None, min_length=2)
 
 
 class Token(BaseModel):

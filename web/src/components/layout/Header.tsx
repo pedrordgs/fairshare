@@ -3,6 +3,7 @@ import { ButtonGhost, ButtonPrimary } from "@components/ui/Button";
 import { useAuthModal } from "@hooks/useAuthModal";
 import { useAuth } from "@context/AuthContext";
 import { useNavigate, Link } from "@tanstack/react-router";
+import { ProfileModal } from "@components/profile/ProfileModal";
 
 /**
  * Header with full auth functionality - shows login/signup or user info
@@ -16,6 +17,10 @@ export const HeaderWithAuth: React.FC = () => {
   const { openAuthModal } = useAuthModal();
   const { user: authUser, logout } = useAuth();
   const navigate = useNavigate();
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+
+  const openProfileModal = () => setIsProfileOpen(true);
+  const closeProfileModal = () => setIsProfileOpen(false);
 
   return (
     <header className="relative z-50 bg-white/95 border-b border-slate-200 shadow-sm">
@@ -46,16 +51,31 @@ export const HeaderWithAuth: React.FC = () => {
             <div className="flex items-center space-x-4">
               {authUser ? (
                 <div className="flex items-center space-x-4">
-                  <div className="hidden sm:flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={openProfileModal}
+                    className="hidden sm:flex items-center space-x-3 px-3 py-2 rounded-full transition-colors duration-200 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 cursor-pointer"
+                    aria-label="Edit profile"
+                  >
                     <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-bold">
                         {authUser.name?.charAt(0).toUpperCase() || "U"}
                       </span>
                     </div>
                     <span className="text-slate-700 font-medium">
-                      Welcome, {authUser.name}!
+                      {authUser.name}
                     </span>
-                  </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openProfileModal}
+                    className="sm:hidden w-9 h-9 bg-gradient-to-br from-primary-500 to-accent-600 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 cursor-pointer"
+                    aria-label="Edit profile"
+                  >
+                    <span className="text-white text-sm font-bold">
+                      {authUser.name?.charAt(0).toUpperCase() || "U"}
+                    </span>
+                  </button>
                   <ButtonGhost
                     size="sm"
                     onClick={logout}
@@ -84,6 +104,9 @@ export const HeaderWithAuth: React.FC = () => {
           </div>
         </div>
       </div>
+      {authUser && (
+        <ProfileModal isOpen={isProfileOpen} onClose={closeProfileModal} />
+      )}
     </header>
   );
 };

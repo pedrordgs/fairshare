@@ -1,6 +1,10 @@
-# FairShare - WIP
+# FairShare
 
 An open-source expense splitting and settlement tracking application. Split bills fairly, track shared expenses, and settle up with friends.
+
+> **Disclaimer**
+> This is a vibe-coded application used to test and experiment with vibe coding and AI-assisted coding workflows.
+> Code quality may vary and the project should be treated as an experimental work.
 
 ## Overview
 

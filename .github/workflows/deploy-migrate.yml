@@ -1,0 +1,35 @@
+name: Deploy Migrations
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "api/**"
+      - ".github/workflows/deploy-migrate.yml"
+
+jobs:
+  migrate-production:
+    name: api:migrate:production
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    env:
+      DATABASE_DSN: ${{ secrets.PROD_DATABASE_DSN }}
+      SECRET_KEY: ${{ secrets.PROD_SECRET_KEY }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: api/.python-version
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Run Alembic migrations
+        run: uv run alembic upgrade head

@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 
 import pytest
@@ -10,9 +11,13 @@ from auth.security import create_access_token
 from auth.service import create_user
 from core.conf import get_settings
 from db.dependencies import get_database_session
-from main import app
 
 type AuthenticatedClient = tuple[TestClient, User]
+
+os.environ.setdefault("DATABASE_DSN", "postgresql+psycopg://dummy")
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
+
+from main import app  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

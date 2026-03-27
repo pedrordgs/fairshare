@@ -5,6 +5,8 @@ import { useAuth } from "@context/AuthContext";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { ProfileModal } from "@components/profile/ProfileModal";
 
+const isDebugMode = import.meta.env.DEV;
+
 /**
  * Header with full auth functionality - shows login/signup or user info
  *
@@ -39,13 +41,14 @@ export const HeaderWithAuth: React.FC = () => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-6">
-            {/* Styleguide Link */}
-            <Link
-              to="/styleguide"
-              className="hidden md:inline-flex text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
-            >
-              Styleguide
-            </Link>
+            {isDebugMode && (
+              <Link
+                to="/styleguide"
+                className="hidden md:inline-flex text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
+              >
+                Styleguide
+              </Link>
+            )}
 
             {/* Auth Section */}
             <div className="flex items-center space-x-4">
@@ -139,13 +142,14 @@ export const HeaderSimple: React.FC = () => {
 
           {/* Right Section */}
           <div className="flex items-center space-x-6">
-            {/* Styleguide Link */}
-            <Link
-              to="/styleguide"
-              className="hidden md:inline-flex text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
-            >
-              Styleguide
-            </Link>
+            {isDebugMode && (
+              <Link
+                to="/styleguide"
+                className="hidden md:inline-flex text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
+              >
+                Styleguide
+              </Link>
+            )}
           </div>
         </div>
       </div>

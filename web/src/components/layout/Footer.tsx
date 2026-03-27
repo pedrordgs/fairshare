@@ -1,6 +1,4 @@
 import React from "react";
-import { ButtonPrimary } from "@components/ui/Button";
-import { useAuthModal } from "@hooks/useAuthModal";
 
 /**
  * Simple footer without auth CTA - for pages where auth is not relevant
@@ -50,8 +48,6 @@ export const FooterSimple: React.FC = () => {
  * ```
  */
 export const FooterWithAuth: React.FC = () => {
-  const { openAuthModal } = useAuthModal();
-
   return (
     <footer className="relative bg-white border-t border-slate-200 py-12">
       <div className="container-max">
@@ -68,15 +64,6 @@ export const FooterWithAuth: React.FC = () => {
               Fair expense splitting made simple.
             </p>
           </div>
-
-          {/* Auth Section */}
-          <ButtonPrimary
-            size="sm"
-            onClick={() => openAuthModal({ tab: "register" })}
-            className="shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-200"
-          >
-            Get Started
-          </ButtonPrimary>
         </div>
 
         {/* Copyright */}

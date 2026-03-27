@@ -50,21 +50,18 @@ export const HomePage: React.FC = () => {
                   className="text-lg shadow-lg hover:shadow-xl"
                   onClick={() => openAuthModal({ tab: "register" })}
                 >
-                  Get Started Free
-                </Button>
-                <Button variant="secondary" size="lg" className="text-lg">
-                  See How It Works
+                  Get Started
                 </Button>
               </div>
 
               <div className="flex items-center space-x-6 pt-8 text-sm text-slate-500">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
-                  <span>No credit card required</span>
+                  <span>100% free forever</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
-                  <span>Free for up to 10 members</span>
+                  <span>Unlimited groups and members</span>
                 </div>
               </div>
             </div>
@@ -205,7 +202,7 @@ export const HomePage: React.FC = () => {
                       Clear Settlements
                     </CardTitle>
                     <CardContent className="text-lg leading-relaxed">
-                      See exactly who owes whom and track repayments. Settle up
+                      See exactly who owes whom and track settlements. Settle up
                       confidently with everyone on the same page.
                     </CardContent>
                   </CardHeader>
@@ -240,15 +237,15 @@ export const HomePage: React.FC = () => {
                 <div className="flex items-center justify-center space-x-8 pt-8 text-white/80 text-sm">
                   <div className="flex items-center space-x-2">
                     <span>✓</span>
-                    <span>Free forever for small groups</span>
+                    <span>100% free forever</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span>✓</span>
-                    <span>No hidden fees</span>
+                    <span>Unlimited groups and members</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span>✓</span>
-                    <span>Cancel anytime</span>
+                    <span>No subscriptions</span>
                   </div>
                 </div>
               </div>

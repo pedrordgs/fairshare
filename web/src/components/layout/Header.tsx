@@ -33,11 +33,11 @@ export const HeaderWithAuth: React.FC = () => {
             className="flex min-w-0 items-center gap-2 sm:gap-3 group cursor-pointer"
             onClick={() => navigate({ to: "/" })}
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
-              <span className="text-white font-bold text-base sm:text-xl">
-                F
-              </span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="FairShare logo"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3"
+            />
             <h1 className="truncate text-xl sm:text-2xl font-bold text-gradient">
               FairShare
             </h1>
@@ -134,11 +134,11 @@ export const HeaderSimple: React.FC = () => {
             className="flex min-w-0 items-center gap-2 sm:gap-3 group cursor-pointer"
             onClick={() => navigate({ to: "/" })}
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
-              <span className="text-white font-bold text-base sm:text-xl">
-                F
-              </span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="FairShare logo"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3"
+            />
             <h1 className="truncate text-xl sm:text-2xl font-bold text-gradient">
               FairShare
             </h1>

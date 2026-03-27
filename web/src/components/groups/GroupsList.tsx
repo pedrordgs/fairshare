@@ -137,15 +137,24 @@ export const GroupsList: React.FC<GroupsListProps> = ({
 
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold text-slate-900">Your Groups</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={onJoinGroup} size="sm" variant="secondary">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              onClick={onJoinGroup}
+              size="sm"
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
               Join Group
             </Button>
-            <Button onClick={onCreateGroup} size="sm">
+            <Button
+              onClick={onCreateGroup}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
               + New Group
             </Button>
           </div>

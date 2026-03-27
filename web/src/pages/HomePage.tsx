@@ -25,20 +25,20 @@ export const HomePage: React.FC = () => {
       <main className="relative">
         {/* Hero Content */}
         <section className="section-padding container-max">
-          <div className="grid lg:grid-cols-2 gap-16 items-center min-h-[80vh]">
+          <div className="grid gap-10 md:gap-12 lg:grid-cols-2 lg:gap-16 items-center min-h-[70vh] lg:min-h-[80vh]">
             {/* Left Column - Text */}
-            <div className="space-y-8 fade-in">
-              <div className="space-y-4">
+            <div className="space-y-6 sm:space-y-8 fade-in">
+              <div className="space-y-3 sm:space-y-4">
                 <p className="text-accent-600 font-semibold tracking-wide uppercase text-sm">
                   Expense Splitting, Reimagined
                 </p>
-                <h1 className="text-5xl lg:text-6xl font-black text-slate-900 leading-tight">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-tight">
                   Split
                   <span className="block text-gradient">Fairly</span>
                 </h1>
               </div>
 
-              <p className="text-xl text-slate-600 leading-relaxed max-w-lg">
+              <p className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-lg">
                 The elegant way to track shared expenses and settle up with
                 friends, roommates, and travel companions. No more awkward money
                 conversations, just transparent fairness.
@@ -54,12 +54,12 @@ export const HomePage: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center space-x-6 pt-8 text-sm text-slate-500">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-4 sm:pt-8 text-sm text-slate-500">
+                <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
                   <span>100% free forever</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-accent-500 rounded-full"></div>
                   <span>Unlimited groups and members</span>
                 </div>
@@ -69,46 +69,52 @@ export const HomePage: React.FC = () => {
             {/* Right Column - Visual */}
             <div className="relative slide-up stagger-2">
               <div className="relative z-10">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 border border-primary-100">
+                <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 border border-primary-100">
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-slate-900">
                         Weekend Trip
                       </h3>
-                      <span className="text-accent-600 font-bold">$847.50</span>
+                      <span className="text-accent-600 font-bold text-sm sm:text-base">
+                        $847.50
+                      </span>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-primary-50 rounded-lg">
+                        <div className="flex min-w-0 items-center space-x-3">
                           <div className="w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                             A
                           </div>
                           <span className="font-medium">Alex</span>
                         </div>
-                        <span className="text-slate-600">Owes $212.50</span>
+                        <span className="text-slate-600 text-sm sm:text-base">
+                          Owes $212.50
+                        </span>
                       </div>
 
-                      <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-primary-50 rounded-lg">
+                        <div className="flex min-w-0 items-center space-x-3">
                           <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                             S
                           </div>
                           <span className="font-medium">Sarah</span>
                         </div>
-                        <span className="text-green-600 font-medium">
+                        <span className="text-green-600 font-medium text-sm sm:text-base">
                           Gets back $425.00
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-primary-50 rounded-lg">
+                        <div className="flex min-w-0 items-center space-x-3">
                           <div className="w-8 h-8 bg-slate-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                             M
                           </div>
                           <span className="font-medium">Mike</span>
                         </div>
-                        <span className="text-slate-600">Owes $212.50</span>
+                        <span className="text-slate-600 text-sm sm:text-base">
+                          Owes $212.50
+                        </span>
                       </div>
                     </div>
 
@@ -134,18 +140,18 @@ export const HomePage: React.FC = () => {
         {/* Features Section */}
         <section className="section-padding bg-gradient-to-b from-transparent to-primary-50/50">
           <div className="container-max">
-            <div className="text-center mb-16 slide-up">
-              <h2 className="text-4xl font-bold text-slate-900 mb-4">
+            <div className="text-center mb-10 sm:mb-16 slide-up">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
                 Designed for
                 <span className="text-gradient"> Modern Life</span>
               </h2>
-              <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto">
                 Everything you need to split expenses fairly, beautifully
                 designed for the way you live today.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            <div className="grid md:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
               <div className="slide-up stagger-1">
                 <Card className="card-elevated h-full">
                   <CardHeader>
@@ -215,35 +221,35 @@ export const HomePage: React.FC = () => {
         {/* CTA Section */}
         <section className="section-padding">
           <div className="container-max">
-            <div className="bg-gradient-to-br from-accent-500 to-primary-600 rounded-3xl p-12 lg:p-16 text-center text-white relative overflow-hidden slide-up">
+            <div className="bg-gradient-to-br from-accent-500 to-primary-600 rounded-3xl p-6 sm:p-8 lg:p-16 text-center text-white relative overflow-hidden slide-up">
               <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative z-10 space-y-6">
-                <h2 className="text-4xl lg:text-5xl font-bold">
+              <div className="relative z-10 space-y-4 sm:space-y-6">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
                   Ready to simplify your shared expenses?
                 </h2>
-                <p className="text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto">
+                <p className="text-lg sm:text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto">
                   Join thousands who've transformed their expense splitting from
                   stressful to seamless.
                 </p>
-                <div className="pt-8">
+                <div className="pt-4 sm:pt-8">
                   <Button
                     size="lg"
-                    className="bg-white text-accent-600 hover:bg-gray-50 text-lg shadow-xl hover:shadow-2xl"
+                    className="bg-white text-accent-600 hover:bg-gray-50 text-base sm:text-lg shadow-xl hover:shadow-2xl"
                     onClick={() => openAuthModal({ tab: "register" })}
                   >
                     Start Your First Group
                   </Button>
                 </div>
-                <div className="flex items-center justify-center space-x-8 pt-8 text-white/80 text-sm">
-                  <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 pt-4 sm:pt-8 text-white/80 text-sm">
+                  <div className="flex items-center gap-2">
                     <span>✓</span>
                     <span>100% free forever</span>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <span>✓</span>
                     <span>Unlimited groups and members</span>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     <span>✓</span>
                     <span>No subscriptions</span>
                   </div>

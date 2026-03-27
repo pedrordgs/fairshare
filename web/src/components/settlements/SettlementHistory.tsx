@@ -306,7 +306,7 @@ const SettlementRow: React.FC<SettlementRowProps> = ({
     <div
       className={`rounded-xl border px-4 py-3 shadow-sm transition-colors ${rowClasses}`}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-bold text-slate-900 truncate">
@@ -317,8 +317,8 @@ const SettlementRow: React.FC<SettlementRowProps> = ({
             {createdByLabel} · {formatDate(settlement.created_at)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <p className="text-lg font-bold text-slate-900">
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
+          <p className="text-base sm:text-lg font-bold text-slate-900">
             {formatCurrency(settlement.amount)}
           </p>
           {isCreator && (

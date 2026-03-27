@@ -27,9 +27,9 @@ export const StyleguidePage: React.FC = () => {
   return (
     <div className="container-max section-padding">
       {/* Header */}
-      <div className="text-center mb-16 fade-in">
+      <div className="text-center mb-10 sm:mb-16 fade-in">
         <h1 className="text-gradient mb-4">FairShare Styleguide</h1>
-        <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
           A comprehensive showcase of our design system components, ensuring
           consistency and elegance across every interaction in the FairShare
           application.
@@ -37,7 +37,7 @@ export const StyleguidePage: React.FC = () => {
       </div>
 
       {/* Colors */}
-      <section className="mb-20 slide-up stagger-1">
+      <section className="mb-12 sm:mb-20 slide-up stagger-1">
         <Card>
           <CardHeader>
             <CardTitle>Color Palette</CardTitle>
@@ -52,7 +52,7 @@ export const StyleguidePage: React.FC = () => {
               <h3 className="text-lg font-semibold text-slate-800 mb-4">
                 Primary Colors
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
                 {[
                   { name: "primary-50", class: "bg-primary-50" },
                   { name: "primary-100", class: "bg-primary-100" },
@@ -82,7 +82,7 @@ export const StyleguidePage: React.FC = () => {
               <h3 className="text-lg font-semibold text-slate-800 mb-4">
                 Accent Colors
               </h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
                 {[
                   { name: "accent-50", class: "bg-accent-50" },
                   { name: "accent-100", class: "bg-accent-100" },
@@ -111,7 +111,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Typography */}
-      <section className="mb-20 slide-up stagger-2">
+      <section className="mb-12 sm:mb-20 slide-up stagger-2">
         <Card>
           <CardHeader>
             <CardTitle>Typography</CardTitle>
@@ -168,7 +168,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Buttons */}
-      <section className="mb-20 slide-up stagger-3">
+      <section className="mb-12 sm:mb-20 slide-up stagger-3">
         <Card>
           <CardHeader>
             <CardTitle>Buttons</CardTitle>
@@ -204,7 +204,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Forms */}
-      <section className="mb-20 slide-up stagger-4">
+      <section className="mb-12 sm:mb-20 slide-up stagger-4">
         <Card>
           <CardHeader>
             <CardTitle>Form Elements</CardTitle>
@@ -281,7 +281,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Badges */}
-      <section className="mb-20 slide-up stagger-5">
+      <section className="mb-12 sm:mb-20 slide-up stagger-5">
         <Card>
           <CardHeader>
             <CardTitle>Badges</CardTitle>
@@ -318,7 +318,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Alerts */}
-      <section className="mb-20 slide-up">
+      <section className="mb-12 sm:mb-20 slide-up">
         <Card>
           <CardHeader>
             <CardTitle>Alerts</CardTitle>
@@ -345,7 +345,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Tabs */}
-      <section className="mb-20 slide-up">
+      <section className="mb-12 sm:mb-20 slide-up">
         <Card>
           <CardHeader>
             <CardTitle>Tabs</CardTitle>
@@ -384,7 +384,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Lists */}
-      <section className="mb-20 slide-up">
+      <section className="mb-12 sm:mb-20 slide-up">
         <Card>
           <CardHeader>
             <CardTitle>Lists</CardTitle>
@@ -419,7 +419,7 @@ export const StyleguidePage: React.FC = () => {
       </section>
 
       {/* Modal */}
-      <section className="mb-20 slide-up">
+      <section className="mb-12 sm:mb-20 slide-up">
         <Card>
           <CardHeader>
             <CardTitle>Modal</CardTitle>
@@ -443,11 +443,20 @@ export const StyleguidePage: React.FC = () => {
               This is an example modal dialog. Modals are used to focus user
               attention on specific tasks or information.
             </p>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
+              <Button
+                className="w-full sm:w-auto"
+                variant="ghost"
+                onClick={() => setIsModalOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button onClick={() => setIsModalOpen(false)}>Confirm</Button>
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Confirm
+              </Button>
             </div>
           </div>
         </ModalContent>

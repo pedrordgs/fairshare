@@ -6,6 +6,8 @@ export interface TabsProps {
   activeTab?: string;
   onTabChange?: (value: string) => void;
   className?: string;
+  tabListClassName?: string;
+  tabClassName?: string;
 }
 
 export interface TabItemProps {
@@ -20,6 +22,8 @@ export const Tabs: React.FC<TabsProps> = ({
   activeTab,
   onTabChange,
   className = "",
+  tabListClassName = "",
+  tabClassName = "",
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState(defaultTab || "");
   const baseId = useId();
@@ -85,7 +89,11 @@ export const Tabs: React.FC<TabsProps> = ({
   return (
     <div className={className}>
       <div className="border-b border-primary-200">
-        <nav className="-mb-px flex space-x-8" role="tablist" aria-label="Tabs">
+        <nav
+          className={`-mb-px flex flex-wrap gap-x-4 gap-y-2 sm:gap-x-8 ${tabListClassName}`}
+          role="tablist"
+          aria-label="Tabs"
+        >
           {tabs.map((tab, index) => (
             <button
               key={tab.props.value}
@@ -97,12 +105,13 @@ export const Tabs: React.FC<TabsProps> = ({
               aria-controls={`${baseId}-panel-${tab.props.value}`}
               tabIndex={activeTabValue === tab.props.value ? 0 : -1}
               className={`
-                py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 cursor-pointer
+                py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap
                 ${
                   activeTabValue === tab.props.value
                     ? "border-accent-500 text-accent-600"
                     : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
                 }
+                ${tabClassName}
               `}
             >
               {tab.props.label}

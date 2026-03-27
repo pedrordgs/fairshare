@@ -22,13 +22,18 @@ export const Balances: React.FC<BalancesProps> = ({
   return (
     <div className="flex-[1] min-w-0 flex flex-col">
       <Card className="bg-white h-full">
-        <CardHeader className="flex flex-row items-center justify-between min-h-9">
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between min-h-9">
           <CardTitle className="text-xl flex items-center gap-2">
             <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
             Balances
           </CardTitle>
           {owedByUser.length > 0 && (
-            <Button size="sm" variant="secondary" onClick={onSettleUp}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={onSettleUp}
+            >
               Settle Up
             </Button>
           )}
@@ -72,20 +77,20 @@ export const Balances: React.FC<BalancesProps> = ({
                   return (
                     <div
                       key={idx}
-                      className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+                      className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg border px-4 py-3 ${
                         fromIsCurrentUser || toIsCurrentUser
                           ? "border-sky-200 bg-sky-50/60"
                           : "border-primary-100 bg-white"
                       }`}
                     >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-slate-900 text-sm">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <p className="font-bold text-slate-900 text-sm break-words">
                           {fromIsCurrentUser ? "You" : fromName}{" "}
                           {fromIsCurrentUser ? "owe" : "owes"}{" "}
                           {toIsCurrentUser ? "you" : toName}
                         </p>
                       </div>
-                      <span className="font-bold text-slate-900 ml-4">
+                      <span className="font-bold text-slate-900 sm:ml-4 sm:shrink-0">
                         {formatCurrency(transfer.amount)}
                       </span>
                     </div>

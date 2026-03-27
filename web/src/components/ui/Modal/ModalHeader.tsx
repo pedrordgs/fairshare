@@ -21,14 +21,14 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({
 }) => {
   return (
     <div
-      className={`flex items-start justify-between p-8 pb-6 relative ${className}`}
+      className={`flex items-start justify-between p-5 sm:p-8 pb-4 sm:pb-6 relative ${className}`}
     >
-      <div className="absolute top-0 left-8 w-12 h-1 bg-gradient-to-r from-accent-400 to-transparent rounded-full" />
+      <div className="absolute top-0 left-5 sm:left-8 w-12 h-1 bg-gradient-to-r from-accent-400 to-transparent rounded-full" />
 
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <h2
           id={titleId}
-          className="text-3xl font-light tracking-tight text-slate-900 font-serif mb-3"
+          className="text-2xl sm:text-3xl font-light tracking-tight text-slate-900 font-serif mb-2 sm:mb-3 break-words"
           style={{
             background: "linear-gradient(135deg, #1e293b 0%, #475569 100%)",
             WebkitBackgroundClip: "text",
@@ -55,7 +55,7 @@ export const ModalHeader: React.FC<ModalHeaderProps> = ({
         variant="ghost"
         size="sm"
         onClick={onClose}
-        className="ml-6 text-slate-400 hover:text-slate-700 p-2.5 rounded-full
+        className="ml-3 sm:ml-6 text-slate-400 hover:text-slate-700 p-2 sm:p-2.5 rounded-full
                    transition-all duration-300 hover:bg-slate-100/50 group"
         aria-label="Close modal"
       >

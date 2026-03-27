@@ -66,7 +66,7 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                     : "border-primary-100 bg-white"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-slate-900 truncate">
@@ -80,8 +80,8 @@ export const ExpensesTab: React.FC<ExpensesTabProps> = ({
                     )}
                     <p className="text-xs text-slate-400 mt-2">{expenseMeta}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-lg font-bold text-slate-900">
+                  <div className="flex items-center justify-between gap-2 sm:justify-end">
+                    <p className="text-base sm:text-lg font-bold text-slate-900">
                       {formatCurrency(expense.value)}
                     </p>
                     {canEditOrDelete && (

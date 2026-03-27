@@ -10,9 +10,9 @@ import React from "react";
  */
 export const FooterSimple: React.FC = () => {
   return (
-    <footer className="relative bg-white border-t border-slate-200 py-12">
+    <footer className="relative bg-white border-t border-slate-200 py-8 sm:py-12">
       <div className="container-max">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4 sm:px-6 lg:px-0">
           {/* Brand Section */}
           <div className="flex flex-col items-center md:items-start space-y-4">
             <div className="flex items-center space-x-3">
@@ -28,8 +28,8 @@ export const FooterSimple: React.FC = () => {
         </div>
 
         {/* Copyright */}
-        <div className="mt-8 pt-8 border-t border-slate-200 text-center">
-          <p className="text-sm text-slate-500">
+        <div className="mt-6 pt-6 sm:mt-8 sm:pt-8 border-t border-slate-200 text-center px-4 sm:px-6 lg:px-0">
+          <p className="text-xs sm:text-sm text-slate-500">
             © {new Date().getFullYear()} FairShare. Built with care for fair
             expense splitting.
           </p>
@@ -49,9 +49,9 @@ export const FooterSimple: React.FC = () => {
  */
 export const FooterWithAuth: React.FC = () => {
   return (
-    <footer className="relative bg-white border-t border-slate-200 py-12">
+    <footer className="relative bg-white border-t border-slate-200 py-8 sm:py-12">
       <div className="container-max">
-        <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-4 sm:px-6 lg:px-0">
           {/* Brand Section */}
           <div className="flex flex-col items-center md:items-start space-y-4">
             <div className="flex items-center space-x-3">
@@ -67,8 +67,8 @@ export const FooterWithAuth: React.FC = () => {
         </div>
 
         {/* Copyright */}
-        <div className="mt-8 pt-8 border-t border-slate-200 text-center">
-          <p className="text-sm text-slate-500">
+        <div className="mt-6 pt-6 sm:mt-8 sm:pt-8 border-t border-slate-200 text-center px-4 sm:px-6 lg:px-0">
+          <p className="text-xs sm:text-sm text-slate-500">
             © {new Date().getFullYear()} FairShare. Built with care for fair
             expense splitting.
           </p>

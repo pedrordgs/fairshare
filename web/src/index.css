@@ -61,6 +61,12 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
   h1,
@@ -119,7 +125,7 @@
   }
 
   .section-padding {
-    @apply py-20 px-6 sm:px-8 lg:px-12;
+    @apply py-12 px-4 sm:py-16 sm:px-6 md:py-20 md:px-8 lg:px-12;
   }
 
   .container-max {

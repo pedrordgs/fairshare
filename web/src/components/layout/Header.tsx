@@ -5,6 +5,8 @@ import { useAuth } from "@context/AuthContext";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { ProfileModal } from "@components/profile/ProfileModal";
 
+const isDebugMode = import.meta.env.DEV;
+
 /**
  * Header with full auth functionality - shows login/signup or user info
  *
@@ -25,36 +27,41 @@ export const HeaderWithAuth: React.FC = () => {
   return (
     <header className="relative z-50 bg-white/95 border-b border-slate-200 shadow-sm">
       <div className="container-max">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-0 lg:h-20">
           {/* Logo/Brand */}
           <div
-            className="flex items-center space-x-3 group cursor-pointer"
+            className="flex min-w-0 items-center gap-2 sm:gap-3 group cursor-pointer"
             onClick={() => navigate({ to: "/" })}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
-              <span className="text-white font-bold text-xl">F</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
+              <span className="text-white font-bold text-base sm:text-xl">
+                F
+              </span>
             </div>
-            <h1 className="text-2xl font-bold text-gradient">FairShare</h1>
+            <h1 className="truncate text-xl sm:text-2xl font-bold text-gradient">
+              FairShare
+            </h1>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-6">
-            {/* Styleguide Link */}
-            <Link
-              to="/styleguide"
-              className="hidden md:inline-flex text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
-            >
-              Styleguide
-            </Link>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2 sm:gap-4">
+            {isDebugMode && (
+              <Link
+                to="/styleguide"
+                className="inline-flex text-sm sm:text-base text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
+              >
+                Styleguide
+              </Link>
+            )}
 
             {/* Auth Section */}
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
               {authUser ? (
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={openProfileModal}
-                    className="hidden sm:flex items-center space-x-3 px-3 py-2 rounded-full transition-colors duration-200 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 cursor-pointer"
+                    className="hidden sm:flex max-w-[200px] items-center space-x-3 px-3 py-2 rounded-full transition-colors duration-200 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 cursor-pointer"
                     aria-label="Edit profile"
                   >
                     <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-600 rounded-full flex items-center justify-center">
@@ -62,7 +69,7 @@ export const HeaderWithAuth: React.FC = () => {
                         {authUser.name?.charAt(0).toUpperCase() || "U"}
                       </span>
                     </div>
-                    <span className="text-slate-700 font-medium">
+                    <span className="truncate text-slate-700 font-medium">
                       {authUser.name}
                     </span>
                   </button>
@@ -76,25 +83,21 @@ export const HeaderWithAuth: React.FC = () => {
                       {authUser.name?.charAt(0).toUpperCase() || "U"}
                     </span>
                   </button>
-                  <ButtonGhost
-                    size="sm"
-                    onClick={logout}
-                    className="hidden sm:inline-flex"
-                  >
+                  <ButtonGhost size="sm" onClick={logout} className="text-sm">
                     Sign Out
                   </ButtonGhost>
                 </div>
               ) : (
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   <ButtonGhost
-                    className="hidden sm:inline-flex"
+                    className="text-sm"
                     onClick={() => openAuthModal()}
                   >
                     Log In
                   </ButtonGhost>
                   <ButtonPrimary
                     onClick={() => openAuthModal({ tab: "register" })}
-                    className="shadow-lg hover:shadow-xl transform hover:-translate-y-px transition-all duration-200"
+                    className="shadow-lg hover:shadow-xl transform hover:-translate-y-px transition-all duration-200 text-sm sm:text-base"
                   >
                     Sign Up
                   </ButtonPrimary>
@@ -125,27 +128,32 @@ export const HeaderSimple: React.FC = () => {
   return (
     <header className="relative z-50 bg-white/95 border-b border-slate-200 shadow-sm">
       <div className="container-max">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-0 lg:h-20">
           {/* Logo/Brand */}
           <div
-            className="flex items-center space-x-3 group cursor-pointer"
+            className="flex min-w-0 items-center gap-2 sm:gap-3 group cursor-pointer"
             onClick={() => navigate({ to: "/" })}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
-              <span className="text-white font-bold text-xl">F</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-accent-500 to-primary-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
+              <span className="text-white font-bold text-base sm:text-xl">
+                F
+              </span>
             </div>
-            <h1 className="text-2xl font-bold text-gradient">FairShare</h1>
+            <h1 className="truncate text-xl sm:text-2xl font-bold text-gradient">
+              FairShare
+            </h1>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-6">
-            {/* Styleguide Link */}
-            <Link
-              to="/styleguide"
-              className="hidden md:inline-flex text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
-            >
-              Styleguide
-            </Link>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2 sm:gap-4">
+            {isDebugMode && (
+              <Link
+                to="/styleguide"
+                className="inline-flex text-sm sm:text-base text-slate-600 hover:text-accent-600 transition-colors duration-200 font-medium"
+              >
+                Styleguide
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -368,12 +368,15 @@ export const GroupDetailPage: React.FC = () => {
             {errorInfo.title}
           </h1>
           <p className="text-slate-600 mb-6">{errorInfo.message}</p>
-          <div className="space-x-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {errorInfo.isRetryable && (
-              <Button onClick={() => refetch()}>Try Again</Button>
+              <Button className="w-full sm:w-auto" onClick={() => refetch()}>
+                Try Again
+              </Button>
             )}
             <Button
               variant={errorInfo.isRetryable ? "secondary" : "primary"}
+              className="w-full sm:w-auto"
               onClick={() => navigate({ to: "/dashboard" })}
             >
               Back to Dashboard
@@ -399,15 +402,17 @@ export const GroupDetailPage: React.FC = () => {
           </Button>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-5xl font-bold text-slate-900 mb-4">
+          <div className="min-w-0">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-2 sm:mb-4 break-words">
               {group.name}
             </h1>
             <div className="flex items-center gap-4 text-slate-500">
-              <span className="text-lg">{group.members.length} members</span>
+              <span className="text-base sm:text-lg">
+                {group.members.length} members
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex w-full sm:w-auto items-center gap-2 flex-wrap">
             {isAdmin && joinRequestsCount > 0 && (
               <ButtonWithBadge
                 variant="secondary"
@@ -415,6 +420,7 @@ export const GroupDetailPage: React.FC = () => {
                 badgeCount={joinRequestsCount}
                 badgeVariant="warning"
                 onClick={() => setIsJoinRequestsOpen(true)}
+                className="w-full sm:w-auto"
               >
                 Join requests
               </ButtonWithBadge>
@@ -423,6 +429,7 @@ export const GroupDetailPage: React.FC = () => {
               <Button
                 variant="secondary"
                 size="sm"
+                className="w-full sm:w-auto"
                 onClick={() => setIsEditGroupOpen(true)}
               >
                 Edit
@@ -432,7 +439,7 @@ export const GroupDetailPage: React.FC = () => {
               <Button
                 variant="secondary"
                 size="sm"
-                className="text-red-600 border-red-200 hover:bg-red-50"
+                className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50"
                 onClick={() => setIsDeleteGroupOpen(true)}
               >
                 Delete
@@ -444,7 +451,7 @@ export const GroupDetailPage: React.FC = () => {
 
       <div className="space-y-6 slide-up stagger-1">
         {/* Summary Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))] gap-4">
           {/* Total Expenses — always shown */}
           <div className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-accent-100/50 px-5 py-4">
             <p className="text-sm text-slate-600 mb-1">Total Expenses</p>
@@ -472,11 +479,11 @@ export const GroupDetailPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex gap-6 items-stretch">
+        <div className="flex flex-col gap-6 items-stretch lg:flex-row">
           {/* Tabs Card — Expenses | Settlements | Members */}
           <div className="flex-[2] min-w-0">
             <Card className="bg-white">
-              <CardHeader className="flex flex-row items-center justify-between min-h-9">
+              <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-h-9">
                 <CardTitle className="text-xl flex items-center gap-2">
                   <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
                   {activeCenterTab === "activity"
@@ -485,9 +492,13 @@ export const GroupDetailPage: React.FC = () => {
                       ? "Settlements"
                       : "Members"}
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full sm:w-auto flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   {activeCenterTab === "activity" && (
-                    <Button size="sm" onClick={() => setIsAddExpenseOpen(true)}>
+                    <Button
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={() => setIsAddExpenseOpen(true)}
+                    >
                       + Add Expense
                     </Button>
                   )}
@@ -496,6 +507,7 @@ export const GroupDetailPage: React.FC = () => {
                     (group?.group_transfers?.length ?? 0) > 0 && (
                       <Button
                         size="sm"
+                        className="w-full sm:w-auto"
                         onClick={() => setIsAddSettlementOpen(true)}
                       >
                         + Add Settlement
@@ -507,6 +519,7 @@ export const GroupDetailPage: React.FC = () => {
                 <Tabs
                   defaultTab="activity"
                   activeTab={activeCenterTab}
+                  tabListClassName="w-full"
                   onTabChange={(value) => {
                     if (
                       value === "activity" ||

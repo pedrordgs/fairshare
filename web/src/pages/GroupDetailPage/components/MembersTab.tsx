@@ -39,11 +39,11 @@ export const MembersTab: React.FC<MembersTabProps> = ({
 
   return (
     <div className="h-[420px] overflow-y-auto pr-1">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col items-start gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-slate-500 text-sm">
           {members.length} people in this group
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-slate-400 shrink-0">Invite code:</span>
           <span className="font-mono text-sm text-slate-600 bg-slate-100 rounded px-1.5 py-0.5">
             {inviteCode}
@@ -65,7 +65,7 @@ export const MembersTab: React.FC<MembersTabProps> = ({
           return (
             <div
               key={member.user_id}
-              className="flex items-center gap-3 p-2 rounded-lg bg-primary-50/50"
+              className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-2 rounded-lg bg-primary-50/50"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-accent-400 to-accent-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                 {member.name.charAt(0).toUpperCase()}
@@ -90,12 +90,12 @@ export const MembersTab: React.FC<MembersTabProps> = ({
                 </p>
               </div>
               {canToggleAdmin && (
-                <div className="flex-shrink-0">
+                <div className="w-full sm:w-auto sm:flex-shrink-0">
                   {member.is_admin ? (
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                      className="w-full sm:w-auto text-xs text-red-600 border-red-200 hover:bg-red-50"
                       onClick={() => onDemote(member.user_id)}
                       disabled={isPromotePending || isDemotePending}
                     >
@@ -105,7 +105,7 @@ export const MembersTab: React.FC<MembersTabProps> = ({
                     <Button
                       size="sm"
                       variant="secondary"
-                      className="text-xs"
+                      className="w-full sm:w-auto text-xs"
                       onClick={() => onPromote(member.user_id)}
                       disabled={isPromotePending || isDemotePending}
                     >

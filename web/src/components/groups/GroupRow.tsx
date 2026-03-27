@@ -50,10 +50,10 @@ export const GroupRow: React.FC<GroupRowProps> = ({
       aria-label={`Open group ${group.name}`}
       onClick={handleRowClick}
       onKeyDown={(e) => e.key === "Enter" && handleRowClick()}
-      className="flex items-center gap-4 p-4 rounded-xl bg-white border border-primary-100 hover:border-primary-200 hover:shadow-sm transition-all duration-200 cursor-pointer group"
+      className="flex flex-col gap-3 p-4 rounded-xl bg-white border border-primary-100 hover:border-primary-200 hover:shadow-sm transition-all duration-200 cursor-pointer group sm:flex-row sm:items-center"
     >
       {/* Left: name + admin badge + created date */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 w-full">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-slate-900 truncate group-hover:text-accent-600 transition-colors">
             {group.name}
@@ -71,7 +71,7 @@ export const GroupRow: React.FC<GroupRowProps> = ({
 
       {/* Centre: balance chips — only shown when non-zero */}
       {(owedByTotal !== 0 || owedToTotal !== 0) && (
-        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-shrink-0">
           {owedByTotal !== 0 && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50">
               <span className="text-xs uppercase tracking-wide text-rose-600">
@@ -96,9 +96,9 @@ export const GroupRow: React.FC<GroupRowProps> = ({
       )}
 
       {/* Right: stats + action buttons */}
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end sm:flex-shrink-0">
         {/* Stats */}
-        <div className="hidden md:flex items-center gap-3 text-sm text-slate-400">
+        <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-400">
           <span>
             {group.expense_count} expense{group.expense_count !== 1 ? "s" : ""}
           </span>

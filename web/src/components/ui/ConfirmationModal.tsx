@@ -46,11 +46,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <p id="confirmation-modal-description" className="text-slate-700 mb-6">
           {message}
         </p>
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
           <ButtonSecondary
             type="button"
             onClick={handleClose}
             disabled={isPending}
+            className="w-full sm:w-auto"
           >
             Cancel
           </ButtonSecondary>
@@ -58,7 +59,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isPending}
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:ring-red-500"
+            className="w-full sm:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:ring-red-500"
           >
             {isPending ? (
               <span className="flex items-center justify-center gap-2">

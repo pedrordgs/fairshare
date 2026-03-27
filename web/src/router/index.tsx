@@ -36,6 +36,8 @@ const redirectIfAuthenticated = () => {
   }
 };
 
+const isDebugMode = import.meta.env.DEV;
+
 // Create the root route with layout
 const rootRoute = createRootRoute({
   component: () => {
@@ -89,8 +91,8 @@ export const router = createRouter({
   routeTree: rootRoute.addChildren([
     indexRoute,
     dashboardRoute,
-    styleguideRoute,
     groupDetailRoute,
+    ...(isDebugMode ? [styleguideRoute] : []),
   ]),
 });
 

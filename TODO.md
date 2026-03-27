@@ -1,7 +1,6 @@
 # TODO
 
 - Fix pre-commit to run both (api and web)
-- Prepare production build and deploy
 
 ## Nice to have
 
